@@ -1,0 +1,7 @@
+#!/bin/bash
+
+## Description: Run pnpm
+## Usage: ddev pnpm [command]
+## Example: ddev pnpm -v
+
+"pnpm" "$@"

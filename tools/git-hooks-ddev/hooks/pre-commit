@@ -1,0 +1,46 @@
+#!/usr/bin/env bash
+
+PROJECT_NAME=$(grep "name: " .ddev/config.yaml | head -1 | cut -f 2 -d ' ')
+
+# Filter for only .php files (using grep)
+STAGED_FILES=$(git diff --diff-filter=ACMR --cached --name-only -- . ":(exclude)vendor/*" ":(exclude)ecs.php" ":(exclude)rector.php" HEAD)
+
+# Check if there are any staged PHP files
+if ! echo "$STAGED_FILES" | grep '\.php$'; then
+    echo "No staged PHP files found. Skipping checks..."
+    exit 0
+fi
+
+echo "Checking PHP Lint..."
+for FILE in $STAGED_FILES; do
+    ddev php -l -d display_errors=0 "$FILE"
+    if [ $? != 0 ]; then
+        echo "Fix the error before commit."
+        exit 1
+    fi
+    FILES="$FILES $FILE"
+done
+
+if [ "$FILES" != "" ]; then
+    echo "Pre-hook: Running EasyCodingStandard"
+    docker exec -t ddev-${PROJECT_NAME}-web ./vendor/bin/ecs check --fix $FILES
+    docker exec -t ddev-${PROJECT_NAME}-web git add $FILES
+
+    echo "Pre-hook: Running Rector"
+    docker exec -t ddev-${PROJECT_NAME}-web ./vendor/bin/rector process -- $FILES
+    docker exec -t ddev-${PROJECT_NAME}-web git add $FILES
+
+    echo "Pre-hook: Running EasyCodingStandard"
+    docker exec -t ddev-${PROJECT_NAME}-web ./vendor/bin/ecs check --fix $FILES
+    docker exec -t ddev-${PROJECT_NAME}-web git add $FILES
+
+    echo "Pre-hook: Running PHPStan"
+    docker exec -t ddev-${PROJECT_NAME}-web ./vendor/bin/phpstan analyse -c phpstan.neon.dist $FILES
+
+    echo 'Pre-hook: Running Psalm'
+    docker exec -t ddev-${PROJECT_NAME}-web ./vendor/bin/psalm.phar --config=psalm.xml $FILES
+
+    docker exec -t ddev-${PROJECT_NAME}-web git add $FILES
+fi
+
+exit 0

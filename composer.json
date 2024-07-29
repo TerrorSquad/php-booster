@@ -1,0 +1,31 @@
+{
+  "name": "generic/php-ddev-blueprint",
+  "type": "project",
+  "authors": [
+    {
+      "name": "DDEV User",
+      "email": "nobody@example.com"
+    }
+  ],
+  "require-dev": {
+    "rector/rector": "^1.2",
+    "phpstan/phpstan": "^1.11",
+    "symplify/easy-coding-standard": "^12.3",
+    "zircote/swagger-php": "^4.10"
+  },
+  "scripts": {
+    "post-install-cmd": [
+      "sh ./tools/git-hooks-ddev/setup.sh"
+    ],
+    "post-update-cmd": [
+      "sh ./tools/git-hooks-ddev/setup.sh"
+    ],
+    "generate-api-spec": "php documentation/api.php",
+    "check-cs": "vendor/bin/ecs check --ansi",
+    "fix-cs": "vendor/bin/ecs check --fix --ansi",
+    "phpstan": "vendor/bin/phpstan analyse -c phpstan.neon.dist",
+    "phpstan:sonar": "vendor/bin/phpstan analyse -c phpstan.neon.dist --error-format=prettyJson > phpstan_sonar.json",
+    "psalm:sonar": "vendor/bin/psalm.phar --report=sonarqube.json; mv sonarqube.json psalm_sonar.json",
+    "rector": "vendor/bin/rector"
+  }
+}

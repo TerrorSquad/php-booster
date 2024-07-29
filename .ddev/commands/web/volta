@@ -1,0 +1,7 @@
+#!/bin/bash
+
+## Description: Run volta
+## Usage: ddev volta [command]
+## Example: ddev volta -v
+
+"volta" "$@"

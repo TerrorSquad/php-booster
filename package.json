@@ -1,0 +1,18 @@
+{
+  "name": "ddev_blueprint",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "prepare": "husky",
+    "commit": "commit",
+    "generate:api-doc:html": "redocly build-docs documentation/openapi.yml --output=documentation/openapi.html"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^19.3.0",
+    "@commitlint/config-conventional": "^19.2.2",
+    "@commitlint/prompt-cli": "^19.3.1",
+    "@redocly/cli": "^1.16.0",
+    "husky": "^9.0.11"
+  }
+}

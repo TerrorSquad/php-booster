@@ -1,0 +1,36 @@
+name: Add Issue Link to PR
+
+on:
+  pull_request:
+    types: [opened]
+
+jobs:
+  add_link:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Add Issue Link
+        run: |
+          BRANCH_NAME="${{ github.head_ref }}"
+          # echo "Branch Name: $BRANCH_NAME"
+          TICKET_ID=$(echo "$BRANCH_NAME" | grep -oP '(PRJ|ERM)-\d+')
+          echo "Ticket ID: $TICKET_ID"
+          TICKET_PREFIX=$(echo "$TICKET_ID" | cut -d '-' -f 1)
+          echo "Ticket Prefix: $TICKET_PREFIX"
+          if [ "$TICKET_PREFIX" == "PRJ" ]; then
+            ISSUE_URL="https://${JIRA_SUBDOMAIN}.atlassian.net/browse/$TICKET_ID"
+          elif [ "$TICKET_PREFIX" == "ERM" ]; then
+            ISSUE_URL="https://${ERM_DOMAIN}.com/issues/$TICKET_ID"
+          else
+            echo "Error: Invalid ticket prefix in branch name."
+            exit 1
+          fi
+          echo "Issue Link: $ISSUE_URL"
+          BODY=${{ toJSON(github.event.pull_request.body) }}
+          NEW_BODY=$(echo -e "$BODY" | sed "s|Issue URL:|Issue URL: $ISSUE_URL|")
+          echo $NEW_BODY
+          # Update the PR using the GitHub API
+          PAYLOAD=$(echo '{}' | jq --arg body "$NEW_BODY" '.body = $body')
+          echo -e $PAYLOAD
+          curl -X PATCH -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" -H "Accept: application/vnd.github.v3+json" -d "$PAYLOAD" ${{ github.event.pull_request.issue_url }}

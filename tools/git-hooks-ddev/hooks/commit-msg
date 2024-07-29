@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+
+# Branch Name Format Validation
+current_branch=$(git symbolic-ref --short HEAD)
+branch_regex='^(feature|fix|chore)/(PRJ|ERM)-(\d+)(-.+)?$'
+
+if ! echo "$current_branch" | grep -qiP "$branch_regex"; then
+    echo "ERROR: Invalid branch name format. Use <type>/<prefix>-<ticket_number>-<description>."
+    echo "Example: feature/PRJ-1234-amazing-new-feature"
+    exit 1
+fi
+
+# Commitlint validation
+ddev pnpm dlx commitlint --edit $1
+
+commit_msg_file=$1
+
+# Extract ticket Id from the branch name
+ticket_id=$(echo "$current_branch" | grep -oP '(PRJ|ERM)-\d+') # Use -oP to extract ticket ID
+
+# Append Ticket ID to Commit Body
+commit_body=$(sed '1d;/^#/d' "$1") # Remove first line and comments
+if ! echo "$commit_body" | grep -qP "$ticket_id"; then
+    echo "" >>"$1"
+    echo "Closes: $ticket_id" >>"$1"
+fi
