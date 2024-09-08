@@ -11,15 +11,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: corepack enable
+
       - uses: actions/setup-node@v3
         with:
           node-version: "22"
-      - name: Install Volta
-        run: curl https://get.volta.sh | bash
+
       - name: Install bun
-        run: curl -sSL https://bun.sh | bash
-      - run: bun install
-      - run: cd docs && npx nuxt build --preset github_pages
+        run: curl -fsSL https://bun.sh/install | bash
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Build the documentation
+        run: cd docs && npx nuxt build --preset github_pages
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
