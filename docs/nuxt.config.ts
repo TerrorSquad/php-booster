@@ -4,6 +4,11 @@ export default defineNuxtConfig({
 
   devtools: { enabled: true },
 
+  app: {
+    baseURL: '/php-blueprint/',
+    buildAssetsDir: 'assets',
+  },
+
   modules: [
     // Remove it if you don't use Plausible analytics
     // https://github.com/nuxt-modules/plausible
