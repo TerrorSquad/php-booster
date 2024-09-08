@@ -23,7 +23,7 @@ contribution.
 
 1. Clone the repository to your own machine
 2. Check out the `main` branch
-3. Go through the **Local development environment** process described in the [README.md](README.md) file
+3. Set up the project locally
 4. Install composer and node dependencies
 5. Ensure you can run the project
 
@@ -59,8 +59,8 @@ This will allow us to find the corresponding branches easily within JIRA or ERM.
 
 ### Commits and commit messages
 
-Try not to create very large commits that change large amounts of code. Lots of smaller focused commits is better than a
-few large ones.
+Commit Size: Aim for small, focused commits that address a single issue or feature
+Commit Messages: Follow the Conventional Commits specification
 
 We use Conventional Commits to maintain a clear and informative commit history. This helps us automate changelog
 generation, versioning, and other project
@@ -92,15 +92,12 @@ Examples
 - `chore: update dependencies`
 - `docs: improve installation instructions`
 
-Commitlint will automatically append the ticket Id to the commit message `footer`. This way you can focus on the title
-and optionally the body.
+Commitlint will automatically append the ticket Id to the commit message `footer`. This way you can focus on the title and optionally the body.
 
 ## Tools We Use
 
-- We use [Husky](https://typicode.github.io/husky/) to manage Git hooks. This helps us enforce code quality and commit
-  message standards.
-- We use [Commitlint](https://commitlint.js.org/) to ensure that all commit messages follow the Conventional Commits
-  specification.
+- We use [Husky](https://typicode.github.io/husky/) to manage Git hooks. This helps us enforce code quality and commit   message standards.
+- We use [Commitlint](https://commitlint.js.org/) to ensure that all commit messages follow the Conventional Commits specification.
 - We use a pull request template to ensure consistent and informative pull requests.
 
 ### Required Visual Studio Code Extensions
@@ -115,11 +112,9 @@ To maintain consistency and enhance productivity, we require the following Visua
 - [vivaxy.vscode-conventional-commits](https://marketplace.visualstudio.com/items?itemName=vivaxy.vscode-conventional-commits)
 - [DEVSENSE.phptools-vscode](https://marketplace.visualstudio.com/items?itemName=DEVSENSE.phptools-vscode)
 
-These extensions are listed in the `.vscode/extensions.json` file in the project root directory. Install them **before**
-starting development to ensure a smooth workflow and adherence to our coding standards.
+These extensions are listed in the `.vscode/extensions.json` file in the project root directory. Install them **before** starting development to ensure a smooth workflow and adherence to our coding standards.
 
-These extensions provide essential features like linting, formatting, and code analysis that help us maintain code
-quality and consistency
+These extensions provide essential features like linting, formatting, and code analysis that help us maintain code quality and consistency
 
 ### Required PHPStorm extensions
 
@@ -138,8 +133,6 @@ quality and consistency
 
 ## Code Quality with SonarQube
 
-We use [SonarQube](https://sonarqube.com/) to analyze our code for potential bugs, vulnerabilities, and code
-smells. This ensures that our codebase is maintainable and of high quality.
+We use [SonarQube](https://sonarqube.com/) to analyze our code for potential bugs, vulnerabilities, and code smells. This ensures that our codebase is maintainable and of high quality.
 
-Before merging any pull request, please make sure that the SonarQube check has passed successfully. If any issues are
-raised by SonarQube, address them before requesting a review.
+Before merging any pull request, please make sure that the SonarQube check has passed successfully. If any issues are raised by SonarQube, address them before requesting a review.
