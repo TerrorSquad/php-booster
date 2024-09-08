@@ -138,7 +138,7 @@ quality and consistency
 
 ## Code Quality with SonarQube
 
-We use [SonarQube](https://sonarqube.oneeuronet.com/) to analyze our code for potential bugs, vulnerabilities, and code
+We use [SonarQube](https://sonarqube.com/) to analyze our code for potential bugs, vulnerabilities, and code
 smells. This ensures that our codebase is maintainable and of high quality.
 
 Before merging any pull request, please make sure that the SonarQube check has passed successfully. If any issues are
