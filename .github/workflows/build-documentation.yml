@@ -16,7 +16,9 @@ jobs:
           node-version: "22"
       - name: Install Volta
         run: curl https://get.volta.sh | bash
-      - name: Install bun
+      - name: Export Volta path
+        run: echo 'export PATH="$HOME/.volta/bin:$PATH"' >> $GITHUB_ENV
+      - name: Install bun with Volta
         run: volta install bun
       - run: bun install
       - run: cd docs && npx nuxt build --preset github_pages
