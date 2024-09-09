@@ -2,9 +2,17 @@
 
 This repository contains a DDEV configuration alongside various other tools that help us ensure consistency across local environments as well as quality within PHP codebases.
 
+## License
+
+This repository is licensed under the MIT license. See [LICENSE.md](LICENSE.md) for more information.
+
 ## Requirements
 
 You need to have DDEV installed. Visit [ddev](https://ddev.com/) for installation instructions.
+
+## Documentation
+
+The documentation is available at [https://terrorsquad.github.io/php-blueprint/](https://terrorsquad.github.io/php-blueprint/)
 
 ## Adding to existing PHP Project
 
