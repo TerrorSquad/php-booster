@@ -21,7 +21,7 @@ fi
 echo "Copying Blueprint files and directories..."
 cp -r php-blueprint/.ddev .
 echo "Configuring DDEV..."
-ddev config --project-type=php --project-name="${PROJECT_NAME}" --docroot=public --create-docroot
+ddev stop --unlist ${PROJECT_NAME} && ddev config --project-type=php --project-name="${PROJECT_NAME}" --docroot=public --create-docroot
 
 cp -r php-blueprint/.github .
 cp -r php-blueprint/.vscode .
