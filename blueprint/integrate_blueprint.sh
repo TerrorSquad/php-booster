@@ -17,22 +17,11 @@ if [ ! -d "php-blueprint" ]; then
 fi
 
 # Run DDEV configuration
-echo "Configuring DDEV..."
-ddev config --project-type=php --project-name="${PROJECT_NAME}" --docroot=public --create-docroot
 
 echo "Copying Blueprint files and directories..."
 cp -r php-blueprint/.ddev .
-
-# Add post exec hooks to ddev
-# hooks:
-#     post-start:
-#         - exec: "pnpm install"
-#         - exec: "sh ./tools/git-hooks-ddev/setup.sh"
-
-echo "hooks:
-    post-start:
-        - exec: \"pnpm install\"
-        - exec: \"sh ./tools/git-hooks-ddev/setup.sh\"" >>.ddev/config.yaml
+echo "Configuring DDEV..."
+ddev config --project-type=php --project-name="${PROJECT_NAME}" --docroot=public --create-docroot
 
 cp -r php-blueprint/.github .
 cp -r php-blueprint/.vscode .
