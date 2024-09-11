@@ -37,7 +37,7 @@ fi
 git diff --name-only | grep -q openapi.yml || exit 0
 
 # Generate the HTML API documentation
-bash "runner" pnpm generate:api-doc:html
+bash "$runner" pnpm generate:api-doc:html
 
 git add documentation
 git commit -m "chore: update API documentation"

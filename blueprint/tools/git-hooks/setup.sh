@@ -41,12 +41,10 @@ fi
 
 rm -rf .husky
 mkdir .husky
+cp -r ./tools/git-hooks/hooks/* .husky
 
-if [ "$HOSTNAME" = "$PROJECT_NAME-web" ]; then
-  cp -r ./tools/git-hooks/hooks/ddev/* .husky
-else
-  cp -r ./tools/git-hooks/hooks/* .husky
-  rm -rf .husky/ddev
+if [ ! "$HOSTNAME" = "$PROJECT_NAME-web" ]; then
+  grep -rl 'bash "$runner" ' .husky/* | xargs sed -i 's/bash "$runner" //g'
 fi
 
-pnpm install
+yes | pnpm install
