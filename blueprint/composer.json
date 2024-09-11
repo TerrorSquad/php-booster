@@ -15,11 +15,13 @@
   },
   "scripts": {
     "post-install-cmd": [
-      "sh ./tools/git-hooks-ddev/setup.sh"
+      "bash ./tools/git-hooks/setup.sh"
     ],
     "post-update-cmd": [
-      "sh ./tools/git-hooks-ddev/setup.sh"
+      "bash ./tools/git-hooks/setup.sh"
     ],
+    "test": "vendor/bin/phpunit --colors=always",
+    "test:coverage": "XDEBUG_COVERAGE vendor/bin/phpunit --colors=always --coverage-clover=coverage.xml",
     "generate-api-spec": "php documentation/api.php",
     "check-cs": "vendor/bin/ecs check --ansi",
     "fix-cs": "vendor/bin/ecs check --fix --ansi",

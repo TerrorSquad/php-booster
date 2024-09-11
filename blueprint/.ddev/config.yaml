@@ -19,8 +19,9 @@ router_http_port: "6666"
 timezone: Europe/Berlin
 hooks:
     post-start:
-        - exec: "pnpm install"
-        - exec: "sh ./tools/git-hooks-ddev/setup.sh"
+        - exec: "bash ./tools/git-hooks/setup.sh"
+        - exec: composer install --prefer-dist --no-progress --no-interaction
+        - exec: python3 .phpstorm/update_xdebug_config.py
 # Key features of DDEV's config.yaml:
 
 # name: <projectname> # Name of the project, automatically provides

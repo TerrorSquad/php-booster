@@ -1,8 +1,15 @@
 #!/usr/bin/env bash
 
-# Branch Name Format Validation
+# Check if MERGE_HEAD exists
+if [ -f "$GIT_DIR/MERGE_HEAD" ]; then
+    # Skip the hook during a merge
+    exit 0
+fi
+
+ROOT=$(git rev-parse --show-toplevel)
+runner="$ROOT/tools/runner.sh"
 current_branch=$(git symbolic-ref --short HEAD)
-branch_regex='^(feature|fix|chore)/(PRJ|ERM)-(\d+)(-.+)?$'
+branch_regex='^(feature|fix|chore|story|task|bug)/(PRJ|ERM)-(\d+)(-.+)?$'
 
 if ! echo "$current_branch" | grep -qiP "$branch_regex"; then
     echo "ERROR: Invalid branch name format. Use <type>/<prefix>-<ticket_number>-<description>."
@@ -10,10 +17,7 @@ if ! echo "$current_branch" | grep -qiP "$branch_regex"; then
     exit 1
 fi
 
-# Commitlint validation
-ddev pnpm dlx commitlint --edit $1
-
-commit_msg_file=$1
+bash "$runner" pnpm dlx commitlint --edit "$1"
 
 # Extract ticket Id from the branch name
 ticket_id=$(echo "$current_branch" | grep -oP '(PRJ|ERM)-\d+') # Use -oP to extract ticket ID

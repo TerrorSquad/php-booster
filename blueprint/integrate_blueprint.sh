@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 echo "Enter the project name (e.g. my-project):"
-read -r PROJECT_NAME
+read -pr "Project name:" PROJECT_NAME
 
 # Check if blueprint repository is already cloned
 if [ ! -d "php-blueprint" ]; then

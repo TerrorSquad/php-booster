@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 use PhpCsFixer\Fixer\Import\NoUnusedImportsFixer;
 use PhpCsFixer\Fixer\Operator\BinaryOperatorSpacesFixer;
-use PhpCsFixer\Fixer\Semicolon\MultilineWhitespaceBeforeSemicolonsFixer;
-use PhpCsFixer\Fixer\Whitespace\StatementIndentationFixer;
 use Symplify\EasyCodingStandard\Config\ECSConfig;
 
 return ECSConfig::configure()
@@ -27,10 +25,6 @@ return ECSConfig::configure()
         psr12: true,
         phpCsFixer: true
     )
-    ->withSkip([
-        StatementIndentationFixer::class,
-        MultilineWhitespaceBeforeSemicolonsFixer::class,
-    ])
     ->withConfiguredRule(BinaryOperatorSpacesFixer::class, [
         'default' => 'align',
     ])
