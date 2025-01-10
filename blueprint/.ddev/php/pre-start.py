@@ -41,7 +41,8 @@ def create_xdebug_config():
         os.remove(FILE)
     with open(FILE, "w") as f:
         f.write("[xdebug]\n")
-        f.write("xdebug.remote_host=" + get_docker_ip() + "\n")
+        # https://xdebug.org/docs/upgrade_guide#changed-xdebug.remote_host
+        f.write("xdebug.client_host=" + get_docker_ip() + "\n")
 
 
 create_xdebug_config()
