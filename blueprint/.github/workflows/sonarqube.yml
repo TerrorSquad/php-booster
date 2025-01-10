@@ -60,7 +60,7 @@ jobs:
         run: composer psalm:sonar || true
 
       - name: Run tests with phpunit/phpunit
-        run: composer test-coverage || true
+        run: composer test:coverage || true
 
       - name: Sonar Scanner
         uses: sonarsource/sonarcloud-github-action@master

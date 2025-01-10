@@ -12,13 +12,13 @@ fi
 # Check if phpunit is installed or pest and run the tests accordingly - don't exit
 if bash "$runner" composer show | grep -q "pestphp/pest"; then
     echo "Running Pest tests..."
-    bash "$runner" composer test-coverage
+    bash "$runner" composer test:coverage
     echo "Tests passed successfully"
 fi
 
 if bash "$runner" composer show | grep -q "phpunit/phpunit"; then
     echo "Running PHPUnit tests..."
-    bash "$runner" composer test-coverage
+    bash "$runner" composer test:coverage
     echo "Tests passed successfully"
 fi
 
