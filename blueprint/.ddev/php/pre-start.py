@@ -1,4 +1,5 @@
 import os
+import subprocess
 
 FILE = ".ddev/php/xdebug-local.ini"
 
