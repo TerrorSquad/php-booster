@@ -68,6 +68,7 @@ function copy_files() {
     cp -r php-blueprint/.github .
     cp -r php-blueprint/.vscode .
     cp -r php-blueprint/tools .
+    cp -r php-blueprint/.phpstorm .
     success "Files copied. Verify the copied files and their paths."
 }
 
@@ -104,6 +105,11 @@ function add_code_quality_tools() {
 function update_readme() {
     log "Updating README.md..."
     if [ -f "README.md" ]; then
+        # Check if README_SNIPPET.md is already appended
+        if grep -q "README_SNIPPET.md" README.md; then
+            warn "README_SNIPPET.md already appended to README.md."
+            return
+        fi
         cat php-blueprint/README_SNIPPET.md >>README.md
         success "README_SNIPPET.md appended to existing README.md."
     else
