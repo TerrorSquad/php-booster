@@ -45,9 +45,9 @@ function check_ddev_project() {
 
 function update_ddev_files() {
     log "Updating ddev files..."
-    cp -r .ddev/commands/web/* .ddev/commands/web/
-    cp -r .ddev/php .ddev/
-    cp -r .ddev/web-build .ddev/
+    cp -r php-blueprint/.ddev/commands/* .ddev/commands
+    cp -r php-blueprint/.ddev/php/* .ddev/php
+    cp -r php-blueprint/.ddev/web-build/ .ddev/web-build
     success "ddev files updated."
 }
 
