@@ -18,8 +18,10 @@ corepack_enable: false
 router_http_port: "6666"
 timezone: Europe/Berlin
 hooks:
+    pre-start:
+        - exec-host: python3 .ddev/php/pre-start.py
     post-start:
-        - exec: "bash ./tools/git-hooks/setup.sh"
+        - exec: bash ./tools/git-hooks/setup.sh
         - exec: composer install --prefer-dist --no-progress --no-interaction
         - exec: python3 .phpstorm/update_xdebug_config.py
 # Key features of DDEV's config.yaml:

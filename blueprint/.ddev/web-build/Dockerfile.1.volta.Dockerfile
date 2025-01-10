@@ -6,8 +6,8 @@ RUN curl https://get.volta.sh | bash
 
 COPY volta.bashrc /etc/bashrc
 
-RUN for i in $(seq 1 3); do \
-      volta install node@20 && volta install pnpm@9 && break; \
-    done
+RUN volta install node@20
+
+RUN volta install pnpm@9
 
 USER root

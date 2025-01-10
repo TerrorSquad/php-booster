@@ -53,12 +53,12 @@ function update_ddev_files() {
 
 function update_ddev_config() {
     log "Updating ddev config..."
-    yq '.hooks' php-blueprint/.ddev/config.yaml > hooks.yaml
-    yq eval-all 'select(fileIndex == 0) * {"hooks": select(fileIndex == 1)}' .ddev/config.yaml hooks.yaml > .ddev/config_updated.yaml
+    yq '.hooks' php-blueprint/.ddev/config.yaml >hooks.yaml
+    yq eval-all 'select(fileIndex == 0) * {"hooks": select(fileIndex == 1)}' .ddev/config.yaml hooks.yaml >.ddev/config_updated.yaml
     mv .ddev/config_updated.yaml .ddev/config.yaml
     rm hooks.yaml
 
-    yq eval '.xdebug_enabled = true' .ddev/config.yaml > .ddev/config_updated.yaml
+    yq eval '.xdebug_enabled = true' .ddev/config.yaml >.ddev/config_updated.yaml
     mv .ddev/config_updated.yaml .ddev/config.yaml
     success "ddev config updated. Ensure the paths in the config are correct."
 }
@@ -79,8 +79,8 @@ function update_package_json() {
         success "package.json and pnpm-lock.dist copied from blueprint."
     else
         log "package.json already exists. Updating scripts..."
-        jq -s '.[0].scripts += .[1].scripts | .[0]["devDependencies"] += .[1]["devDependencies"] | .[0]["volta"] += .[1]["volta"]' package.json php-blueprint/package.json > package.json.tmp
-        jq '.[0]' package.json.tmp > package.json
+        jq -s '.[0].scripts += .[1].scripts | .[0]["devDependencies"] += .[1]["devDependencies"] | .[0]["volta"] += .[1]["volta"]' package.json php-blueprint/package.json >package.json.tmp
+        jq '.[0]' package.json.tmp >package.json
         rm package.json.tmp
         success "package.json updated with new scripts and devDependencies."
     fi
@@ -95,8 +95,8 @@ function add_code_quality_tools() {
     success "Code quality tools and documentation copied. Check the paths in rector.php and phpstan.neon.dist."
 
     log "Updating composer.json..."
-    jq -s '.[0].scripts += .[1].scripts | .[0]["require-dev"] += .[1]["require-dev"]' composer.json php-blueprint/composer.json > composer.json.tmp
-    jq '.[0]' composer.json.tmp > composer.json
+    jq -s '.[0].scripts += .[1].scripts | .[0]["require-dev"] += .[1]["require-dev"]' composer.json php-blueprint/composer.json >composer.json.tmp
+    jq '.[0]' composer.json.tmp >composer.json
     rm composer.json.tmp
     success "composer.json updated with new scripts and require-dev dependencies."
 }
@@ -104,11 +104,11 @@ function add_code_quality_tools() {
 function update_readme() {
     log "Updating README.md..."
     if [ -f "README.md" ]; then
-        cat php-blueprint/README_SNIPPET.md >> README.md
+        cat php-blueprint/README_SNIPPET.md >>README.md
         success "README_SNIPPET.md appended to existing README.md."
     else
         warn "README.md not found. Creating new README.md..."
-        cat php-blueprint/README_SNIPPET.md > README.md
+        cat php-blueprint/README_SNIPPET.md >README.md
         success "New README.md created with README_SNIPPET.md content."
     fi
 }
@@ -129,6 +129,19 @@ function cleanup() {
     success "Temporary files cleaned up."
 }
 
+function update_gitignore() {
+    log "Updating .gitignore..."
+
+    # Remove the .vscode directory from .gitignore
+    sed -i '/.vscode/d' .gitignore
+
+    if ! grep -q ".ddev/php/xdebug-local.ini" .gitignore; then
+        echo ".ddev/php/xdebug-local.ini" >>.gitignore
+    fi
+
+    success ".gitignore updated."
+}
+
 function main() {
     if [ "$1" = "--verbose" ]; then
         VERBOSE=true
@@ -144,6 +157,7 @@ function main() {
     update_package_json
     add_code_quality_tools
     update_readme
+    update_gitignore
     cleanup
     log "Ensure you are using Volta for Node.js version management and PNPM as the package manager."
 
