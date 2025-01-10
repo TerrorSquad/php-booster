@@ -1,70 +1,153 @@
 #!/usr/bin/env bash
 
-echo "Enter the project name (e.g. my-project):"
-read -pr "Project name:" PROJECT_NAME
+# This script is used to integrate the php-blueprint into your DDEV project
 
-# Check if blueprint repository is already cloned
-if [ ! -d "php-blueprint" ]; then
-  echo "Downloading PHP Blueprint repository..."
+# ANSI color codes
+GREEN='\033[0;32m'
+RED='\033[0;31m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
 
-  curl -sSL https://github.com/TerrorSquad/php-blueprint/archive/refs/heads/main.zip -o php-blueprint.zip
+VERBOSE=false
 
-  unzip php-blueprint.zip
+function log() {
+    if [ "$VERBOSE" = true ]; then
+        echo -e "${NC}$1${NC}"
+    fi
+}
 
-  mv php-blueprint-main/blueprint php-blueprint
+function warn() {
+    echo -e "${YELLOW}$1${NC}"
+}
 
-  rm php-blueprint.zip
-fi
+function error() {
+    echo -e "${RED}$1${NC}" >&2
+    exit 1
+}
 
-# Run DDEV configuration
+function success() {
+    echo -e "${GREEN}$1${NC}"
+}
 
-echo "Copying Blueprint files and directories..."
-cp -r php-blueprint/.ddev .
-echo "Configuring DDEV..."
-ddev stop --unlist ${PROJECT_NAME} && ddev config --project-type=php --project-name="${PROJECT_NAME}" --docroot=public --create-docroot
+function check_dependencies() {
+    log "Checking dependencies..."
+    command -v jq >/dev/null 2>&1 || error "jq is not installed. Please install jq."
+    command -v yq >/dev/null 2>&1 || error "yq is not installed. Please install yq."
+    success "All dependencies are satisfied."
+}
 
-cp -r php-blueprint/.github .
-cp -r php-blueprint/.vscode .
-cp -r php-blueprint/tools .
+function check_ddev_project() {
+    if [ ! -d ".ddev" ]; then
+        error "This script must be run in a directory containing a DDEV project (.ddev directory not found)."
+    fi
+    success "DDEV project detected."
+}
 
-# Check if package.json exists
+function update_ddev_files() {
+    log "Updating ddev files..."
+    cp -r .ddev/commands/web/* .ddev/commands/web/
+    cp -r .ddev/php .ddev/
+    cp -r .ddev/web-build .ddev/
+    success "ddev files updated."
+}
 
-if [ ! -f "package.json" ]; then
-  cp php-blueprint/package.json .
-  cp php-blueprint/pnpm-lock.dist .
-else
-  echo "package.json already exists. Updating scripts..."
-  jq -s '.[0].scripts += .[1].scripts | .[0]["devDependencies"] += .[1]["devDependencies"] | .[0]["volta"] += .[1]["volta"]' package.json php-blueprint/package.json >tmp.$$.json && mv tmp.$$.json package.json
-fi
+function update_ddev_config() {
+    log "Updating ddev config..."
+    yq '.hooks' php-blueprint/.ddev/config.yaml > hooks.yaml
+    yq eval-all 'select(fileIndex == 0) * {"hooks": select(fileIndex == 1)}' .ddev/config.yaml hooks.yaml > .ddev/config_updated.yaml
+    mv .ddev/config_updated.yaml .ddev/config.yaml
+    rm hooks.yaml
 
-cp php-blueprint/commitlint.config.js .
+    yq eval '.xdebug_enabled = true' .ddev/config.yaml > .ddev/config_updated.yaml
+    mv .ddev/config_updated.yaml .ddev/config.yaml
+    success "ddev config updated. Ensure the paths in the config are correct."
+}
 
-cp php-blueprint/rector.php php-blueprint/phpstan.neon.dist php-blueprint/ecs.php .
-cp -r php-blueprint/documentation .
+function copy_files() {
+    log "Copying files..."
+    cp -r php-blueprint/.github .
+    cp -r php-blueprint/.vscode .
+    cp -r php-blueprint/tools .
+    success "Files copied. Verify the copied files and their paths."
+}
 
-# Update composer.json
-echo "Updating composer.json..."
-jq -s '.[0].scripts += .[1].scripts | .[0]["require-dev"] += .[1]["require-dev"]' composer.json php-blueprint/composer.json >tmp.$$.json && mv tmp.$$.json composer.json
+function update_package_json() {
+    log "Updating package.json..."
+    if [ ! -f "package.json" ]; then
+        cp php-blueprint/package.json .
+        cp php-blueprint/pnpm-lock.dist .
+        success "package.json and pnpm-lock.dist copied from blueprint."
+    else
+        log "package.json already exists. Updating scripts..."
+        jq -s '.[0].scripts += .[1].scripts | .[0]["devDependencies"] += .[1]["devDependencies"] | .[0]["volta"] += .[1]["volta"]' package.json php-blueprint/package.json > package.json.tmp
+        jq '.[0]' package.json.tmp > package.json
+        rm package.json.tmp
+        success "package.json updated with new scripts and devDependencies."
+    fi
+    cp php-blueprint/commitlint.config.js .
+    success "commitlint.config.js copied."
+}
 
-# Install Composer and Node dependencies within DDEV
-echo "Installing dependencies within DDEV..."
-ddev start
-ddev composer install
-ddev pnpm install
+function add_code_quality_tools() {
+    log "Adding code quality tools..."
+    cp php-blueprint/rector.php php-blueprint/phpstan.neon.dist php-blueprint/ecs.php .
+    cp -r php-blueprint/documentation .
+    success "Code quality tools and documentation copied. Check the paths in rector.php and phpstan.neon.dist."
 
-# Enhance README.md (manual step for now)
-echo "Updating README.md with README_SNIPPET.md:"
+    log "Updating composer.json..."
+    jq -s '.[0].scripts += .[1].scripts | .[0]["require-dev"] += .[1]["require-dev"]' composer.json php-blueprint/composer.json > composer.json.tmp
+    jq '.[0]' composer.json.tmp > composer.json
+    rm composer.json.tmp
+    success "composer.json updated with new scripts and require-dev dependencies."
+}
 
-if [ -f "README.md" ]; then
-  cat php-blueprint/README_SNIPPET.md >>README.md
-else
-  echo "README.md not found. Please add the following section to your README.md:"
-  cat php-blueprint/README_SNIPPET.md >README.md
-fi
+function update_readme() {
+    log "Updating README.md..."
+    if [ -f "README.md" ]; then
+        cat php-blueprint/README_SNIPPET.md >> README.md
+        success "README_SNIPPET.md appended to existing README.md."
+    else
+        warn "README.md not found. Creating new README.md..."
+        cat php-blueprint/README_SNIPPET.md > README.md
+        success "New README.md created with README_SNIPPET.md content."
+    fi
+}
 
-# Replace project name in all files
-echo "Replacing project name in all files..."
-find . -type f -exec sed -i "s/php-blueprint/${PROJECT_NAME}/g" {} +
+function download_php_blueprint() {
+    log "Downloading php-blueprint..."
+    curl -sSL https://github.com/TerrorSquad/php-blueprint/archive/refs/heads/main.zip -o php-blueprint.zip
+    unzip php-blueprint.zip
+    mv php-blueprint-main/blueprint php-blueprint
+    rm php-blueprint.zip
+    rm -rf php-blueprint-main
+    success "php-blueprint downloaded and extracted."
+}
 
-echo "Integration complete!"
-echo "Please review the changes and commit them to your repository."
+function cleanup() {
+    log "Cleaning up..."
+    rm -rf php-blueprint
+    success "Temporary files cleaned up."
+}
+
+function main() {
+    if [ "$1" = "--verbose" ]; then
+        VERBOSE=true
+    fi
+
+    log "Starting integration..."
+    check_ddev_project
+    check_dependencies
+    download_php_blueprint
+    update_ddev_files
+    update_ddev_config
+    copy_files
+    update_package_json
+    add_code_quality_tools
+    update_readme
+    cleanup
+    log "Ensure you are using Volta for Node.js version management and PNPM as the package manager."
+
+    success "Integration completed. Please review the log messages for any important information."
+}
+
+main "$@"
