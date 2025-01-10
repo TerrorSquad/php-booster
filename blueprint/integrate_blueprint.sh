@@ -33,6 +33,8 @@ function check_dependencies() {
     log "Checking dependencies..."
     command -v jq >/dev/null 2>&1 || error "jq is not installed. Please install jq."
     command -v yq >/dev/null 2>&1 || error "yq is not installed. Please install yq."
+    command -v volta >/dev/null 2>&1 || error "Volta is not installed. Please install Volta."
+    command -v pnpm >/dev/null 2>&1 || error "PNPM is not installed. Please install PNPM."
     success "All dependencies are satisfied."
 }
 
