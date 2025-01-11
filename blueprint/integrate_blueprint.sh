@@ -103,17 +103,14 @@ function add_code_quality_tools() {
     rm composer.json.tmp
 
     if jq -e '.require' php-blueprint/composer.json >/dev/null; then
-        dependencies=$(jq -r '.require | keys[]' php-blueprint/composer.json)
-        for dependency in $dependencies; do
-            ddev composer require "$dependency"
-        done
+        prod_dependencies=$(jq -r '.require | keys[]' php-blueprint/composer.json)
+        echo "$prod_dependencies" | xargs ddev composer require
+
     fi
 
     if jq -e '.["require-dev"]' php-blueprint/composer.json >/dev/null; then
-        dependencies=$(jq -r '.["require-dev"] | keys[]' php-blueprint/composer.json)
-        for dependency in $dependencies; do
-            ddev composer require --dev "$dependency"
-        done
+        dev_dependencies=$(jq -r '.["require-dev"] | keys[]' php-blueprint/composer.json)
+        echo "$dev_dependencies" | xargs ddev composer require --dev
     fi
 
     success "composer.json updated with new scripts and require-dev dependencies."
