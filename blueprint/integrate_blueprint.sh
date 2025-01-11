@@ -160,8 +160,6 @@ function update_gitignore() {
     while IFS= read -r line; do
         if ! grep -q "^$line" .gitignore && ! grep -q "^/$line" .gitignore; then
             echo "$line" >>.gitignore
-        else
-            sed -i '' "/^\/$line/d" .gitignore
         fi
     done <php-blueprint/.gitignore
 
