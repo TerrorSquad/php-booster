@@ -140,14 +140,19 @@ function cleanup() {
 function update_gitignore() {
     log "Updating .gitignore..."
 
-    # Remove the .vscode directory from .gitignore (posix compliant)
-    if grep -q ".vscode" .gitignore; then
-        sed -i '' '/.vscode/d' .gitignore
-    fi
+    declare -A ignore_lines=(
+        [".vscode"]=1
+        [".ddev/php/xdebug-local.ini"]=1
+        ["coverage.xml"]=1
+    )
 
-    if ! grep -q ".ddev/php/xdebug-local.ini" .gitignore; then
-        echo ".ddev/php/xdebug-local.ini" >>.gitignore
-    fi
+    for line in "${!ignore_lines[@]}"; do
+        if ! grep -q "^$line" .gitignore && ! grep -q "^/$line" .gitignore; then
+            echo "$line" >>.gitignore
+        else
+            sed -i '' "/^\/$line/d" .gitignore
+        fi
+    done
 
     success ".gitignore updated."
 }
