@@ -4,9 +4,7 @@ declare(strict_types=1);
 
 use OpenApi\Generator;
 
-chdir(__DIR__ . '/../');
-
-require 'vendor/autoload.php';
+require  __DIR__ . '/../vendor/autoload.php';
 
 // Change this to the paths of your API classes
 $scanPaths = glob('./src');
