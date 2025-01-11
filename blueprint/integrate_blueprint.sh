@@ -99,13 +99,14 @@ function add_code_quality_tools() {
 
     log "Updating composer.json..."
     jq -s '.[0].scripts += .[1].scripts' composer.json php-blueprint/composer.json >composer.json.tmp
-    jq '.[0]' composer.json.tmp >composer.json
+
+    # Ensure scripts defined as arrays still contain existing values
+    jq '.[0].scripts |= with_entries(if .value | type == "array" then .value |= (.[0].scripts[.key] + .[1].scripts[.key] | unique) else . end)' composer.json.tmp >composer.json
     rm composer.json.tmp
 
     if jq -e '.require' php-blueprint/composer.json >/dev/null; then
         prod_dependencies=$(jq -r '.require | keys[]' php-blueprint/composer.json)
         echo "$prod_dependencies" | xargs ddev composer require
-
     fi
 
     if jq -e '.["require-dev"]' php-blueprint/composer.json >/dev/null; then
