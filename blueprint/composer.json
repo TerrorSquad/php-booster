@@ -24,7 +24,8 @@
 		"fix-cs": "vendor/bin/ecs check --fix --ansi",
 		"phpstan": "vendor/bin/phpstan analyse -c phpstan.neon.dist",
 		"phpstan:sonar": "vendor/bin/phpstan analyse -c phpstan.neon.dist --error-format=prettyJson > phpstan_sonar.json",
-		"psalm:sonar": "vendor/bin/psalm.phar --report=sonarqube.json; mv sonarqube.json psalm_sonar.json",
+		"psalm-phar:sonar": "vendor/bin/psalm.phar --report=sonarqube.json; mv sonarqube.json psalm_sonar.json",
+		"psalm:sonar": "vendor/bin/psalm --report=sonarqube.json; mv sonarqube.json psalm_sonar.json",
 		"rector": "vendor/bin/rector"
 	}
 }

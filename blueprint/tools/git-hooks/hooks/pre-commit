@@ -20,6 +20,9 @@ fi
 
 echo "Checking PHP Lint..."
 for FILE in $STAGED_FILES; do
+    if ! echo "$FILE" | grep '\.php$'; then
+        continue
+    fi
     bash "$runner" php -l -d display_errors=0 "$FILE"
     if [ $? != 0 ]; then
         echo "Fix the error before commit."
@@ -61,6 +64,11 @@ if [ "$FILES" != "" ]; then
     if [ -f "$ROOT/vendor/bin/psalm.phar" ]; then
         echo "Pre-hook: Running Psalm"
         bash "$runner" ./vendor/bin/psalm.phar --show-info=false "$FILES"
+    fi
+
+    if [ -f "$ROOT/vendor/bin/psalm" ]; then
+        echo "Pre-hook: Running Psalm"
+        bash "$runner" ./vendor/bin/psalm --show-info=false "$FILES"
     fi
 
 fi
