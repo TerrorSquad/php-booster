@@ -146,7 +146,6 @@ function add_code_quality_tools() {
 
     log "Updating composer.json..."
     merge_scripts composer.json php-blueprint/composer.json composer.json.tmp
-    mv composer.json.tmp composer.json
 
     if jq -e '.require' php-blueprint/composer.json >/dev/null; then
         prod_dependencies=$(jq -r '.require | keys[]' php-blueprint/composer.json)
