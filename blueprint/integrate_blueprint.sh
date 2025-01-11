@@ -186,6 +186,8 @@ function main() {
     log "Ensure you are using Volta for Node.js version management and PNPM as the package manager."
 
     success "Integration completed. Please review the log messages for any important information."
+
+    log "Please run 'ddev restart' to apply the changes."
 }
 
 main "$@"
