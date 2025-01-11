@@ -8,10 +8,11 @@
 		}
 	],
 	"require-dev": {
-		"rector/rector": "^1.2",
-		"phpstan/phpstan": "^1.11",
+		"rector/rector": "^2.0",
+		"phpstan/phpstan": "^2.0",
 		"symplify/easy-coding-standard": "^12.3",
-		"zircote/swagger-php": "^4.10"
+		"zircote/swagger-php": "^5.0",
+		"vimeo/psalm": "^5.0"
 	},
 	"scripts": {
 		"post-install-cmd": ["bash ./tools/git-hooks/setup.sh"],
