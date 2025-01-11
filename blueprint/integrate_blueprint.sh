@@ -91,6 +91,53 @@ function update_package_json() {
     success "commitlint.config.js copied."
 }
 
+merge_scripts() {
+    local COMPOSER1="$1"
+    local COMPOSER2="$2"
+    local OUTPUT="$3"
+
+    # Extract the "scripts" nodes from both composer files
+    jq '.scripts' "$COMPOSER1" >scripts1.json
+    jq '.scripts' "$COMPOSER2" >scripts2.json
+
+    # Initialize merged scripts object
+    echo '{}' >merged_scripts.json
+
+    # Dynamically detect all array keys in the "scripts" node
+    ARRAY_KEYS=$(jq -r '. | to_entries | map(select(.value | type == "array") | .key) | .[]' scripts1.json scripts2.json | sort -u)
+
+    # Merge each array key dynamically
+    for key in $ARRAY_KEYS; do
+        jq -s --arg key "$key" '
+      [.[].[$key] | arrays] | add | unique | {($key): .}
+    ' scripts1.json scripts2.json >temp_key.json
+
+        # Merge the result into the merged_scripts.json
+        jq -s '.[0] * .[1]' merged_scripts.json temp_key.json >temp_merged.json
+        mv temp_merged.json merged_scripts.json
+    done
+
+    # Merge non-array script keys explicitly
+    jq -s '
+    reduce .[] as $item ({}; . + ($item | to_entries | map(
+      if .value | type != "array" then { (.key): .value } else {} end
+    ) | add))
+  ' scripts1.json scripts2.json >non_array_scripts.json
+
+    # Combine array scripts and non-array scripts
+    jq -s '.[0] * .[1]' merged_scripts.json non_array_scripts.json >final_scripts.json
+
+    # Replace the "scripts" node in COMPOSER1 with the merged scripts
+    jq --argjson scripts "$(cat final_scripts.json)" \
+        '.scripts = $scripts' "$COMPOSER1" >"$OUTPUT"
+
+    # Clean up temporary files
+    rm scripts1.json scripts2.json merged_scripts.json non_array_scripts.json temp_key.json final_scripts.json
+
+    mv "$OUTPUT" "$COMPOSER1"
+    echo "Merged scripts written to $COMPOSER1"
+}
+
 function add_code_quality_tools() {
     log "Adding code quality tools..."
     cp php-blueprint/rector.php php-blueprint/phpstan.neon.dist php-blueprint/ecs.php php-blueprint/psalm.xml .
@@ -98,11 +145,8 @@ function add_code_quality_tools() {
     success "Code quality tools and documentation copied. Check the paths in rector.php and phpstan.neon.dist."
 
     log "Updating composer.json..."
-    jq -s '.[0].scripts += .[1].scripts' composer.json php-blueprint/composer.json >composer.json.tmp
-
-    # Ensure scripts defined as arrays still contain existing values
-    jq '.[0].scripts |= with_entries(if .value | type == "array" then .value |= (.[0].scripts[.key] + .[1].scripts[.key] | unique) else . end)' composer.json.tmp >composer.json
-    rm composer.json.tmp
+    merge_scripts composer.json php-blueprint/composer.json composer.json.tmp
+    mv composer.json.tmp composer.json
 
     if jq -e '.require' php-blueprint/composer.json >/dev/null; then
         prod_dependencies=$(jq -r '.require | keys[]' php-blueprint/composer.json)
