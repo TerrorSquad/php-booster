@@ -153,13 +153,13 @@ function cleanup() {
 function update_gitignore() {
     log "Updating .gitignore..."
 
-    declare -A ignore_lines=(
-        [".vscode"]=1
-        [".ddev/php/xdebug-local.ini"]=1
-        ["coverage.xml"]=1
+    ignore_lines=(
+        ".vscode"
+        ".ddev/php/xdebug-local.ini"
+        "coverage.xml"
     )
 
-    for line in "${!ignore_lines[@]}"; do
+    for line in "${ignore_lines[@]}"; do
         if ! grep -q "^$line" .gitignore && ! grep -q "^/$line" .gitignore; then
             echo "$line" >>.gitignore
         else
