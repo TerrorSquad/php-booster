@@ -91,7 +91,7 @@ function update_package_json() {
     success "commitlint.config.js copied."
 }
 
-merge_scripts() {
+function merge_scripts() {
     local COMPOSER1="$1"
     local COMPOSER2="$2"
     local OUTPUT="$3"
@@ -104,12 +104,15 @@ merge_scripts() {
     echo '{}' >merged_scripts.json
 
     # Dynamically detect all array keys in the "scripts" node
-    ARRAY_KEYS=$(jq -r '. | to_entries | map(select(.value | type == "array") | .key) | .[]' scripts1.json scripts2.json | sort -u)
+    ARRAY_KEYS=$(jq -r '. | to_entries | map(select(.value | type == "array") | .key) | .[]' scripts1.json scripts2.json)
 
-    # Merge each array key dynamically
+    # Merge each array key dynamically while preserving order
     for key in $ARRAY_KEYS; do
         jq -s --arg key "$key" '
-      [.[].[$key] | arrays] | add | unique | {($key): .}
+      # Concatenate arrays from both files (composer1 first, then composer2)
+      [
+        .[0][$key] + .[1][$key]  # Concatenate arrays (composer1 first, then composer2)
+      ] | add | {($key): .}
     ' scripts1.json scripts2.json >temp_key.json
 
         # Merge the result into the merged_scripts.json
@@ -117,7 +120,7 @@ merge_scripts() {
         mv temp_merged.json merged_scripts.json
     done
 
-    # Merge non-array script keys explicitly
+    # Merge non-array script keys explicitly (no change needed for non-array keys)
     jq -s '
     reduce .[] as $item ({}; . + ($item | to_entries | map(
       if .value | type != "array" then { (.key): .value } else {} end
