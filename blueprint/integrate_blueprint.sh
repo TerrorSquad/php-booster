@@ -103,13 +103,15 @@ function add_code_quality_tools() {
     rm composer.json.tmp
 
     if jq -e '.require' php-blueprint/composer.json >/dev/null; then
-        jq -r '.require | keys[]' php-blueprint/composer.json | while read -r dependency; do
+        dependencies=$(jq -r '.require | keys[]' php-blueprint/composer.json)
+        for dependency in $dependencies; do
             ddev composer require "$dependency"
         done
     fi
 
     if jq -e '.["require-dev"]' php-blueprint/composer.json >/dev/null; then
-        jq -r '.["require-dev"] | keys[]' php-blueprint/composer.json | while read -r dependency; do
+        dependencies=$(jq -r '.["require-dev"] | keys[]' php-blueprint/composer.json)
+        for dependency in $dependencies; do
             ddev composer require --dev "$dependency"
         done
     fi
