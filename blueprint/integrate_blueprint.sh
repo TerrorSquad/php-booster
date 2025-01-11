@@ -93,7 +93,7 @@ function update_package_json() {
 
 function add_code_quality_tools() {
     log "Adding code quality tools..."
-    cp php-blueprint/rector.php php-blueprint/phpstan.neon.dist php-blueprint/ecs.php .
+    cp php-blueprint/rector.php php-blueprint/phpstan.neon.dist php-blueprint/ecs.php php-blueprint/psalm.xml .
     cp -r php-blueprint/documentation .
     success "Code quality tools and documentation copied. Check the paths in rector.php and phpstan.neon.dist."
 
@@ -153,11 +153,7 @@ function cleanup() {
 function update_gitignore() {
     log "Updating .gitignore..."
 
-    ignore_lines=(
-        ".vscode"
-        ".ddev/php/xdebug-local.ini"
-        "coverage.xml"
-    )
+    ignore_lines=$(cat php-blueprint/.gitignore)
 
     for line in "${ignore_lines[@]}"; do
         if ! grep -q "^$line" .gitignore && ! grep -q "^/$line" .gitignore; then
