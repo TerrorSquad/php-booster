@@ -12,7 +12,7 @@
 		"phpstan/phpstan": "^2.0",
 		"symplify/easy-coding-standard": "^12.3",
 		"zircote/swagger-php": "^5.0",
-		"vimeo/psalm": "^5.0"
+		"psalm/phar": "^5.0"
 	},
 	"scripts": {
 		"post-install-cmd": ["bash ./tools/git-hooks/setup.sh"],
