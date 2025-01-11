@@ -117,7 +117,7 @@ function update_readme() {
     log "Updating README.md..."
     if [ -f "README.md" ]; then
         # Check if README_SNIPPET.md is already appended
-        if grep -q "README_SNIPPET.md" README.md; then
+        if grep -q "php-blueprint/README_SNIPPET.md" README.md; then
             warn "README_SNIPPET.md already appended to README.md."
             return
         fi
