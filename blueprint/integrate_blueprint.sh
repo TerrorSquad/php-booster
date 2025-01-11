@@ -189,7 +189,7 @@ function main() {
 
     success "Integration completed. Please review the log messages for any important information."
 
-    log "Please run 'ddev restart' to apply the changes."
+    success "Please run 'ddev restart' to apply the changes."
 }
 
 main "$@"
