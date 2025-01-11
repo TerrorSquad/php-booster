@@ -153,15 +153,17 @@ function cleanup() {
 function update_gitignore() {
     log "Updating .gitignore..."
 
-    ignore_lines=$(cat php-blueprint/.gitignore)
+    if [ ! -f "php-blueprint/.gitignore" ]; then
+        error "php-blueprint/.gitignore file not found."
+    fi
 
-    for line in "${ignore_lines[@]}"; do
+    while IFS= read -r line; do
         if ! grep -q "^$line" .gitignore && ! grep -q "^/$line" .gitignore; then
             echo "$line" >>.gitignore
         else
             sed -i '' "/^\/$line/d" .gitignore
         fi
-    done
+    done <php-blueprint/.gitignore
 
     success ".gitignore updated."
 }
