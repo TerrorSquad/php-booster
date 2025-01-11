@@ -38,7 +38,7 @@ function check_dependencies() {
     success "All dependencies are satisfied."
 }
 
-function check_ddev_project() {
+function is_ddev_project() {
     if [ ! -d ".ddev" ]; then
         error "This script must be run in a directory containing a DDEV project (.ddev directory not found)."
     fi
@@ -176,7 +176,7 @@ function main() {
     fi
 
     log "Starting integration..."
-    check_ddev_project
+    is_ddev_project
     check_dependencies
     download_php_blueprint
     update_ddev_files
