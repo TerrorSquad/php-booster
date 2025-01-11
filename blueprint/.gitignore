@@ -7,3 +7,4 @@ coverage.xml
 phpstan_sonar.json
 psalm_sonar.json
 .phpunit.result.cache
+.ddev/php/xdebug-local.ini
