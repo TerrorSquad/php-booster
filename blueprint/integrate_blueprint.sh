@@ -98,9 +98,18 @@ function add_code_quality_tools() {
     success "Code quality tools and documentation copied. Check the paths in rector.php and phpstan.neon.dist."
 
     log "Updating composer.json..."
-    jq -s '.[0].scripts += .[1].scripts | .[0]["require-dev"] += .[1]["require-dev"]' composer.json php-blueprint/composer.json >composer.json.tmp
+    jq -s '.[0].scripts += .[1].scripts' composer.json php-blueprint/composer.json >composer.json.tmp
     jq '.[0]' composer.json.tmp >composer.json
     rm composer.json.tmp
+
+    jq -r '.require | keys[]' php-blueprint/composer.json | while read -r dependency; do
+        ddev composer require "$dependency"
+    done
+
+    jq -r '.["require-dev"] | keys[]' php-blueprint/composer.json | while read -r dependency; do
+        ddev composer require --dev "$dependency"
+    done
+
     success "composer.json updated with new scripts and require-dev dependencies."
 }
 
