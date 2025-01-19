@@ -28,7 +28,10 @@ for FILE in $STAGED_FILES; do
         echo "Fix the error before commit."
         exit 1
     fi
+    # Add the file to the FILES variable
     FILES="$FILES $FILE"
+    # Ensure there are no trailing whitespaces in $FILES
+    FILES=$(echo "$FILES" | xargs)
 done
 
 if [ "$FILES" != "" ]; then
