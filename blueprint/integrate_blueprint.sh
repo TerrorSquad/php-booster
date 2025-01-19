@@ -40,10 +40,10 @@ function check_dependencies() {
 
 function is_ddev_project() {
     if [ ! -d ".ddev" ]; then
-        return 1
+        echo 1
     fi
 
-    return 0
+    echo 0
 }
 
 function update_ddev_files() {
