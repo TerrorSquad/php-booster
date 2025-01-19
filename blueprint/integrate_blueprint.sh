@@ -230,7 +230,7 @@ function main() {
     IS_DDEV_PROJECT=$(is_ddev_project)
     check_dependencies
     download_php_blueprint
-    if [ $IS_DDEV_PROJECT == 1 ]; then
+    if [ $IS_DDEV_PROJECT -eq 1 ]; then
         update_ddev_files
         update_ddev_config
     fi
@@ -244,7 +244,7 @@ function main() {
 
     success "Integration completed. Please review the log messages for any important information."
 
-    if [ $IS_DDEV_PROJECT == 1 ]; then
+    if [ $IS_DDEV_PROJECT -eq 1 ]; then
         success "Please run 'ddev restart' to apply the changes."
     fi
 }
