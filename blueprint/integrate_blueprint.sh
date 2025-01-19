@@ -9,7 +9,7 @@ YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
 VERBOSE=false
-
+IS_DDEV_PROJECT=false
 function log() {
     if [ "$VERBOSE" = true ]; then
         echo -e "${NC}$1${NC}"
@@ -152,12 +152,20 @@ function add_code_quality_tools() {
 
     if jq -e '.require' php-blueprint/composer.json >/dev/null; then
         prod_dependencies=$(jq -r '.require | keys[]' php-blueprint/composer.json)
-        echo "$prod_dependencies" | xargs ddev composer require
+        if [ $IS_DDEV_PROJECT ]; then
+            echo "$prod_dependencies" | xargs ddev composer require
+        else
+            echo "$prod_dependencies" | xargs composer require
+        fi
     fi
 
     if jq -e '.["require-dev"]' php-blueprint/composer.json >/dev/null; then
         dev_dependencies=$(jq -r '.["require-dev"] | keys[]' php-blueprint/composer.json)
-        echo "$dev_dependencies" | xargs ddev composer require --dev
+        if [ $IS_DDEV_PROJECT ]; then
+            echo "$dev_dependencies" | xargs ddev composer require --dev
+        else
+            echo "$dev_dependencies" | xargs composer require --dev
+        fi
     fi
 
     success "composer.json updated with new scripts and require-dev dependencies."
@@ -218,11 +226,13 @@ function main() {
     fi
 
     log "Starting integration..."
-    is_ddev_project
+    IS_DDEV_PROJECT=$(is_ddev_project)
     check_dependencies
     download_php_blueprint
-    update_ddev_files
-    update_ddev_config
+    if ($IS_DDEV_PROJECT); then
+        update_ddev_files
+        update_ddev_config
+    fi
     copy_files
     update_package_json
     add_code_quality_tools
@@ -233,7 +243,9 @@ function main() {
 
     success "Integration completed. Please review the log messages for any important information."
 
-    success "Please run 'ddev restart' to apply the changes."
+    if [ $IS_DDEV_PROJECT ]; then
+        success "Please run 'ddev restart' to apply the changes."
+    fi
 }
 
 main "$@"
