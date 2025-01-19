@@ -9,7 +9,7 @@ YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
 VERBOSE=false
-IS_DDEV_PROJECT=false
+IS_DDEV_PROJECT=0
 function log() {
     if [ "$VERBOSE" = true ]; then
         echo -e "${NC}$1${NC}"
@@ -230,7 +230,7 @@ function main() {
     IS_DDEV_PROJECT=$(is_ddev_project)
     check_dependencies
     download_php_blueprint
-    if ($IS_DDEV_PROJECT); then
+    if [ $IS_DDEV_PROJECT == 1 ]; then
         update_ddev_files
         update_ddev_config
     fi
@@ -244,7 +244,7 @@ function main() {
 
     success "Integration completed. Please review the log messages for any important information."
 
-    if [ $IS_DDEV_PROJECT ]; then
+    if [ $IS_DDEV_PROJECT == 1 ]; then
         success "Please run 'ddev restart' to apply the changes."
     fi
 }
