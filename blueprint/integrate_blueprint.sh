@@ -39,7 +39,7 @@ function check_dependencies() {
 }
 
 function is_ddev_project() {
-    if [ ! -d ".ddev" ]; then
+    if [ -d ".ddev" ]; then
         echo 1
         return
     fi
