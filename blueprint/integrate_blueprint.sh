@@ -40,9 +40,10 @@ function check_dependencies() {
 
 function is_ddev_project() {
     if [ ! -d ".ddev" ]; then
-        error "This script must be run in a directory containing a DDEV project (.ddev directory not found)."
+        return 1
     fi
-    success "DDEV project detected."
+
+    return 0
 }
 
 function update_ddev_files() {
