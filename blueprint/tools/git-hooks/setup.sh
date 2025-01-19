@@ -1,10 +1,5 @@
 #!/usr/bin/env bash
 
-# Get the current hostname
-HOSTNAME=$(hostname)
-ROOT=$(git rev-parse --show-toplevel)
-PROJECT_NAME=$(grep "name: " "$ROOT"/.ddev/config.yaml | head -1 | cut -f 2 -d ' ')
-
 # check if env CI is set, if so we are in a CI environment and we should not install git hooks
 if [ -n "$CI" ]; then
   echo "CI environment detected, skipping git hooks installation"
@@ -42,9 +37,5 @@ fi
 rm -rf .husky
 mkdir .husky
 cp -r ./tools/git-hooks/hooks/* .husky
-
-if [ ! "$HOSTNAME" = "$PROJECT_NAME-web" ]; then
-  grep -rl 'bash "$runner" ' .husky/* | xargs sed -i 's/bash "$runner" //g'
-fi
 
 yes | pnpm install
