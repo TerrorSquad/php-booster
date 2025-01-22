@@ -234,11 +234,11 @@ function main() {
     if [ $IS_DDEV_PROJECT -eq 1 ]; then
         update_ddev_files
         update_ddev_config
+        update_readme
     fi
     copy_files
     update_package_json
     add_code_quality_tools
-    update_readme
     update_gitignore
     cleanup
     log "Ensure you are using Volta for Node.js version management and PNPM as the package manager."
