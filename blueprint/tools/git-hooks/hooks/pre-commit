@@ -38,40 +38,40 @@ if [ "$FILES" != "" ]; then
 
     if [ -f "$ROOT/vendor/bin/ecs" ]; then
         echo "Pre-hook: Running EasyCodingStandard"
-        bash "$runner" ./vendor/bin/ecs check --fix "$FILES"
+        bash "$runner" ./vendor/bin/ecs check --fix $FILES
 
-        bash "$runner" git add "$FILES"
+        bash "$runner" git add $FILES
     fi
 
     if [ -f "$ROOT/vendor/bin/rector" ]; then
         echo "Pre-hook: Running Rector"
-        bash "$runner" ./vendor/bin/rector process -- "$FILES"
+        bash "$runner" ./vendor/bin/rector process -- $FILES
 
-        bash "$runner" git add "$FILES"
+        bash "$runner" git add $FILES
     fi
 
     if [ -f "$ROOT/vendor/bin/ecs" ]; then
         echo "Pre-hook: Running EasyCodingStandard"
-        bash "$runner" ./vendor/bin/ecs check --fix "$FILES"
+        bash "$runner" ./vendor/bin/ecs check --fix $FILES
 
-        bash "$runner" git add "$FILES"
+        bash "$runner" git add $FILES
     fi
 
     if [ -f "$ROOT/vendor/bin/phpstan" ]; then
         echo "Pre-hook: Running PHPStan"
-        bash "$runner" ./vendor/bin/phpstan analyse -c phpstan.neon.dist "$FILES"
+        bash "$runner" ./vendor/bin/phpstan analyse -c phpstan.neon.dist $FILES
 
-        bash "$runner" git add "$FILES"
+        bash "$runner" git add $FILES
     fi
 
     if [ -f "$ROOT/vendor/bin/psalm.phar" ]; then
         echo "Pre-hook: Running Psalm"
-        bash "$runner" ./vendor/bin/psalm.phar --show-info=false "$FILES"
+        bash "$runner" ./vendor/bin/psalm.phar --show-info=false $FILES
     fi
 
     if [ -f "$ROOT/vendor/bin/psalm" ]; then
         echo "Pre-hook: Running Psalm"
-        bash "$runner" ./vendor/bin/psalm --show-info=false "$FILES"
+        bash "$runner" ./vendor/bin/psalm --show-info=false $FILES
     fi
 
 fi
