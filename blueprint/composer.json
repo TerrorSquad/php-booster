@@ -17,8 +17,10 @@
 	"scripts": {
 		"post-install-cmd": ["bash ./tools/git-hooks/setup.sh"],
 		"post-update-cmd": ["bash ./tools/git-hooks/setup.sh"],
-		"test": "vendor/bin/phpunit --colors=always",
-		"test:coverage": "XDEBUG_MODE=coverage vendor/bin/phpunit --colors=always --coverage-clover=coverage.xml",
+		"test:pest": "vendor/bin/pest --colors=always",
+		"test:phpunit": "vendor/bin/phpunit --colors=always",
+		"test:coverage:pest": "XDEBUG_MODE=coverage vendor/bin/pest --colors=always --coverage-clover=coverage.xml",
+		"test:coverage:phpunit": "XDEBUG_MODE=coverage vendor/bin/phpunit --colors=always --coverage-clover=coverage.xml",
 		"generate-api-spec": "php documentation/api.php",
 		"check-cs": "vendor/bin/ecs check --ansi",
 		"fix-cs": "vendor/bin/ecs check --fix --ansi",
