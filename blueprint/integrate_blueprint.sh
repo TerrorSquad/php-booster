@@ -155,18 +155,18 @@ function add_code_quality_tools() {
     if jq -e '.require' php-blueprint/composer.json >/dev/null; then
         prod_dependencies=$(jq -r '.require | keys[]' php-blueprint/composer.json)
         if [ $IS_DDEV_PROJECT -eq 1 ]; then
-            echo "$prod_dependencies" | xargs ddev composer require
+            echo "$prod_dependencies" | xargs ddev COMPOSER_MEMORY_LIMIT=-1 composer require
         else
-            echo "$prod_dependencies" | xargs composer require
+            echo "$prod_dependencies" | xargs COMPOSER_MEMORY_LIMIT=-1 composer require
         fi
     fi
 
     if jq -e '.["require-dev"]' php-blueprint/composer.json >/dev/null; then
         dev_dependencies=$(jq -r '.["require-dev"] | keys[]' php-blueprint/composer.json)
         if [ $IS_DDEV_PROJECT -eq 1 ]; then
-            echo "$dev_dependencies" | xargs ddev composer require --dev
+            echo "$dev_dependencies" | xargs ddev COMPOSER_MEMORY_LIMIT=-1 composer require --dev
         else
-            echo "$dev_dependencies" | xargs composer require --dev
+            echo "$dev_dependencies" | xargs COMPOSER_MEMORY_LIMIT=-1 composer require --dev
         fi
     fi
 
