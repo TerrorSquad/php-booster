@@ -10,6 +10,10 @@ NC='\033[0m' # No Color
 
 VERBOSE=false
 IS_DDEV_PROJECT=0
+
+# Set the memory limit for Composer to unlimited
+export COMPOSER_MEMORY_LIMIT=-1
+
 function log() {
     if [ "$VERBOSE" = true ]; then
         echo -e "${NC}$1${NC}"
@@ -155,18 +159,18 @@ function add_code_quality_tools() {
     if jq -e '.require' php-blueprint/composer.json >/dev/null; then
         prod_dependencies=$(jq -r '.require | keys[]' php-blueprint/composer.json)
         if [ $IS_DDEV_PROJECT -eq 1 ]; then
-            echo "$prod_dependencies" | xargs ddev COMPOSER_MEMORY_LIMIT=-1 composer require
+            echo "$prod_dependencies" | xargs ddev composer require
         else
-            echo "$prod_dependencies" | xargs COMPOSER_MEMORY_LIMIT=-1 composer require
+            echo "$prod_dependencies" | xargs composer require
         fi
     fi
 
     if jq -e '.["require-dev"]' php-blueprint/composer.json >/dev/null; then
         dev_dependencies=$(jq -r '.["require-dev"] | keys[]' php-blueprint/composer.json)
         if [ $IS_DDEV_PROJECT -eq 1 ]; then
-            echo "$dev_dependencies" | xargs ddev COMPOSER_MEMORY_LIMIT=-1 composer require --dev
+            echo "$dev_dependencies" | xargs ddev composer require --dev
         else
-            echo "$dev_dependencies" | xargs COMPOSER_MEMORY_LIMIT=-1 composer require --dev
+            echo "$dev_dependencies" | xargs composer require --dev
         fi
     fi
 
