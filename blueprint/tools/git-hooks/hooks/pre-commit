@@ -1,79 +1,8 @@
 #!/usr/bin/env bash
 
-# Check if MERGE_HEAD exists
-if [ -f "$GIT_DIR/MERGE_HEAD" ]; then
-    # Skip the hook during a merge
-    exit 0
-fi
+# Since git hooks must be POSIX compliant, we can't use bash features.
+# This script is a wrapper around the actual script that does the work.
 
-ROOT=$(git rev-parse --show-toplevel)
-runner="$ROOT/tools/runner.sh"
+GIT_HOOKS_PATH=$(git config core.hooksPath)
 
-# Filter for only .php files (using grep)
-STAGED_FILES=$(git diff --diff-filter=ACMR --cached --name-only -- . ":(exclude)vendor/*" ":(exclude)ecs.php" ":(exclude)rector.php" HEAD)
-
-# Check if there are any staged PHP files
-if ! echo "$STAGED_FILES" | grep '\.php$'; then
-    echo "No staged PHP files found. Skipping checks..."
-    exit 0
-fi
-
-echo "Checking PHP Lint..."
-for FILE in $STAGED_FILES; do
-    if ! echo "$FILE" | grep '\.php$'; then
-        continue
-    fi
-    bash "$runner" php -l -d display_errors=0 "$FILE"
-    if [ $? != 0 ]; then
-        echo "Fix the error before commit."
-        exit 1
-    fi
-    # Add the file to the FILES variable
-    FILES="$FILES $FILE"
-    # Ensure there are no trailing whitespaces in $FILES
-    FILES=$(echo "$FILES" | xargs)
-done
-
-if [ "$FILES" != "" ]; then
-
-    if [ -f "$ROOT/vendor/bin/ecs" ]; then
-        echo "Pre-hook: Running EasyCodingStandard"
-        bash "$runner" ./vendor/bin/ecs check --fix $FILES
-
-        bash "$runner" git add $FILES
-    fi
-
-    if [ -f "$ROOT/vendor/bin/rector" ]; then
-        echo "Pre-hook: Running Rector"
-        bash "$runner" ./vendor/bin/rector process -- $FILES
-
-        bash "$runner" git add $FILES
-    fi
-
-    if [ -f "$ROOT/vendor/bin/ecs" ]; then
-        echo "Pre-hook: Running EasyCodingStandard"
-        bash "$runner" ./vendor/bin/ecs check --fix $FILES
-
-        bash "$runner" git add $FILES
-    fi
-
-    if [ -f "$ROOT/vendor/bin/phpstan" ]; then
-        echo "Pre-hook: Running PHPStan"
-        bash "$runner" ./vendor/bin/phpstan analyse -c phpstan.neon.dist $FILES
-
-        bash "$runner" git add $FILES
-    fi
-
-    if [ -f "$ROOT/vendor/bin/psalm.phar" ]; then
-        echo "Pre-hook: Running Psalm Phar"
-        bash "$runner" ./vendor/bin/psalm.phar --show-info=false $FILES
-    fi
-
-    if [ -f "$ROOT/vendor/bin/psalm" ]; then
-        echo "Pre-hook: Running Psalm"
-        bash "$runner" ./vendor/bin/psalm --show-info=false $FILES
-    fi
-
-fi
-
-exit 0
+bash "$GIT_HOOKS_PATH/../pre-commit.bash"
