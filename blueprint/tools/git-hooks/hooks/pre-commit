@@ -65,7 +65,7 @@ if [ "$FILES" != "" ]; then
     fi
 
     if [ -f "$ROOT/vendor/bin/psalm.phar" ]; then
-        echo "Pre-hook: Running Psalm"
+        echo "Pre-hook: Running Psalm Phar"
         bash "$runner" ./vendor/bin/psalm.phar --show-info=false $FILES
     fi
 
