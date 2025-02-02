@@ -77,6 +77,7 @@ function copy_files() {
     cp -r php-blueprint/.vscode .
     cp -r php-blueprint/tools .
     cp -r php-blueprint/.phpstorm .
+    cp -r php-blueprint/.editorconfig .
     success "Files copied. Verify the copied files and their paths."
 }
 
