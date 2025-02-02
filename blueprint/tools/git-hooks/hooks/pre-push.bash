@@ -50,8 +50,8 @@ function generate_api_docs() {
 }
 
 # Run Pest or PHPUnit tests
-run_tests "pestphp/pest" "test:coverage"
-run_tests "phpunit/phpunit" "test:coverage"
+run_tests "pestphp/pest" "test:coverage:pest"
+run_tests "phpunit/phpunit" "test:coverage:phpunit"
 
 # Generate API documentation if necessary
 generate_api_docs
