@@ -5,4 +5,4 @@
 
 GIT_HOOKS_PATH=$(git config core.hooksPath)
 
-bash "$GIT_HOOKS_PATH/../commit-msg.bash"
+bash "$GIT_HOOKS_PATH/../commit-msg.bash" "$@"
