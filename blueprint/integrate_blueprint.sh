@@ -180,15 +180,7 @@ function add_code_quality_tools() {
 
 function update_readme() {
     log "Updating README.md..."
-    if [ -f "README.md" ]; then
-        # Check if README_SNIPPET.md is already appended
-        if grep -q "php-blueprint/README_SNIPPET.md" README.md; then
-            warn "README_SNIPPET.md already appended to README.md."
-            return
-        fi
-        cat php-blueprint/README_SNIPPET.md >>README.md
-        success "README_SNIPPET.md appended to existing README.md."
-    else
+    if [ ! -f "README.md" ]; then
         warn "README.md not found. Creating new README.md..."
         cat php-blueprint/README_SNIPPET.md >README.md
         success "New README.md created with README_SNIPPET.md content."
