@@ -34,6 +34,16 @@ def get_ddev_hostname():
     return None
 
 
+def get_ddev_container_name():
+    if os.path.exists(DOCKER_COMPOSE_FULL):
+        with open(DOCKER_COMPOSE_FULL, "r") as f:
+            content = f.read()
+            match = re.search(r"name:\s*([^\s]+)", content)
+            if match:
+                return match.group(1) + "-web"
+    return None
+
+
 def create_server_element(ddev_hostname):
     server = ET.Element("server")
     server.attrib["host"] = ddev_hostname
@@ -100,6 +110,14 @@ try:
 
     app_server = create_server_element(ddev_hostname)
     servers.append(app_server)
+
+    app_server_http = create_server_element(get_ddev_container_name())
+    app_server_http.attrib["port"] = "80"
+    servers.append(app_server_http)
+
+    app_server_https = create_server_element(get_ddev_container_name())
+    app_server_https.attrib["port"] = "443"
+    servers.append(app_server_https)
 
     # Add additional servers here if needed
 
