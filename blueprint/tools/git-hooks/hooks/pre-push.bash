@@ -49,6 +49,20 @@ function generate_api_docs() {
     git commit -m "chore: update API documentation"
 }
 
+if [ -f "$ROOT/vendor/bin/deptrac" ]; then
+    echo "Pre-hook: Running deptrac"
+    bash "$runner" composer deptrac
+    RESULT=$?
+    if [ $RESULT -ne 0 ]; then
+        echo "Deptrac failed. Please fix the issues before committing."
+        exit 1
+    fi
+
+    bash "$runner" composer deptrac:image
+
+    bash "$runner" git add $FILES deptrac.png
+fi
+
 # Run Pest or PHPUnit tests
 run_tests "pestphp/pest" "test:coverage:pest"
 run_tests "phpunit/phpunit" "test:coverage:phpunit"

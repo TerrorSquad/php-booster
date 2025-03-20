@@ -10,8 +10,7 @@ ROOT=$(git rev-parse --show-toplevel)
 runner="$ROOT/tools/runner.sh"
 
 # Filter for only .php files (using grep)
-STAGED_FILES=$(git diff --diff-filter=ACMR --cached --name-only -- . ":(exclude)vendor/*" ":(exclude)ecs.php" ":(exclude)rector.php" HEAD)
-
+STAGED_FILES=$(git diff --diff-filter=ACMR --cached --name-only -- . ":(exclude)vendor/*" HEAD)
 # Check if there are any staged PHP files
 if ! echo "$STAGED_FILES" | grep '\.php$'; then
     echo "No staged PHP files found. Skipping checks..."
@@ -57,9 +56,28 @@ if [ "$FILES" != "" ]; then
         bash "$runner" git add $FILES
     fi
 
+    if [ -f "$ROOT/vendor/bin/deptrac" ]; then
+        echo "Pre-hook: Running deptrac"
+        bash "$runner" composer deptrac
+        RESULT=$?
+        if [ $RESULT -ne 0 ]; then
+            echo "Deptrac failed. Please fix the issues before committing."
+            exit 1
+        fi
+        bash "$runner" composer deptrac:image
+
+        bash "$runner" git add $FILES deptrac.png
+    fi
+
     if [ -f "$ROOT/vendor/bin/phpstan" ]; then
         echo "Pre-hook: Running PHPStan"
         bash "$runner" ./vendor/bin/phpstan analyse -c phpstan.neon.dist $FILES
+
+        RESULT_CODE=$?
+        if [ $RESULT_CODE != 0 ]; then
+            echo "Fix the error(s) before commit."
+            exit $RESULT_CODE
+        fi
 
         bash "$runner" git add $FILES
     fi
@@ -67,13 +85,27 @@ if [ "$FILES" != "" ]; then
     if [ -f "$ROOT/vendor/bin/psalm.phar" ]; then
         echo "Pre-hook: Running Psalm Phar"
         bash "$runner" ./vendor/bin/psalm.phar --show-info=false $FILES
+
+        RESULT_CODE=$?
+        if [ $RESULT_CODE != 0 ]; then
+            echo "Fix the error(s) before commit."
+            exit $RESULT_CODE
+        fi
+
+        bash "$runner" git add $FILES
     fi
 
     if [ -f "$ROOT/vendor/bin/psalm" ]; then
         echo "Pre-hook: Running Psalm"
         bash "$runner" ./vendor/bin/psalm --show-info=false $FILES
+
+        RESULT_CODE=$?
+        if [ $RESULT_CODE != 0 ]; then
+            echo "Fix the error(s) before commit."
+            exit $RESULT_CODE
+        fi
+
+        bash "$runner" git add $FILES
     fi
-
 fi
-
 exit 0
