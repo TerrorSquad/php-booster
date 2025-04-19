@@ -85,8 +85,7 @@ function update_package_json() {
     log "Updating package.json..."
     if [ ! -f "package.json" ]; then
         cp php-blueprint/package.json .
-        cp php-blueprint/pnpm-lock.dist .
-        success "package.json and pnpm-lock.dist copied from blueprint."
+        success "package.json copied from blueprint."
     else
         log "package.json already exists. Updating scripts..."
         jq -s '.[0].scripts += .[1].scripts | .[0]["devDependencies"] += .[1]["devDependencies"] | .[0]["volta"] += .[1]["volta"]' package.json php-blueprint/package.json >package.json.tmp
