@@ -118,8 +118,10 @@ function update_ddev_files() {
         local dest_path="${project_ddev_path}/${subdir}"
         if [ -d "$src_path" ]; then
             log "  Copying '$src_path' to '$dest_path'..."
-            mkdir -p "$dest_path" # Ensure destination exists
-            cp -rT "$src_path" "$dest_path" || warn "Failed to copy '$src_path'. Check permissions."
+            # Use standard recursive copy -R, ensure destination parent exists
+            mkdir -p "$dest_path"
+            # Copy the source directory *into* the destination directory
+            cp -R "$src_path" "$dest_path" || warn "Failed to copy '$src_path'. Check permissions."
         else
             log "  Blueprint DDEV subdirectory '$subdir' not found at '$src_path'. Skipping."
         fi
@@ -178,12 +180,13 @@ function copy_files() {
 
     for item in "${common_files[@]}"; do
         local src_path="${BLUEPRINT_INTERNAL_PATH}/${item}"
-        local dest_path="." # Copying to project root
+        # Destination is the current directory, the item will be created inside it
+        local dest_path="."
 
         if [ -e "$src_path" ]; then
-            log "  Copying '$src_path' to '$dest_path'..."
-            # Use -T with cp -r to copy contents if source is dir, or file itself
-            cp -rT "$src_path" "${dest_path}/${item}" || warn "Failed to copy '$src_path'. Check permissions."
+            log "  Copying '$src_path' to '${dest_path}/${item}'..."
+            # Use standard recursive copy -R. This copies the source item into the dest dir.
+            cp -R "$src_path" "${dest_path}/${item}" || warn "Failed to copy '$src_path'. Check permissions."
         else
             log "  Blueprint item '$item' not found at '$src_path'. Skipping."
         fi
@@ -343,7 +346,9 @@ function add_code_quality_tools() {
     # --- Copy Documentation Directory ---
     local blueprint_doc_path="${BLUEPRINT_INTERNAL_PATH}/documentation"
     if [ -d "$blueprint_doc_path" ]; then
-        cp -rT "$blueprint_doc_path" "documentation" || warn "Failed to copy documentation directory."
+        log "  Copying '$blueprint_doc_path' to 'documentation'..."
+        # Use standard recursive copy -R
+        cp -R "$blueprint_doc_path" "documentation" || warn "Failed to copy documentation directory."
     else
         log "  Blueprint documentation directory not found. Skipping."
     fi
@@ -378,7 +383,10 @@ function add_code_quality_tools() {
         if [ -n "$prod_deps" ]; then
             log "Adding composer 'require' dependencies from blueprint..."
             # Pass dependencies line by line to xargs
-            echo "$prod_deps" | xargs "${composer_cmd[@]}" require || warn "Failed to install some production dependencies."
+            # Use --no-scripts during require to prevent hooks from running prematurely
+            echo "$prod_deps" | xargs "${composer_cmd[@]}" require --no-scripts || warn "Failed to add some production dependencies (require step)."
+            # Run update afterwards to ensure scripts run if needed, though maybe not desired here?
+            # "${composer_cmd[@]}" update --lock # Or just rely on the dev require below
         else
             log "No production dependencies found in blueprint composer.json 'require' section."
         fi
@@ -393,7 +401,8 @@ function add_code_quality_tools() {
         if [ -n "$dev_deps" ]; then
             log "Adding composer 'require-dev' dependencies from blueprint..."
             # Pass dependencies line by line to xargs
-            echo "$dev_deps" | xargs "${composer_cmd[@]}" require --dev || warn "Failed to install some dev dependencies."
+            # Run composer require --dev normally, allowing its scripts to run *after* install/update
+            echo "$dev_deps" | xargs "${composer_cmd[@]}" require --dev || warn "Failed to install/update some dev dependencies. Check composer output."
         else
             log "No development dependencies found in blueprint composer.json 'require-dev' section."
         fi
@@ -445,10 +454,11 @@ function update_gitignore() {
         if [ -z "$line" ] || [[ "$line" == \#* ]]; then
             continue
         fi
-        # Escape line for grep pattern matching
-        local escaped_line=$(sed 's/[^^]/[&]/g; s/\^/\\^/g' <<<"$line") # Basic escaping
+        # Escape line for grep pattern matching (basic)
+        # local escaped_line=$(sed 's/[^^]/[&]/g; s/\^/\\^/g' <<< "$line")
+        # Using fixed string grep (-F) avoids need for complex escaping
         # Check if the exact line (or commented out) already exists
-        if ! grep -q -x -F "$line" "$project_gitignore" && ! grep -q -x -F "#$line" "$project_gitignore"; then
+        if ! grep -q -x -F "$line" "$project_gitignore" && ! grep -q -x -F "# $line" "$project_gitignore" && ! grep -q -x -F "#$line" "$project_gitignore"; then
             # Check if line starting with / exists if original doesn't start with /
             if [[ "$line" != /* ]] && grep -q -x -F "/$line" "$project_gitignore"; then
                 continue
@@ -462,7 +472,7 @@ function update_gitignore() {
             # Add a header if this is the first addition in this run
             if [ $added_count -eq 0 ]; then
                 # Add newline if file not empty and doesn't end with newline
-                [ -s "$project_gitignore" ] && [ "$(tail -c 1 "$project_gitignore")" != "" ] && echo >>"$project_gitignore"
+                [ -s "$project_gitignore" ] && [ "$(tail -c 1 "$project_gitignore")" != $'\n' ] && echo >>"$project_gitignore"
                 echo "" >>"$project_gitignore" # Ensure separation
                 echo "# --- Added by php-blueprint integration ---" >>"$project_gitignore"
             fi
@@ -480,15 +490,17 @@ function update_gitignore() {
 
 function cleanup_silent() {
     # Used for cleanup during error exit, without verbose logging
+    # Need to declare vars used in merge_scripts locally or pass them if needed,
+    # but rm -f is safe even if vars are empty/undefined in this context.
     rm -rf "$BLUEPRINT_TARGET_DIR"
-    rm -f "$OUTPUT" "$temp_next" "$hooks_tmp" "$merged_tmp" "$tmp_pkg" # Clean up temp files from various functions
+    rm -f composer.json.merged.tmp composer.json.merged.tmp.next hooks.yaml.tmp .ddev/config.yaml.tmp package.json.tmp # Clean up temp files
 }
 
 function cleanup() {
     log "Cleaning up temporary files..."
     rm -rf "$BLUEPRINT_TARGET_DIR"
     # Remove potential temp files just in case they weren't cleaned up
-    rm -f "$OUTPUT" "$temp_next" "$hooks_tmp" "$merged_tmp" "$tmp_pkg"
+    rm -f composer.json.merged.tmp composer.json.merged.tmp.next hooks.yaml.tmp .ddev/config.yaml.tmp package.json.tmp
     success "Temporary files cleaned up."
 }
 
