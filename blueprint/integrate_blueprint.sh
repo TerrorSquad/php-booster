@@ -1,8 +1,14 @@
 #!/usr/bin/env bash
 
-# This script is used to integrate the php-blueprint into your DDEV project
+# This script is used to integrate the php-blueprint into your project (potentially DDEV)
 
-# ANSI color codes
+# --- Configuration ---
+BLUEPRINT_REPO_ZIP_URL="https://github.com/TerrorSquad/php-blueprint/archive/refs/heads/main.zip"
+BLUEPRINT_EXTRACTED_DIR_NAME="php-blueprint-main" # Default extracted dir name from GitHub zip
+BLUEPRINT_TARGET_DIR="php-blueprint"
+BLUEPRINT_INTERNAL_PATH="${BLUEPRINT_TARGET_DIR}/blueprint" # Actual content is inside 'blueprint' subdir
+
+# --- ANSI color codes ---
 GREEN='\033[0;32m'
 RED='\033[0;31m'
 YELLOW='\033[1;33m'
@@ -11,239 +17,538 @@ NC='\033[0m' # No Color
 VERBOSE=false
 IS_DDEV_PROJECT=0
 
-# Set the memory limit for Composer to unlimited
+# Set the memory limit for Composer to unlimited (can help with large dependency trees)
 export COMPOSER_MEMORY_LIMIT=-1
+
+# --- Helper Functions ---
 
 function log() {
     if [ "$VERBOSE" = true ]; then
-        echo -e "${NC}$1${NC}"
+        echo -e "${NC}[LOG] $1${NC}"
     fi
 }
 
 function warn() {
-    echo -e "${YELLOW}$1${NC}"
+    echo -e "${YELLOW}[WARN] $1${NC}"
 }
 
 function error() {
-    echo -e "${RED}$1${NC}" >&2
+    echo -e "${RED}[ERROR] $1${NC}" >&2
+    # Clean up before exiting on error
+    cleanup_silent
     exit 1
 }
 
 function success() {
-    echo -e "${GREEN}$1${NC}"
+    echo -e "${GREEN}[SUCCESS] $1${NC}"
 }
+
+# --- Dependency Checks ---
 
 function check_dependencies() {
     log "Checking dependencies..."
-    command -v jq >/dev/null 2>&1 || error "jq is not installed. Please install jq."
-    command -v yq >/dev/null 2>&1 || error "yq is not installed. Please install yq."
-    command -v volta >/dev/null 2>&1 || error "Volta is not installed. Please install Volta."
-    command -v pnpm >/dev/null 2>&1 || error "PNPM is not installed. Please install PNPM."
+    local missing_deps=()
+    command -v jq >/dev/null 2>&1 || missing_deps+=("jq")
+    command -v yq >/dev/null 2>&1 || missing_deps+=("yq") # Still needed for ddev config
+    command -v curl >/dev/null 2>&1 || missing_deps+=("curl")
+    command -v unzip >/dev/null 2>&1 || missing_deps+=("unzip")
+
+    if [ $IS_DDEV_PROJECT -eq 1 ]; then
+        command -v ddev >/dev/null 2>&1 || missing_deps+=("ddev")
+    else
+        command -v composer >/dev/null 2>&1 || missing_deps+=("composer")
+    fi
+
+    if [ ${#missing_deps[@]} -ne 0 ]; then
+        error "Missing dependencies: ${missing_deps[*]}. Please install them."
+    fi
     success "All dependencies are satisfied."
 }
+
+# --- Project Type Detection ---
 
 function is_ddev_project() {
     if [ -d ".ddev" ]; then
         echo 1
-        return
+    else
+        echo 0
     fi
+}
 
-    echo 0
+# --- Core Logic Functions ---
+
+function download_php_blueprint() {
+    log "Downloading php-blueprint from $BLUEPRINT_REPO_ZIP_URL..."
+    # Clean up previous attempts first
+    rm -f php-blueprint.zip
+    rm -rf "$BLUEPRINT_TARGET_DIR"
+    rm -rf "$BLUEPRINT_EXTRACTED_DIR_NAME"
+
+    curl -sSL "$BLUEPRINT_REPO_ZIP_URL" -o php-blueprint.zip || error "Failed to download blueprint zip."
+    unzip -q php-blueprint.zip || error "Failed to unzip blueprint."
+    rm php-blueprint.zip
+
+    if [ ! -d "$BLUEPRINT_EXTRACTED_DIR_NAME" ]; then
+        error "Expected extracted directory '$BLUEPRINT_EXTRACTED_DIR_NAME' not found."
+    fi
+    mv "$BLUEPRINT_EXTRACTED_DIR_NAME" "$BLUEPRINT_TARGET_DIR" || error "Failed to rename extracted directory."
+
+    if [ ! -d "$BLUEPRINT_INTERNAL_PATH" ]; then
+        warn "The expected internal structure '$BLUEPRINT_INTERNAL_PATH' was not found within the downloaded archive."
+        # Decide if this is fatal
+        # error "Blueprint content directory '$BLUEPRINT_INTERNAL_PATH' not found."
+    fi
+    success "php-blueprint downloaded and extracted to '$BLUEPRINT_TARGET_DIR'."
 }
 
 function update_ddev_files() {
     log "Updating ddev files..."
-    cp -r php-blueprint/.ddev/commands/* .ddev/commands
-    cp -r php-blueprint/.ddev/php/* .ddev/php
-    cp -r php-blueprint/.ddev/web-build/* .ddev/web-build
-    success "ddev files updated."
+    local blueprint_ddev_path="${BLUEPRINT_INTERNAL_PATH}/.ddev"
+    local project_ddev_path=".ddev"
+
+    if [ ! -d "$blueprint_ddev_path" ]; then
+        warn "Blueprint DDEV directory '$blueprint_ddev_path' not found. Skipping DDEV file update."
+        return
+    fi
+
+    # Define source -> destination mappings relative to .ddev dirs
+    local ddev_subdirs=("commands" "php" "web-build")
+    for subdir in "${ddev_subdirs[@]}"; do
+        local src_path="${blueprint_ddev_path}/${subdir}"
+        local dest_path="${project_ddev_path}/${subdir}"
+        if [ -d "$src_path" ]; then
+            log "  Copying '$src_path' to '$dest_path'..."
+            mkdir -p "$dest_path" # Ensure destination exists
+            cp -rT "$src_path" "$dest_path" || warn "Failed to copy '$src_path'. Check permissions."
+        else
+            log "  Blueprint DDEV subdirectory '$subdir' not found at '$src_path'. Skipping."
+        fi
+    done
+    success "ddev files updated (if found in blueprint)."
 }
 
 function update_ddev_config() {
-    log "Updating ddev config..."
-    yq '.hooks' php-blueprint/.ddev/config.yaml >hooks.yaml
-    yq eval-all 'select(fileIndex == 0) * {"hooks": select(fileIndex == 1)}' .ddev/config.yaml hooks.yaml >.ddev/config_updated.yaml
-    mv .ddev/config_updated.yaml .ddev/config.yaml
-    rm hooks.yaml
+    log "Updating ddev config using yq..."
+    local project_config=".ddev/config.yaml"
+    local blueprint_config="${BLUEPRINT_INTERNAL_PATH}/.ddev/config.yaml"
+    local hooks_tmp="hooks.yaml.tmp"
+    local merged_tmp=".ddev/config.yaml.tmp"
 
-    yq eval '.xdebug_enabled = true' .ddev/config.yaml >.ddev/config_updated.yaml
-    mv .ddev/config_updated.yaml .ddev/config.yaml
+    if [ ! -f "$project_config" ]; then
+        warn "Project DDEV config '$project_config' not found. Skipping update."
+        return
+    fi
+    if [ ! -f "$blueprint_config" ]; then
+        warn "Blueprint DDEV config '$blueprint_config' not found. Skipping update."
+        return
+    fi
+
+    # 1. Extract hooks from blueprint config (handle potential errors)
+    log "  Extracting hooks from blueprint config..."
+    if ! yq '.hooks' "$blueprint_config" >"$hooks_tmp"; then
+        warn "Failed to extract hooks using yq from '$blueprint_config'. Skipping hook merge."
+        rm -f "$hooks_tmp"
+    else
+        # 2. Merge hooks into project config
+        log "  Merging hooks into project config..."
+        if ! yq eval-all 'select(fileIndex == 0) * {"hooks": select(fileIndex == 1)}' "$project_config" "$hooks_tmp" >"$merged_tmp"; then
+            warn "Failed to merge hooks using yq. Original config preserved."
+            rm -f "$hooks_tmp" "$merged_tmp"
+            return # Stop ddev config update here if merge fails
+        else
+            # Replace project config with merged one if successful
+            mv "$merged_tmp" "$project_config"
+            log "  Hooks merged successfully."
+        fi
+        rm -f "$hooks_tmp"
+    fi
+
+    # 3. Ensure xdebug_enabled is true (operate on the potentially updated project_config)
+    log "  Ensuring 'xdebug_enabled = true' using yq..."
+    if ! yq eval '.xdebug_enabled = true' -i "$project_config"; then
+        warn "Failed to set 'xdebug_enabled = true' using yq. Check '$project_config'."
+    fi
+
     success "ddev config updated. Ensure the paths in the config are correct."
 }
 
 function copy_files() {
-    log "Copying files..."
-    cp -r php-blueprint/.github .
-    cp -r php-blueprint/.vscode .
-    cp -r php-blueprint/tools .
-    cp -r php-blueprint/.phpstorm .
-    cp -r php-blueprint/.editorconfig .
-    success "Files copied. Verify the copied files and their paths."
+    log "Copying common files..."
+    local common_files=(".github" ".vscode" "tools" ".phpstorm" ".editorconfig") # Add other files/dirs if needed
+
+    for item in "${common_files[@]}"; do
+        local src_path="${BLUEPRINT_INTERNAL_PATH}/${item}"
+        local dest_path="." # Copying to project root
+
+        if [ -e "$src_path" ]; then
+            log "  Copying '$src_path' to '$dest_path'..."
+            # Use -T with cp -r to copy contents if source is dir, or file itself
+            cp -rT "$src_path" "${dest_path}/${item}" || warn "Failed to copy '$src_path'. Check permissions."
+        else
+            log "  Blueprint item '$item' not found at '$src_path'. Skipping."
+        fi
+    done
+    success "Common files copied (if found in blueprint). Verify the copied files and their paths."
 }
 
 function update_package_json() {
     log "Updating package.json..."
-    if [ ! -f "package.json" ]; then
-        cp php-blueprint/package.json .
+    local project_pkg="package.json"
+    local blueprint_pkg="${BLUEPRINT_INTERNAL_PATH}/package.json"
+    local blueprint_commitlint="${BLUEPRINT_INTERNAL_PATH}/commitlint.config.js"
+    local tmp_pkg="package.json.tmp"
+
+    if [ ! -f "$blueprint_pkg" ]; then
+        warn "Blueprint package.json '$blueprint_pkg' not found. Skipping update."
+        return
+    fi
+
+    if [ ! -f "$project_pkg" ]; then
+        log "'$project_pkg' not found. Copying from blueprint..."
+        cp "$blueprint_pkg" "$project_pkg" || error "Failed to copy blueprint package.json."
         success "package.json copied from blueprint."
     else
-        log "package.json already exists. Updating scripts..."
-        jq -s '.[0].scripts += .[1].scripts | .[0]["devDependencies"] += .[1]["devDependencies"] | .[0]["volta"] += .[1]["volta"]' package.json php-blueprint/package.json >package.json.tmp
-        jq '.[0]' package.json.tmp >package.json
-        rm package.json.tmp
-        success "package.json updated with new scripts and devDependencies."
+        log "'$project_pkg' already exists. Merging scripts, devDependencies, and volta sections..."
+        # Merge using jq: project + blueprint (blueprint overwrites simple keys, merges objects)
+        # This merges top-level objects like scripts, devDependencies, volta
+        jq -s '
+            .[0] as $proj | .[1] as $blue |
+            $proj * {
+                scripts: (($proj.scripts // {}) + ($blue.scripts // {})),
+                devDependencies: (($proj.devDependencies // {}) + ($blue.devDependencies // {})),
+                volta: (($proj.volta // {}) + ($blue.volta // {}))
+            }
+            ' "$project_pkg" "$blueprint_pkg" >"$tmp_pkg" || error "Failed to merge package.json using jq."
+
+        mv "$tmp_pkg" "$project_pkg"
+        success "package.json updated with merged scripts, devDependencies, and volta info."
     fi
-    cp php-blueprint/commitlint.config.js .
-    success "commitlint.config.js copied."
+
+    # Copy commitlint config regardless
+    if [ -f "$blueprint_commitlint" ]; then
+        cp "$blueprint_commitlint" . || warn "Failed to copy commitlint config."
+        success "commitlint.config.js copied (if found in blueprint)."
+    else
+        warn "Blueprint 'commitlint.config.js' not found. Skipping copy."
+    fi
 }
 
+# --- Updated merge_scripts Function ---
 function merge_scripts() {
-    local COMPOSER1="$1"
-    local COMPOSER2="$2"
-    local OUTPUT="$3"
+    local COMPOSER1="composer.json"                            # Project composer.json
+    local COMPOSER2="${BLUEPRINT_INTERNAL_PATH}/composer.json" # Blueprint composer.json
+    local OUTPUT="composer.json.merged.tmp"
 
-    # Extract the "scripts" nodes from both composer files
-    jq '.scripts' "$COMPOSER1" >scripts1.json
-    jq '.scripts' "$COMPOSER2" >scripts2.json
+    # Ensure jq is available
+    command -v jq >/dev/null 2>&1 || error "jq is required but not installed."
 
-    # Initialize merged scripts object
-    echo '{}' >merged_scripts.json
+    # Check if files exist
+    [ ! -f "$COMPOSER1" ] && error "Project composer.json not found at '$COMPOSER1'"
+    [ ! -f "$COMPOSER2" ] && error "Blueprint composer.json not found at '$COMPOSER2'"
 
-    # Dynamically detect all array keys in the "scripts" node
-    ARRAY_KEYS=$(jq -r '. | to_entries | map(select(.value | type == "array") | .key) | .[]' scripts1.json scripts2.json)
+    log "Merging scripts from '$COMPOSER2' into '$COMPOSER1'..."
 
-    # Merge each array key dynamically while preserving order
-    for key in $ARRAY_KEYS; do
-        jq -s --arg key "$key" '
-      # Concatenate arrays from both files (composer1 first, then composer2)
-      [
-        .[0][$key] + .[1][$key]  # Concatenate arrays (composer1 first, then composer2)
-      ] | add | {($key): .}
-    ' scripts1.json scripts2.json >temp_key.json
+    # Create a temporary copy to work on
+    cp "$COMPOSER1" "$OUTPUT"
 
-        # Merge the result into the merged_scripts.json
-        jq -s '.[0] * .[1]' merged_scripts.json temp_key.json >temp_merged.json
-        mv temp_merged.json merged_scripts.json
-    done
+    # Get script keys from blueprint composer.json, handle null/missing scripts section
+    # Use jq -e to check exit status if .scripts is null or not an object
+    if ! jq -e '(.scripts // {}) | type == "object"' "$COMPOSER2" >/dev/null; then
+        log "No valid 'scripts' object found in blueprint composer.json. Nothing to merge."
+        rm "$OUTPUT" # Clean up temp file
+        return 0
+    fi
+    local blue_keys=$(jq -r '.scripts | keys_unsorted | .[]' "$COMPOSER2")
 
-    # Merge non-array script keys explicitly (no change needed for non-array keys)
-    jq -s '
-    reduce .[] as $item ({}; . + ($item | to_entries | map(
-      if .value | type != "array" then { (.key): .value } else {} end
-    ) | add))
-  ' scripts1.json scripts2.json >non_array_scripts.json
+    # Iterate over each script key from the blueprint
+    echo "$blue_keys" | while IFS= read -r key; do
+        log "  Processing script key: $key"
 
-    # Combine array scripts and non-array scripts
-    jq -s '.[0] * .[1]' merged_scripts.json non_array_scripts.json >final_scripts.json
+        # Get values and types using jq
+        local proj_script_json=$(jq --arg key "$key" '(.scripts // {})[$key]' "$OUTPUT")
+        local blue_script_json=$(jq --arg key "$key" '.scripts[$key]' "$COMPOSER2") # Assumes .scripts exists from check above
+        local proj_type=$(jq -r 'type' <<<"$proj_script_json")
+        local blue_type=$(jq -r 'type' <<<"$blue_script_json")
 
-    # Replace the "scripts" node in COMPOSER1 with the merged scripts
-    jq --argjson scripts "$(cat final_scripts.json)" \
-        '.scripts = $scripts' "$COMPOSER1" >"$OUTPUT"
+        log "    Project type: $proj_type, Blueprint type: $blue_type"
 
-    # Clean up temporary files
-    rm scripts1.json scripts2.json merged_scripts.json non_array_scripts.json temp_key.json final_scripts.json
+        local merged_script_json
 
+        if [ "$proj_type" == "null" ]; then
+            # Script only exists in blueprint, add it
+            log "    Adding script from blueprint."
+            merged_script_json="$blue_script_json"
+        else
+            # Script exists in both project and blueprint, merge based on type
+            if [ "$proj_type" == "string" ] && [ "$blue_type" == "string" ]; then
+                if [ "$proj_script_json" == "$blue_script_json" ]; then
+                    log "    Scripts are identical strings, keeping project version."
+                    merged_script_json="$proj_script_json"
+                else
+                    log "    Scripts are different strings, merging into unique array."
+                    # Ensure output is valid JSON array
+                    merged_script_json=$(jq -n --argjson p "$proj_script_json" --argjson b "$blue_script_json" '[$p, $b] | unique')
+                fi
+            elif [ "$proj_type" == "array" ] && [ "$blue_type" == "array" ]; then
+                log "    Both scripts are arrays, merging uniquely."
+                merged_script_json=$(jq -n --argjson p "$proj_script_json" --argjson b "$blue_script_json" '($p + $b) | unique')
+            elif [ "$proj_type" == "string" ] && [ "$blue_type" == "array" ]; then
+                log "    Project is string, blueprint is array. Merging uniquely."
+                merged_script_json=$(jq -n --argjson p "$proj_script_json" --argjson b "$blue_script_json" '([$p] + $b) | unique')
+            elif [ "$proj_type" == "array" ] && [ "$blue_type" == "string" ]; then
+                log "    Project is array, blueprint is string. Merging uniquely."
+                merged_script_json=$(jq -n --argjson p "$proj_script_json" --argjson b "$blue_script_json" '($p + [$b]) | unique')
+            else
+                # Handle other mismatches (e.g., object vs string) - prefer blueprint? Or keep project? Let's prefer blueprint.
+                log "    Type mismatch ($proj_type vs $blue_type). Using blueprint version."
+                merged_script_json="$blue_script_json"
+            fi
+        fi
+
+        # Update the temporary composer file with the merged script
+        # Ensure .scripts object exists before assigning
+        local temp_next="$OUTPUT.next"
+        jq --arg key "$key" --argjson value "$merged_script_json" \
+            'if (.scripts | type) != "object" then .scripts = {} else . end | .scripts[$key] = $value' \
+            "$OUTPUT" >"$temp_next" || {
+            error "jq update failed for key '$key'"
+            rm "$temp_next" "$OUTPUT"
+            return 1
+        } # Exit loop on jq error
+        mv "$temp_next" "$OUTPUT"
+
+    done || error "Failed during script merging loop." # Catch errors from the while loop subshell
+
+    # Replace the original composer.json with the merged version
     mv "$OUTPUT" "$COMPOSER1"
-    echo "Merged scripts written to $COMPOSER1"
+    success "Scripts merged idempotently into $COMPOSER1."
 }
 
 function add_code_quality_tools() {
     log "Adding code quality tools..."
-    cp php-blueprint/rector.php php-blueprint/phpstan.neon.dist php-blueprint/ecs.php php-blueprint/psalm.xml .
-    cp -r php-blueprint/documentation .
-    success "Code quality tools and documentation copied. Check the paths in rector.php and phpstan.neon.dist."
+    local project_composer="composer.json"
+    local blueprint_composer="${BLUEPRINT_INTERNAL_PATH}/composer.json"
 
+    # --- Copy Config Files ---
+    local cq_files=("rector.php" "phpstan.neon.dist" "ecs.php" "psalm.xml")
+    for file in "${cq_files[@]}"; do
+        local src_path="${BLUEPRINT_INTERNAL_PATH}/${file}"
+        if [ -f "$src_path" ]; then
+            cp "$src_path" . || warn "Failed to copy '$src_path'."
+        else
+            log "  Blueprint config '$file' not found. Skipping."
+        fi
+    done
+
+    # --- Copy Documentation Directory ---
+    local blueprint_doc_path="${BLUEPRINT_INTERNAL_PATH}/documentation"
+    if [ -d "$blueprint_doc_path" ]; then
+        cp -rT "$blueprint_doc_path" "documentation" || warn "Failed to copy documentation directory."
+    else
+        log "  Blueprint documentation directory not found. Skipping."
+    fi
+    success "Code quality tool configs and documentation copied (if found)."
+
+    # --- Update composer.json ---
     log "Updating composer.json..."
-    merge_scripts composer.json php-blueprint/composer.json composer.json.tmp
-
-    if jq -e '.require' php-blueprint/composer.json >/dev/null; then
-        prod_dependencies=$(jq -r '.require | keys[]' php-blueprint/composer.json)
-        if [ $IS_DDEV_PROJECT -eq 1 ]; then
-            echo "$prod_dependencies" | xargs ddev composer require
-        else
-            echo "$prod_dependencies" | xargs composer require
-        fi
+    if [ ! -f "$project_composer" ]; then
+        warn "'$project_composer' not found. Cannot merge scripts or add dependencies. Consider copying blueprint composer.json first."
+        return
+    fi
+    if [ ! -f "$blueprint_composer" ]; then
+        warn "Blueprint composer.json '$blueprint_composer' not found. Skipping composer update."
+        return
     fi
 
-    if jq -e '.["require-dev"]' php-blueprint/composer.json >/dev/null; then
-        dev_dependencies=$(jq -r '.["require-dev"] | keys[]' php-blueprint/composer.json)
-        if [ $IS_DDEV_PROJECT -eq 1 ]; then
-            echo "$dev_dependencies" | xargs ddev composer require --dev
-        else
-            echo "$dev_dependencies" | xargs composer require --dev
-        fi
+    # Merge scripts using the updated function
+    merge_scripts # This now handles the merging idempotently
+
+    # --- Install Composer Dependencies ---
+    local composer_cmd
+    if [ $IS_DDEV_PROJECT -eq 1 ]; then
+        composer_cmd=(ddev composer)
+    else
+        composer_cmd=(composer)
     fi
 
-    success "composer.json updated with new scripts and require-dev dependencies."
+    # Install production dependencies (if any in blueprint)
+    # Check if require section exists and is an object
+    if jq -e '.require | type == "object"' "$blueprint_composer" >/dev/null; then
+        local prod_deps=$(jq -r '.require | keys_unsorted | .[]' "$blueprint_composer")
+        if [ -n "$prod_deps" ]; then
+            log "Adding composer 'require' dependencies from blueprint..."
+            # Pass dependencies line by line to xargs
+            echo "$prod_deps" | xargs "${composer_cmd[@]}" require || warn "Failed to install some production dependencies."
+        else
+            log "No production dependencies found in blueprint composer.json 'require' section."
+        fi
+    else
+        log "No 'require' object found in blueprint composer.json."
+    fi
+
+    # Install dev dependencies
+    # Check if require-dev section exists and is an object
+    if jq -e '.["require-dev"] | type == "object"' "$blueprint_composer" >/dev/null; then
+        local dev_deps=$(jq -r '.["require-dev"] | keys_unsorted | .[]' "$blueprint_composer")
+        if [ -n "$dev_deps" ]; then
+            log "Adding composer 'require-dev' dependencies from blueprint..."
+            # Pass dependencies line by line to xargs
+            echo "$dev_deps" | xargs "${composer_cmd[@]}" require --dev || warn "Failed to install some dev dependencies."
+        else
+            log "No development dependencies found in blueprint composer.json 'require-dev' section."
+        fi
+    else
+        log "No 'require-dev' object found in blueprint composer.json."
+    fi
+
+    success "composer.json updated with merged scripts and new dependencies (if any)."
 }
 
 function update_readme() {
     log "Updating README.md..."
-    if [ ! -f "README.md" ]; then
-        warn "README.md not found. Creating new README.md..."
-        cat php-blueprint/README_SNIPPET.md >README.md
-        success "New README.md created with README_SNIPPET.md content."
+    local project_readme="README.md"
+    local blueprint_snippet="${BLUEPRINT_INTERNAL_PATH}/README_SNIPPET.md"
+
+    if [ -f "$project_readme" ]; then
+        log "'$project_readme' already exists. Skipping creation."
+        # Future enhancement: Append snippet if a placeholder exists?
+    else
+        if [ -f "$blueprint_snippet" ]; then
+            warn "'$project_readme' not found. Creating new README.md from blueprint snippet..."
+            cp "$blueprint_snippet" "$project_readme" || error "Failed to copy README snippet."
+            success "New README.md created with content from '$blueprint_snippet'."
+        else
+            warn "'$project_readme' not found, and blueprint snippet '$blueprint_snippet' also not found. Skipping."
+        fi
     fi
-}
-
-function download_php_blueprint() {
-    log "Downloading php-blueprint..."
-    curl -sSL https://github.com/TerrorSquad/php-blueprint/archive/refs/heads/main.zip -o php-blueprint.zip
-    unzip php-blueprint.zip
-    mv php-blueprint-main/blueprint php-blueprint
-    rm php-blueprint.zip
-    rm -rf php-blueprint-main
-    success "php-blueprint downloaded and extracted."
-}
-
-function cleanup() {
-    log "Cleaning up..."
-    rm -rf php-blueprint
-    success "Temporary files cleaned up."
 }
 
 function update_gitignore() {
     log "Updating .gitignore..."
+    local project_gitignore=".gitignore"
+    local blueprint_gitignore="${BLUEPRINT_INTERNAL_PATH}/.gitignore"
 
-    if [ ! -f "php-blueprint/.gitignore" ]; then
-        error "php-blueprint/.gitignore file not found."
+    if [ ! -f "$blueprint_gitignore" ]; then
+        warn "Blueprint .gitignore '$blueprint_gitignore' not found. Skipping update."
+        return
     fi
 
-    while IFS= read -r line; do
-        if ! grep -q "^$line" .gitignore && ! grep -q "^/$line" .gitignore; then
-            echo "$line" >>.gitignore
-        fi
-    done <php-blueprint/.gitignore
+    # Create .gitignore if it doesn't exist
+    touch "$project_gitignore"
 
-    success ".gitignore updated."
+    local added_count=0
+    # Read blueprint gitignore line by line
+    while IFS= read -r line || [[ -n "$line" ]]; do
+        # Trim whitespace (optional, depends on desired behavior)
+        line=$(echo "$line" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+        # Skip empty lines and comments
+        if [ -z "$line" ] || [[ "$line" == \#* ]]; then
+            continue
+        fi
+        # Escape line for grep pattern matching
+        local escaped_line=$(sed 's/[^^]/[&]/g; s/\^/\\^/g' <<<"$line") # Basic escaping
+        # Check if the exact line (or commented out) already exists
+        if ! grep -q -x -F "$line" "$project_gitignore" && ! grep -q -x -F "#$line" "$project_gitignore"; then
+            # Check if line starting with / exists if original doesn't start with /
+            if [[ "$line" != /* ]] && grep -q -x -F "/$line" "$project_gitignore"; then
+                continue
+            fi
+            # Check if line without / exists if original starts with /
+            if [[ "$line" == /* ]] && grep -q -x -F "${line#/}" "$project_gitignore"; then
+                continue
+            fi
+
+            log "  Adding '$line' to .gitignore"
+            # Add a header if this is the first addition in this run
+            if [ $added_count -eq 0 ]; then
+                # Add newline if file not empty and doesn't end with newline
+                [ -s "$project_gitignore" ] && [ "$(tail -c 1 "$project_gitignore")" != "" ] && echo >>"$project_gitignore"
+                echo "" >>"$project_gitignore" # Ensure separation
+                echo "# --- Added by php-blueprint integration ---" >>"$project_gitignore"
+            fi
+            echo "$line" >>"$project_gitignore"
+            ((added_count++))
+        fi
+    done <"$blueprint_gitignore"
+
+    if [ $added_count -gt 0 ]; then
+        success ".gitignore updated with $added_count new entries."
+    else
+        log "No new entries needed for .gitignore."
+    fi
 }
 
+function cleanup_silent() {
+    # Used for cleanup during error exit, without verbose logging
+    rm -rf "$BLUEPRINT_TARGET_DIR"
+    rm -f "$OUTPUT" "$temp_next" "$hooks_tmp" "$merged_tmp" "$tmp_pkg" # Clean up temp files from various functions
+}
+
+function cleanup() {
+    log "Cleaning up temporary files..."
+    rm -rf "$BLUEPRINT_TARGET_DIR"
+    # Remove potential temp files just in case they weren't cleaned up
+    rm -f "$OUTPUT" "$temp_next" "$hooks_tmp" "$merged_tmp" "$tmp_pkg"
+    success "Temporary files cleaned up."
+}
+
+# --- Main Execution ---
+
 function main() {
-    if [ "$1" = "--verbose" ]; then
+    # Parse arguments (simple verbose flag)
+    if [ "$1" = "--verbose" ] || [ "$1" = "-v" ]; then
         VERBOSE=true
+        log "Verbose mode enabled."
     fi
 
-    log "Starting integration..."
+    log "Starting php-blueprint integration..."
     IS_DDEV_PROJECT=$(is_ddev_project)
+
+    if [ $IS_DDEV_PROJECT -eq 1 ]; then
+        log "DDEV project detected."
+        warn "For DDEV projects, ensure this script is run *inside* the web container (e.g., using 'ddev ssh') for 'ddev composer' commands to work correctly."
+    else
+        log "Standard PHP project detected (no .ddev directory found)."
+    fi
+
+    # Basic check if running from project root
+    if [ ! -f "composer.json" ] && [ ! -d ".git" ]; then
+        warn "Script might not be running from the project root (composer.json or .git not found). Results may be unexpected."
+    fi
+
     check_dependencies
     download_php_blueprint
+
     if [ $IS_DDEV_PROJECT -eq 1 ]; then
         update_ddev_files
         update_ddev_config
-        update_readme
     fi
-    copy_files
-    update_package_json
-    add_code_quality_tools
-    update_gitignore
-    cleanup
-    log "Ensure you are using Volta for Node.js version management and PNPM as the package manager."
 
-    success "Integration completed. Please review the log messages for any important information."
+    copy_files
+    update_package_json    # Merges package.json sections
+    add_code_quality_tools # Merges composer scripts & installs deps
+    update_readme
+    update_gitignore
+
+    success "Integration process completed."
+    log "Ensure you are using Volta for Node.js version management and PNPM as the package manager inside the DDEV container."
 
     if [ $IS_DDEV_PROJECT -eq 1 ]; then
-        success "Please run 'ddev restart' to apply the changes."
+        success "Please run 'ddev restart' to apply the DDEV configuration changes."
     fi
+
+    # Final cleanup
+    cleanup
 }
 
+# --- Script Entry Point ---
+# Ensure script exits immediately if a command fails (safer execution)
+set -e
+# Ensure pipe failures are caught
+set -o pipefail
+
+# Run main function, passing all arguments
 main "$@"
+
+# Explicitly exit with success code
+exit 0
