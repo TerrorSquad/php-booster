@@ -537,6 +537,11 @@ function main() {
     check_dependencies
     download_php_blueprint
 
+    copy_files
+    update_package_json # Merges package.json sections
+    update_readme
+    update_gitignore
+
     if [ $IS_DDEV_PROJECT -eq 1 ]; then
         log "Updating DDEV files..."
         ddev start
@@ -545,12 +550,7 @@ function main() {
         ddev restart # Restart DDEV to apply changes
     fi
 
-    copy_files
-    update_package_json    # Merges package.json sections
     add_code_quality_tools # Merges composer scripts & installs deps
-    update_readme
-    update_gitignore
-
     success "Integration process completed."
     log "Ensure you are using Volta for Node.js version management and PNPM as the package manager inside the DDEV container."
 
