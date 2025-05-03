@@ -187,7 +187,7 @@ function copy_files() {
         if [ -e "$src_path" ]; then
             log "  Copying '$src_path' to '${dest_path}/${item}'..."
             # Use standard recursive copy -R. This copies the source item into the dest dir.
-            cp -R "$src_path" "${dest_path}/${item}" || warn "Failed to copy '$src_path'. Check permissions."
+            cp -R "$src_path" "${dest_path}" || warn "Failed to copy '$src_path'. Check permissions."
         else
             log "  Blueprint item '$item' not found at '$src_path'. Skipping."
         fi
