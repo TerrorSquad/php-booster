@@ -15,6 +15,7 @@ YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
 VERBOSE=false
+NO_CLEANUP=false
 IS_DDEV_PROJECT=0
 
 # Set the memory limit for Composer to unlimited (can help with large dependency trees)
@@ -507,11 +508,16 @@ function cleanup() {
 # --- Main Execution ---
 
 function main() {
-    # Parse arguments (simple verbose flag)
-    if [ "$1" = "--verbose" ] || [ "$1" = "-v" ]; then
-        VERBOSE=true
-        log "Verbose mode enabled."
-    fi
+    # Parse arguments (verbose, cleanup)
+    while getopts ":vc" opt; do
+        case $opt in
+        v) VERBOSE=true ;;
+        c) NO_CLEANUP=true ;;
+        \?) error "Invalid option: -$OPTARG" ;;
+        :) error "Option -$OPTARG requires an argument." ;;
+        esac
+    done
+    shift $((OPTIND - 1))
 
     log "Starting php-blueprint integration..."
     IS_DDEV_PROJECT=$(is_ddev_project)
@@ -553,7 +559,11 @@ function main() {
     fi
 
     # Final cleanup
-    cleanup
+    if [ "$NO_CLEANUP" = true ]; then
+        log "Skipping cleanup as per user request."
+    else
+        cleanup
+    fi
 }
 
 # --- Script Entry Point ---
