@@ -532,8 +532,11 @@ function main() {
     download_php_blueprint
 
     if [ $IS_DDEV_PROJECT -eq 1 ]; then
+        log "Updating DDEV files..."
+        ddev start
         update_ddev_files
         update_ddev_config
+        ddev restart # Restart DDEV to apply changes
     fi
 
     copy_files
