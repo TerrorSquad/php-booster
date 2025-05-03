@@ -18,5 +18,5 @@
   "volta": {
     "node": "22.8.0"
   },
-  "packageManager": "yarn@4.4.1"
+  "packageManager": "pnpm@10.10.0"
 }
