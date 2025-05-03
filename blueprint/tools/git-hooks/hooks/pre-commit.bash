@@ -10,7 +10,7 @@ ROOT=$(git rev-parse --show-toplevel)
 runner="$ROOT/tools/runner.sh"
 
 # Filter for only .php files (using grep)
-STAGED_FILES=$(git diff --diff-filter=ACMR --cached --name-only -- . ":(exclude)vendor/*" HEAD)
+STAGED_FILES=$(git diff --diff-filter=ACMR --cached --name-only -- . ":(exclude)vendor/*" ":(exclude)ecs.php" ":(exclude)rector.php" HEAD)
 # Check if there are any staged PHP files
 if ! echo "$STAGED_FILES" | grep '\.php$'; then
     echo "No staged PHP files found. Skipping checks..."
