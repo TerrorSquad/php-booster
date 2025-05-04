@@ -58,6 +58,8 @@ function check_dependencies() {
         command -v ddev >/dev/null 2>&1 || missing_deps+=("ddev")
     else
         command -v composer >/dev/null 2>&1 || missing_deps+=("composer")
+        command -v volta >/dev/null 2>&1 || missing_deps+=("volta")
+        command -v pnpm >/dev/null 2>&1 || missing_deps+=("pnpm")
     fi
 
     if [ ${#missing_deps[@]} -ne 0 ]; then
@@ -327,6 +329,157 @@ function merge_scripts() {
     mv "$OUTPUT" "$COMPOSER1"
     success "Scripts merged idempotently into $COMPOSER1."
 }
+# --- Function to Update Tool Paths Dynamically ---
+function update_tool_paths() {
+    log "Dynamically updating paths in tool configuration files using temp files and sed..."
+    local php_dirs_file="php_dirs.txt"
+    local return_code=0 # Track overall success/failure
+
+    # 1. Find directories containing .php files and save to php_dirs.txt
+    log "  Searching for directories containing PHP files (excluding vendor, .git, node_modules, etc.)..."
+    find . -type f \
+        -name "*.php" \
+        -not -path "./vendor/*" \
+        -not -path "./node_modules/*" \
+        -not -path "./.ddev/*" \
+        -exec dirname {} \; | sort -u | grep -v ^.$ | cut -d '/' -f2 | sort -u >"$php_dirs_file" || {
+        warn "find command failed or produced unexpected output while searching for PHP directories."
+        # Create empty file if find failed, to avoid errors later
+        touch "$php_dirs_file"
+    }
+
+    if [ ! -s "$php_dirs_file" ]; then
+        warn "No subdirectories containing PHP files found (excluding vendor, hidden dirs, etc.). Placeholders will be removed from tool configurations."
+    else
+        log "  Found PHP directories listed in '$php_dirs_file'."
+    fi
+
+    # --- Define helper for sed replacement ---
+    # Usage: replace_placeholder "config_file" "placeholder_regex" "formatted_dirs_file"
+    function replace_placeholder() {
+        local config_file="$1"
+        local placeholder_regex="$2"
+        local formatted_dirs_file="$3"
+        local tmp_config_file="${config_file}.tmp"
+
+        if [ ! -f "$config_file" ]; then
+            log "    File '$config_file' not found. Skipping."
+            return 0 # Not an error if the config file isn't there
+        fi
+
+        log "    Processing '$config_file'..."
+        # Use process substitution <(...) if available and preferred, otherwise use temp file
+        # Using temp file for broader compatibility
+
+        # Create the new file by reading the formatted dirs where the placeholder is found
+        # Use -n to suppress default output, p to print non-matching lines, r to read on match
+        # This requires two passes or complex scripting. Let's use the requested r/d approach.
+
+        # Pass 1: Read the formatted dirs file after the placeholder line
+        sed -e "$placeholder_regex r $formatted_dirs_file" "$config_file" >"$tmp_config_file" || {
+            warn "sed 'r' command failed for '$config_file'."
+            rm -f "$tmp_config_file"
+            return 1 # Signal failure
+        }
+
+        # Pass 2: Delete the placeholder line from the temp file, overwrite original
+        sed -i.bak -e "$placeholder_regex d" "$tmp_config_file" || {
+            warn "sed 'd' command failed for '$tmp_config_file'."
+            rm -f "$tmp_config_file"
+            # Restore original from backup if it exists
+            [ -f "${config_file}.bak" ] && mv "${config_file}.bak" "$config_file"
+            return 1 # Signal failure
+        }
+
+        # Check if placeholder was found by checking if backup was created
+        if [ ! -f "${config_file}.bak" ]; then
+            warn "Placeholder pattern '$placeholder_regex' not found in '$config_file'. File unchanged by delete step."
+            # Keep the result from the 'r' command if no placeholder was deleted
+            mv "$tmp_config_file" "$config_file"
+        else
+            # Placeholder was found and deleted, move the final result
+            mv "$tmp_config_file" "$config_file"
+            rm "${config_file}.bak" # Clean up backup
+            log "    Successfully updated '$config_file'."
+        fi
+        return 0
+    }
+
+    # --- Process Rector PHP file ---
+    local rector_file="rector.php"
+    local rector_dirs_file="rector_dirs.txt"
+    local rector_placeholder_regex="/^[[:space:]]*__DIR__ \. '\/DIRECTORY',[[:space:]]*$/"
+    # Create formatted dirs file
+    rm -f "$rector_dirs_file" && touch "$rector_dirs_file"
+    if [ -s "$php_dirs_file" ]; then # Only loop if dirs were found
+        while IFS= read -r dir; do
+            printf "        __DIR__ . '/%s',\n" "$dir" >>"$rector_dirs_file"
+        done <"$php_dirs_file"
+        # Remove trailing newline potentially added by loop/printf
+        # sed -i '' -e '$a\' is complex; let's assume tools tolerate trailing comma/newline ok
+    fi
+    # Replace placeholder
+    replace_placeholder "$rector_file" "$rector_placeholder_regex" "$rector_dirs_file" || return_code=1
+    rm -f "$rector_dirs_file" # Clean up
+
+    # --- Process ECS PHP file ---
+    local ecs_file="ecs.php"
+    local ecs_dirs_file="ecs_dirs.txt"
+    local ecs_placeholder_regex="/^[[:space:]]*__DIR__ \. '\/DIRECTORY',[[:space:]]*$/"
+    # Create formatted dirs file
+    rm -f "$ecs_dirs_file" && touch "$ecs_dirs_file"
+    if [ -s "$php_dirs_file" ]; then
+        while IFS= read -r dir; do
+            printf "        __DIR__ . '/%s',\n" "$dir" >>"$ecs_dirs_file"
+        done <"$php_dirs_file"
+    fi
+    # Replace placeholder
+    replace_placeholder "$ecs_file" "$ecs_placeholder_regex" "$ecs_dirs_file" || return_code=1
+    rm -f "$ecs_dirs_file" # Clean up
+
+    # --- Process Psalm XML file ---
+    local psalm_file="psalm.xml"
+    local psalm_dirs_file="psalm_dirs.txt"
+    local psalm_placeholder_regex='/^[[:space:]]*<directory name="DIRECTORY" \/>[[:space:]]*$/'
+    # Create formatted dirs file
+    rm -f "$psalm_dirs_file" && touch "$psalm_dirs_file"
+    if [ -s "$php_dirs_file" ]; then
+        while IFS= read -r dir; do
+            # Basic XML escaping for dir name (only & and < are strictly needed here, but > and " are good practice)
+            local escaped_dir=$(echo "$dir" | sed -e 's/&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g' -e 's/"/\&quot;/g')
+            printf '        <directory name="%s" />\n' "$escaped_dir" >>"$psalm_dirs_file"
+        done <"$php_dirs_file"
+    fi
+    # Replace placeholder
+    replace_placeholder "$psalm_file" "$psalm_placeholder_regex" "$psalm_dirs_file" || return_code=1
+    rm -f "$psalm_dirs_file" # Clean up
+
+    # --- Process PHPStan NEON file ---
+    local phpstan_file="phpstan.neon.dist"
+    local phpstan_dirs_file="phpstan_dirs.txt"
+    local phpstan_placeholder_regex='/^[[:space:]]*-[[:space:]]*DIRECTORY[[:space:]]*$/'
+    # Create formatted dirs file
+    rm -f "$phpstan_dirs_file" && touch "$phpstan_dirs_file"
+    if [ -s "$php_dirs_file" ]; then
+        while IFS= read -r dir; do
+            printf '    - %s\n' "$dir" >>"$phpstan_dirs_file"
+        done <"$php_dirs_file"
+    fi
+    # Replace placeholder
+    replace_placeholder "$phpstan_file" "$phpstan_placeholder_regex" "$phpstan_dirs_file" || return_code=1
+    rm -f "$phpstan_dirs_file" # Clean up
+
+    # --- Final Cleanup and Status ---
+    rm -f "$php_dirs_file"
+
+    if [ $return_code -eq 0 ]; then
+        success "Tool configuration paths updated dynamically based on found PHP directories."
+        return 0
+    else
+        warn "Errors occurred while updating tool configuration paths. Check logs."
+        return 1
+    fi
+}
 
 function add_code_quality_tools() {
     log "Adding code quality tools..."
@@ -354,6 +507,12 @@ function add_code_quality_tools() {
         log "  Blueprint documentation directory not found. Skipping."
     fi
     success "Code quality tool configs and documentation copied (if found)."
+
+    # --- Dynamically Update Paths in Config Files ---
+    # Use return code from function to check for errors
+    if ! update_tool_paths; then
+        error "Failed to update tool paths dynamically. Please check warnings."
+    fi
 
     # --- Update composer.json ---
     log "Updating composer.json..."

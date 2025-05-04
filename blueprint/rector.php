@@ -11,9 +11,7 @@ use Rector\TypeDeclaration\Rector\ClassMethod\AddVoidReturnTypeWhereNoReturnRect
 
 return RectorConfig::configure()
  ->withPaths([
- __DIR__ . '/public',
- __DIR__ . '/src',
- __DIR__ . '/tests',
+        __DIR__ . '/DIRECTORY',
  ])
  ->withSets([
  SetList::CODE_QUALITY,

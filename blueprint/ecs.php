@@ -8,9 +8,7 @@ use Symplify\EasyCodingStandard\Config\ECSConfig;
 
 return ECSConfig::configure()
     ->withPaths([
-        __DIR__ . '/public',
-        __DIR__ . '/src',
-        __DIR__ . '/tests',
+        __DIR__ . '/DIRECTORY',
     ])
     ->withRules([
         NoUnusedImportsFixer::class,
