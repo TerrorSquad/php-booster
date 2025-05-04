@@ -341,6 +341,7 @@ function update_tool_paths() {
         -name "*.php" \
         -not -path "./vendor/*" \
         -not -path "./node_modules/*" \
+        -not -path "./php-blueprint/*" \
         -not -path "./.ddev/*" \
         -exec dirname {} \; | sort -u | grep -v ^.$ | cut -d '/' -f2 | sort -u >"$php_dirs_file" || {
         warn "find command failed or produced unexpected output while searching for PHP directories."
