@@ -124,7 +124,7 @@ function update_ddev_files() {
             # Use standard recursive copy -R, ensure destination parent exists
             mkdir -p "$dest_path"
             # Copy the source directory *into* the destination directory
-            cp -R $src_path/* "$dest_path" || warn "Failed to copy '$src_path'. Check permissions."
+            cp -R $src_path/. "$dest_path" || warn "Failed to copy '$src_path'. Check permissions."
         else
             log "  Blueprint DDEV subdirectory '$subdir' not found at '$src_path'. Skipping."
         fi
