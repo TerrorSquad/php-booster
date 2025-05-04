@@ -3,10 +3,9 @@
 # This script is used to integrate the php-blueprint into your project (potentially DDEV)
 
 # --- Configuration ---
-BLUEPRINT_REPO_ZIP_URL="https://github.com/TerrorSquad/php-blueprint/archive/refs/heads/main.zip"
-BLUEPRINT_EXTRACTED_DIR_NAME="php-blueprint-main" # Default extracted dir name from GitHub zip
-BLUEPRINT_TARGET_DIR="php-blueprint"
-BLUEPRINT_INTERNAL_PATH="${BLUEPRINT_TARGET_DIR}/blueprint" # Actual content is inside 'blueprint' subdir
+BLUEPRINT_REPO_URL="https://github.com/TerrorSquad/php-blueprint.git" # Changed to Git URL
+BLUEPRINT_TARGET_DIR="php-blueprint"                                  # Directory to clone into
+BLUEPRINT_INTERNAL_PATH="${BLUEPRINT_TARGET_DIR}/blueprint"           # Actual content is inside 'blueprint' subdir
 
 # --- ANSI color codes ---
 GREEN='\033[0;32m'
@@ -14,7 +13,7 @@ RED='\033[0;31m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
-VERBOSE=false
+VERBOSE=true
 NO_CLEANUP=false
 IS_DDEV_PROJECT=0
 
@@ -81,27 +80,23 @@ function is_ddev_project() {
 # --- Core Logic Functions ---
 
 function download_php_blueprint() {
-    log "Downloading php-blueprint from $BLUEPRINT_REPO_ZIP_URL..."
+    log "Cloning php-blueprint from $BLUEPRINT_REPO_URL..."
     # Clean up previous attempts first
-    rm -f php-blueprint.zip
-    rm -rf "$BLUEPRINT_TARGET_DIR"
-    rm -rf "$BLUEPRINT_EXTRACTED_DIR_NAME"
+    rm -rf "$BLUEPRINT_TARGET_DIR" # Remove target dir if it exists
 
-    curl -sSL "$BLUEPRINT_REPO_ZIP_URL" -o php-blueprint.zip || error "Failed to download blueprint zip."
-    unzip -q php-blueprint.zip || error "Failed to unzip blueprint."
-    rm php-blueprint.zip
+    # Clone only the main branch and only the latest commit for speed
+    git clone --depth 1 --branch main "$BLUEPRINT_REPO_URL" "$BLUEPRINT_TARGET_DIR" || error "Failed to clone blueprint repository."
 
-    if [ ! -d "$BLUEPRINT_EXTRACTED_DIR_NAME" ]; then
-        error "Expected extracted directory '$BLUEPRINT_EXTRACTED_DIR_NAME' not found."
+    if [ ! -d "$BLUEPRINT_TARGET_DIR" ]; then
+        error "Target directory '$BLUEPRINT_TARGET_DIR' not found after clone."
     fi
-    mv "$BLUEPRINT_EXTRACTED_DIR_NAME" "$BLUEPRINT_TARGET_DIR" || error "Failed to rename extracted directory."
 
     if [ ! -d "$BLUEPRINT_INTERNAL_PATH" ]; then
-        warn "The expected internal structure '$BLUEPRINT_INTERNAL_PATH' was not found within the downloaded archive."
+        warn "The expected internal structure '$BLUEPRINT_INTERNAL_PATH' was not found within the cloned repository."
         # Decide if this is fatal
         # error "Blueprint content directory '$BLUEPRINT_INTERNAL_PATH' not found."
     fi
-    success "php-blueprint downloaded and extracted to '$BLUEPRINT_TARGET_DIR'."
+    success "php-blueprint cloned successfully into '$BLUEPRINT_TARGET_DIR'."
 }
 
 function update_ddev_files() {
@@ -599,7 +594,7 @@ function update_gitignore() {
         # Trim whitespace (optional, depends on desired behavior)
         line=$(echo "$line" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
         # Skip empty lines and comments
-        if [ -z "$line" ] || [[ "$line" == \#* ]]; then
+        if [ -z "$line" ]; then
             continue
         fi
         # Escape line for grep pattern matching (basic)
@@ -619,13 +614,18 @@ function update_gitignore() {
             log "  Adding '$line' to .gitignore"
             # Add a header if this is the first addition in this run
             if [ $added_count -eq 0 ]; then
-                # Add newline if file not empty and doesn't end with newline
-                [ -s "$project_gitignore" ] && [ "$(tail -c 1 "$project_gitignore")" != $'\n' ] && echo >>"$project_gitignore"
+                # Add newline before header if file is not empty
+                [ -s "$project_gitignore" ] && echo >>"$project_gitignore"
+                # Add spacing newline and header
                 echo "" >>"$project_gitignore" # Ensure separation
                 echo "# --- Added by php-blueprint integration ---" >>"$project_gitignore"
+                log "  Added header to .gitignore"
             fi
             echo "$line" >>"$project_gitignore"
+            log "  Added '$line' to .gitignore"
             ((added_count++))
+            log "  Incremented added_count to $added_count"
+            log "  Total added: $added_count"
         fi
     done <"$blueprint_gitignore"
 
@@ -688,10 +688,7 @@ function main() {
     update_package_json # Merges package.json sections
     update_readme
     update_gitignore
-
-    if ! update_tool_paths; then
-        error "Failed to update tool paths dynamically. Please check warnings."
-    fi
+    update_tool_paths
 
     if [ $IS_DDEV_PROJECT -eq 1 ]; then
         log "Updating DDEV files..."
