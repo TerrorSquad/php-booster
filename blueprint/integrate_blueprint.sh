@@ -14,7 +14,7 @@ RED='\033[0;31m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
-VERBOSE=true
+VERBOSE=false
 NO_CLEANUP=false
 IS_DDEV_PROJECT=0
 
@@ -391,17 +391,9 @@ function update_tool_paths() {
             return 1 # Signal failure
         }
 
-        # Check if placeholder was found by checking if backup was created
-        if [ ! -f "${config_file}.bak" ]; then
-            warn "Placeholder pattern '$placeholder_regex' not found in '$config_file'. File unchanged by delete step."
-            # Keep the result from the 'r' command if no placeholder was deleted
-            mv "$tmp_config_file" "$config_file"
-        else
-            # Placeholder was found and deleted, move the final result
-            mv "$tmp_config_file" "$config_file"
-            rm "${config_file}.bak" # Clean up backup
-            log "    Successfully updated '$config_file'."
-        fi
+        mv "$tmp_config_file" "$config_file"
+        rm -f $config_file.tmp.bak
+
         return 0
     }
 
@@ -502,7 +494,7 @@ function add_code_quality_tools() {
     if [ -d "$blueprint_doc_path" ]; then
         log "  Copying '$blueprint_doc_path' to 'documentation'..."
         # Use standard recursive copy -R
-        cp -R "$blueprint_doc_path" "documentation" || warn "Failed to copy documentation directory."
+        cp -R "$blueprint_doc_path/." "documentation" || warn "Failed to copy documentation directory."
     else
         log "  Blueprint documentation directory not found. Skipping."
     fi
