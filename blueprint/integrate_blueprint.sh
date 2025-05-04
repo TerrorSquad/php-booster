@@ -331,6 +331,18 @@ function merge_scripts() {
 }
 # --- Function to Update Tool Paths Dynamically ---
 function update_tool_paths() {
+
+    # --- Copy Config Files ---
+    local cq_files=("rector.php" "phpstan.neon.dist" "ecs.php" "psalm.xml")
+    for file in "${cq_files[@]}"; do
+        local src_path="${BLUEPRINT_INTERNAL_PATH}/${file}"
+        if [ -f "$src_path" ]; then
+            cp "$src_path" . || warn "Failed to copy '$src_path'."
+        else
+            log "  Blueprint config '$file' not found. Skipping."
+        fi
+    done
+
     log "Dynamically updating paths in tool configuration files using temp files and sed..."
     local php_dirs_file="php_dirs.txt"
     local return_code=0 # Track overall success/failure
@@ -479,17 +491,6 @@ function add_code_quality_tools() {
     local project_composer="composer.json"
     local blueprint_composer="${BLUEPRINT_INTERNAL_PATH}/composer.json"
 
-    # --- Copy Config Files ---
-    local cq_files=("rector.php" "phpstan.neon.dist" "ecs.php" "psalm.xml")
-    for file in "${cq_files[@]}"; do
-        local src_path="${BLUEPRINT_INTERNAL_PATH}/${file}"
-        if [ -f "$src_path" ]; then
-            cp "$src_path" . || warn "Failed to copy '$src_path'."
-        else
-            log "  Blueprint config '$file' not found. Skipping."
-        fi
-    done
-
     # --- Copy Documentation Directory ---
     local blueprint_doc_path="${BLUEPRINT_INTERNAL_PATH}/documentation"
     if [ -d "$blueprint_doc_path" ]; then
@@ -500,12 +501,6 @@ function add_code_quality_tools() {
         log "  Blueprint documentation directory not found. Skipping."
     fi
     success "Code quality tool configs and documentation copied (if found)."
-
-    # --- Dynamically Update Paths in Config Files ---
-    # Use return code from function to check for errors
-    if ! update_tool_paths; then
-        error "Failed to update tool paths dynamically. Please check warnings."
-    fi
 
     # --- Update composer.json ---
     log "Updating composer.json..."
@@ -694,9 +689,24 @@ function main() {
     update_readme
     update_gitignore
 
+    if ! update_tool_paths; then
+        error "Failed to update tool paths dynamically. Please check warnings."
+    fi
+
     if [ $IS_DDEV_PROJECT -eq 1 ]; then
         log "Updating DDEV files..."
-        ddev start
+        # ddev start might fail, ensure it's running by repeating the command max 3 times
+        local attempts=0
+        local max_attempts=3
+        while [ $attempts -lt $max_attempts ]; do
+            if ddev start; then
+                break
+            else
+                warn "ddev start failed. Retrying... ($((attempts + 1))/$max_attempts)"
+                ((attempts++))
+                sleep 5 # Wait before retrying
+            fi
+        done
         update_ddev_files
         update_ddev_config
         ddev restart # Restart DDEV to apply changes
