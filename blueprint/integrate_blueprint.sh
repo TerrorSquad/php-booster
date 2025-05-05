@@ -124,7 +124,7 @@ function update_ddev_files() {
             log "  Blueprint DDEV subdirectory '$subdir' not found at '$src_path'. Skipping."
         fi
     done
-    success "ddev files updated (if found in blueprint)."
+    success "ddev files updated."
 }
 
 function update_ddev_config() {
@@ -189,7 +189,7 @@ function copy_files() {
             log "  Blueprint item '$item' not found at '$src_path'. Skipping."
         fi
     done
-    success "Common files copied (if found in blueprint). Verify the copied files and their paths."
+    success "Common files copied. Verify the copied files and their paths."
 }
 
 function update_package_json() {
@@ -228,7 +228,7 @@ function update_package_json() {
     # Copy commitlint config regardless
     if [ -f "$blueprint_commitlint" ]; then
         cp "$blueprint_commitlint" . || warn "Failed to copy commitlint config."
-        success "commitlint.config.js copied (if found in blueprint)."
+        success "commitlint.config.js copied."
     else
         warn "Blueprint 'commitlint.config.js' not found. Skipping copy."
     fi
@@ -495,7 +495,7 @@ function add_code_quality_tools() {
     else
         log "  Blueprint documentation directory not found. Skipping."
     fi
-    success "Code quality tool configs and documentation copied (if found)."
+    success "Code quality tool configs and documentation copied."
 
     # --- Update composer.json ---
     log "Updating composer.json..."
@@ -519,7 +519,7 @@ function add_code_quality_tools() {
         composer_cmd=(composer)
     fi
 
-    # Install production dependencies (if any in blueprint)
+    # Install production dependencies
     # Check if require section exists and is an object
     if jq -e '.require | type == "object"' "$blueprint_composer" >/dev/null; then
         local prod_deps=$(jq -r '.require | keys_unsorted | .[]' "$blueprint_composer")
@@ -553,7 +553,7 @@ function add_code_quality_tools() {
         log "No 'require-dev' object found in blueprint composer.json."
     fi
 
-    success "composer.json updated with merged scripts and new dependencies (if any)."
+    success "composer.json updated with merged scripts and new dependencies."
 }
 
 function update_readme() {
@@ -668,7 +668,6 @@ function main() {
 
     if [ $IS_DDEV_PROJECT -eq 1 ]; then
         log "DDEV project detected."
-        warn "For DDEV projects, ensure this script is run *inside* the web container (e.g., using 'ddev ssh') for 'ddev composer' commands to work correctly."
     else
         log "Standard PHP project detected (no .ddev directory found)."
     fi
