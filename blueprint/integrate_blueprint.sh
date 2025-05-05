@@ -13,7 +13,7 @@ RED='\033[0;31m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
-VERBOSE=true
+VERBOSE=false
 NO_CLEANUP=false
 IS_DDEV_PROJECT=0
 
@@ -622,10 +622,7 @@ function update_gitignore() {
                 log "  Added header to .gitignore"
             fi
             echo "$line" >>"$project_gitignore"
-            log "  Added '$line' to .gitignore"
-            ((added_count++))
-            log "  Incremented added_count to $added_count"
-            log "  Total added: $added_count"
+            added_count=$((added_count+1))
         fi
     done <"$blueprint_gitignore"
 
