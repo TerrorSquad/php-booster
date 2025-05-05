@@ -326,6 +326,15 @@ function merge_scripts() {
 }
 # --- Function to Update Tool Paths Dynamically ---
 function update_tool_paths() {
+    # --- Copy Documentation Directory ---
+    local blueprint_doc_path="${BLUEPRINT_INTERNAL_PATH}/documentation"
+    if [ -d "$blueprint_doc_path" ]; then
+        log "  Copying '$blueprint_doc_path' to 'documentation'..."
+        # Use standard recursive copy -R
+        cp -R "$blueprint_doc_path/." "documentation" || warn "Failed to copy documentation directory."
+    else
+        log "  Blueprint documentation directory not found. Skipping."
+    fi
 
     # --- Copy Config Files ---
     local cq_files=("rector.php" "phpstan.neon.dist" "ecs.php" "psalm.xml")
@@ -337,6 +346,8 @@ function update_tool_paths() {
             log "  Blueprint config '$file' not found. Skipping."
         fi
     done
+
+    success "Code quality tool configs and documentation copied."
 
     log "Dynamically updating paths in tool configuration files using temp files and sed..."
     local php_dirs_file="php_dirs.txt"
@@ -485,17 +496,6 @@ function add_code_quality_tools() {
     log "Adding code quality tools..."
     local project_composer="composer.json"
     local blueprint_composer="${BLUEPRINT_INTERNAL_PATH}/composer.json"
-
-    # --- Copy Documentation Directory ---
-    local blueprint_doc_path="${BLUEPRINT_INTERNAL_PATH}/documentation"
-    if [ -d "$blueprint_doc_path" ]; then
-        log "  Copying '$blueprint_doc_path' to 'documentation'..."
-        # Use standard recursive copy -R
-        cp -R "$blueprint_doc_path/." "documentation" || warn "Failed to copy documentation directory."
-    else
-        log "  Blueprint documentation directory not found. Skipping."
-    fi
-    success "Code quality tool configs and documentation copied."
 
     # --- Update composer.json ---
     log "Updating composer.json..."
