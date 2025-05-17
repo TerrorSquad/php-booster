@@ -1,10 +1,12 @@
 # Blueprint
 
-This repository contains a DDEV configuration alongside various other tools that help us ensure consistency across local environments as well as quality within PHP codebases.
+A curated collection of tools and best practices for PHP development.
 
-## License
-
-This repository is licensed under the MIT license. See [LICENSE.md](LICENSE.md) for more information.
+## Key Features
+- Streamlined local development with [DDEV](https://ddev.com/).
+- Static analysis with [PHPStan](https://phpstan.org/) and [Psalm](https://psalm.dev/).
+- Automated code formatting with [EasyCodingStandard](https://github.com/symplify/easy-coding-standard).
+- Git hooks for quality enforcement.
 
 ## Requirements
 
@@ -29,3 +31,7 @@ curl -sSL https://raw.githubusercontent.com/TerrorSquad/php-blueprint/main/bluep
 3. Follow the instructions on the screen.
 
 4. Commit the changes and push the branch to your repository.
+
+
+## License
+This repository is licensed under the MIT License. See [LICENSE.md](LICENSE.md) for details.

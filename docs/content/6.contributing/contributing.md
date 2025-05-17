@@ -6,17 +6,13 @@ contribution.
 ## Table of Contents
 
 - [Contributions](#contributions)
-  - [Table of Contents](#table-of-contents)
-  - [Initial setup](#initial-setup)
+  - [Initial Setup](#initial-setup)
   - [Contributing](#contributing)
-  - [Conventions used](#conventions-used)
-    - [Branches](#branches)
-    - [Commits and commit messages](#commits-and-commit-messages)
-      - [Commit Message Format](#commit-message-format)
+  - [Branch Naming](#branch-naming)
+  - [Commit Messages](#commit-messages)
   - [Tools We Use](#tools-we-use)
     - [Required Visual Studio Code Extensions](#required-visual-studio-code-extensions)
-    - [Required PHPStorm extensions](#required-phpstorm-extensions)
-      - [Optional PHPStorm extensions](#optional-phpstorm-extensions)
+    - [Required PHPStorm Extensions](#required-phpstorm-extensions)
   - [Code Quality with SonarQube](#code-quality-with-sonarqube)
 
 ## Initial setup
@@ -41,7 +37,7 @@ contribution.
 This project uses [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/). This ensures git history is
 clean and readable.
 
-### Branches
+### Branch Naming
 
 Branches must be named in the following format:
 
@@ -49,13 +45,12 @@ Branches must be named in the following format:
 
 Where the prefix can be either `PRJ` (for JIRA tickets) or `ERM` (for Easy RedMine tickets).
 
-examples:
+#### Examples:
+- `feature/PRJ-1234-add-login-feature`
+- `fix/ERM-5678-correct-auth-bug`
+- `chore/PRJ-9101-update-dependencies`
 
-- `feature/PRJ-1234-my-new-feature`
-- `fix/ERM-1234-fix-user-auth`
-- `chore/PRJ-1234-update-ci-config`
-
-This will allow us to find the corresponding branches easily within JIRA or ERM.
+This naming convention ensures branches are easily identifiable and traceable to their corresponding tasks or issues.
 
 ### Commits and commit messages
 
@@ -66,9 +61,13 @@ We use Conventional Commits to maintain a clear and informative commit history. 
 generation, versioning, and other project
 management tasks.
 
-#### Commit Message Format
+### Commit Messages
+
+Follow the [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) specification for clear and consistent commit messages.
 
 Each commit message should adhere to the following format:
+
+#### Format
 
 ```
 <type>[optional scope]: <description>
@@ -84,15 +83,20 @@ Each commit message should adhere to the following format:
 - body (optional): A more detailed explanation of the change, if necessary.
 - footer(s) (optional): Additional information like breaking changes or issue references (e.g., "BREAKING CHANGE: ..."
   or "Fixes #123").
+- **type**: The type of change (e.g., feat, fix, chore, docs).
+- **scope** (optional): The area of the codebase affected.
+- **description**: A brief summary of the change.
+- **body** (optional): Detailed explanation, if needed.
+- **footer(s)** (optional): Additional info like breaking changes or issue references.
 
-Examples
+#### Examples
 
 - `feat: add user authentication`
 - `fix(auth): correct password validation error`
 - `chore: update dependencies`
 - `docs: improve installation instructions`
 
-Commitlint will automatically append the ticket Id to the commit message `footer`. This way you can focus on the title and optionally the body.
+Commitlint will automatically append the ticket ID to the commit message `footer`. Focus on the title and optionally the body.
 
 ## Tools We Use
 
