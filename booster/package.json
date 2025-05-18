@@ -1,5 +1,5 @@
 {
-  "name": "ddev_blueprint",
+  "name": "php_booster",
   "private": true,
   "type": "module",
   "scripts": {

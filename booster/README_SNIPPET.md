@@ -8,7 +8,7 @@ This project uses [`ddev`](https://ddev.com/) to easily create a local developme
 4. Run `ddev composer install`
 5. Run `ddev pnpm install`
 
-The project will be available at https://php-blueprint.ddev.site/
+The project will be available at https://php-booster.ddev.site/
 
 ### Working with PHP
 

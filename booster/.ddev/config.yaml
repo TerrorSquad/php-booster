@@ -1,16 +1,16 @@
-name: php-blueprint
+name: php-booster
 type: php
 docroot: public
 php_version: "8.2"
 webserver_type: nginx-fpm
 xdebug_enabled: true
 omit_containers:
-    - db
+  - db
 additional_hostnames: []
 additional_fqdns: []
 database:
-    type: mariadb
-    version: "10.11"
+  type: mariadb
+  version: "10.11"
 use_dns_when_possible: true
 composer_version: "2"
 web_environment: []
@@ -18,12 +18,12 @@ corepack_enable: false
 router_http_port: "6666"
 timezone: Europe/Berlin
 hooks:
-    pre-start:
-        - exec-host: python3 .ddev/php/pre-start.py
-    post-start:
-        - exec: bash ./tools/git-hooks/setup.sh
-        - exec: composer install --prefer-dist --no-progress --no-interaction
-        - exec: python3 .phpstorm/update_xdebug_config.py
+  pre-start:
+    - exec-host: python3 .ddev/php/pre-start.py
+  post-start:
+    - exec: bash ./tools/git-hooks/setup.sh
+    - exec: composer install --prefer-dist --no-progress --no-interaction
+    - exec: python3 .phpstorm/update_xdebug_config.py
 # Key features of DDEV's config.yaml:
 
 # name: <projectname> # Name of the project, automatically provides

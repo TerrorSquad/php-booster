@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 
-# This script is used to integrate the php-blueprint into your project (potentially DDEV)
+# This script is used to integrate the php-booster into your project (potentially DDEV)
 
 # --- Configuration ---
-BLUEPRINT_REPO_URL="https://github.com/TerrorSquad/php-blueprint.git" # Changed to Git URL
-BLUEPRINT_TARGET_DIR="php-blueprint"                                  # Directory to clone into
-BLUEPRINT_INTERNAL_PATH="${BLUEPRINT_TARGET_DIR}/blueprint"           # Actual content is inside 'blueprint' subdir
+BOOSTER_REPO_URL="https://github.com/TerrorSquad/php-blueprint.git" # Changed to Git URL
+BOOSTER_TARGET_DIR="php-booster"                                    # Directory to clone into
+BOOSTER_INTERNAL_PATH="${BOOSTER_TARGET_DIR}/booster"               # Actual content is inside 'booster' subdir
 
 # --- ANSI color codes ---
 GREEN='\033[0;32m'
@@ -79,40 +79,40 @@ function is_ddev_project() {
 
 # --- Core Logic Functions ---
 
-function download_php_blueprint() {
-    log "Cloning php-blueprint from $BLUEPRINT_REPO_URL..."
+function download_php_booster() {
+    log "Cloning php-booster from $BOOSTER_REPO_URL..."
     # Clean up previous attempts first
-    rm -rf "$BLUEPRINT_TARGET_DIR" # Remove target dir if it exists
+    rm -rf "$BOOSTER_TARGET_DIR" # Remove target dir if it exists
 
     # Clone only the main branch and only the latest commit for speed
-    git clone --depth 1 --branch main "$BLUEPRINT_REPO_URL" "$BLUEPRINT_TARGET_DIR" || error "Failed to clone booster repository."
+    git clone --depth 1 --branch main "$BOOSTER_REPO_URL" "$BOOSTER_TARGET_DIR" || error "Failed to clone booster repository."
 
-    if [ ! -d "$BLUEPRINT_TARGET_DIR" ]; then
-        error "Target directory '$BLUEPRINT_TARGET_DIR' not found after clone."
+    if [ ! -d "$BOOSTER_TARGET_DIR" ]; then
+        error "Target directory '$BOOSTER_TARGET_DIR' not found after clone."
     fi
 
-    if [ ! -d "$BLUEPRINT_INTERNAL_PATH" ]; then
-        warn "The expected internal structure '$BLUEPRINT_INTERNAL_PATH' was not found within the cloned repository."
+    if [ ! -d "$BOOSTER_INTERNAL_PATH" ]; then
+        warn "The expected internal structure '$BOOSTER_INTERNAL_PATH' was not found within the cloned repository."
         # Decide if this is fatal
-        # error "Blueprint content directory '$BLUEPRINT_INTERNAL_PATH' not found."
+        # error "Blueprint content directory '$BOOSTER_INTERNAL_PATH' not found."
     fi
-    success "php-blueprint cloned successfully into '$BLUEPRINT_TARGET_DIR'."
+    success "php-booster cloned successfully into '$BOOSTER_TARGET_DIR'."
 }
 
 function update_ddev_files() {
     log "Updating ddev files..."
-    local blueprint_ddev_path="${BLUEPRINT_INTERNAL_PATH}/.ddev"
+    local booster_ddev_path="${BOOSTER_INTERNAL_PATH}/.ddev"
     local project_ddev_path=".ddev"
 
-    if [ ! -d "$blueprint_ddev_path" ]; then
-        warn "Blueprint DDEV directory '$blueprint_ddev_path' not found. Skipping DDEV file update."
+    if [ ! -d "$booster_ddev_path" ]; then
+        warn "Blueprint DDEV directory '$booster_ddev_path' not found. Skipping DDEV file update."
         return
     fi
 
     # Define source -> destination mappings relative to .ddev dirs
     local ddev_subdirs=("commands" "php" "web-build")
     for subdir in "${ddev_subdirs[@]}"; do
-        local src_path="${blueprint_ddev_path}/${subdir}"
+        local src_path="${booster_ddev_path}/${subdir}"
         local dest_path="${project_ddev_path}/${subdir}"
         if [ -d "$src_path" ]; then
             log "  Copying '$src_path' to '$dest_path'..."
@@ -130,7 +130,7 @@ function update_ddev_files() {
 function update_ddev_config() {
     log "Updating ddev config using yq..."
     local project_config=".ddev/config.yaml"
-    local blueprint_config="${BLUEPRINT_INTERNAL_PATH}/.ddev/config.yaml"
+    local booster_config="${BOOSTER_INTERNAL_PATH}/.ddev/config.yaml"
     local hooks_tmp="hooks.yaml.tmp"
     local merged_tmp=".ddev/config.yaml.tmp"
 
@@ -138,15 +138,15 @@ function update_ddev_config() {
         warn "Project DDEV config '$project_config' not found. Skipping update."
         return
     fi
-    if [ ! -f "$blueprint_config" ]; then
-        warn "Blueprint DDEV config '$blueprint_config' not found. Skipping update."
+    if [ ! -f "$booster_config" ]; then
+        warn "Blueprint DDEV config '$booster_config' not found. Skipping update."
         return
     fi
 
     # 1. Extract hooks from booster config (handle potential errors)
     log "  Extracting hooks from booster config..."
-    if ! yq '.hooks' "$blueprint_config" >"$hooks_tmp"; then
-        warn "Failed to extract hooks using yq from '$blueprint_config'. Skipping hook merge."
+    if ! yq '.hooks' "$booster_config" >"$hooks_tmp"; then
+        warn "Failed to extract hooks using yq from '$booster_config'. Skipping hook merge."
         rm -f "$hooks_tmp"
     else
         # 2. Merge hooks into project config
@@ -177,7 +177,7 @@ function copy_files() {
     local common_files=(".github" ".vscode" "tools" ".phpstorm" ".editorconfig") # Add other files/dirs if needed
 
     for item in "${common_files[@]}"; do
-        local src_path="${BLUEPRINT_INTERNAL_PATH}/${item}"
+        local src_path="${BOOSTER_INTERNAL_PATH}/${item}"
         # Destination is the current directory, the item will be created inside it
         local dest_path="."
 
@@ -195,39 +195,39 @@ function copy_files() {
 function update_package_json() {
     log "Updating package.json..."
     local project_pkg="package.json"
-    local blueprint_pkg="${BLUEPRINT_INTERNAL_PATH}/package.json"
-    local blueprint_commitlint="${BLUEPRINT_INTERNAL_PATH}/commitlint.config.js"
+    local booster_pkg="${BOOSTER_INTERNAL_PATH}/package.json"
+    local booster_commitlint="${BOOSTER_INTERNAL_PATH}/commitlint.config.js"
     local tmp_pkg="package.json.tmp"
 
-    if [ ! -f "$blueprint_pkg" ]; then
-        warn "Blueprint package.json '$blueprint_pkg' not found. Skipping update."
+    if [ ! -f "$booster_pkg" ]; then
+        warn "Blueprint package.json '$booster_pkg' not found. Skipping update."
         return
     fi
 
     if [ ! -f "$project_pkg" ]; then
-        log "'$project_pkg' not found. Copying from blueprint..."
-        cp "$blueprint_pkg" "$project_pkg" || error "Failed to copy booster package.json."
-        success "package.json copied from blueprint."
+        log "'$project_pkg' not found. Copying from booster..."
+        cp "$booster_pkg" "$project_pkg" || error "Failed to copy booster package.json."
+        success "package.json copied from booster."
     else
         log "'$project_pkg' already exists. Merging scripts, devDependencies, and volta sections..."
-        # Merge using jq: project + booster (blueprint overwrites simple keys, merges objects)
+        # Merge using jq: project + booster (booster overwrites simple keys, merges objects)
         # This merges top-level objects like scripts, devDependencies, volta
         jq -s '
-            .[0] as $proj | .[1] as $blue |
+            .[0] as $proj | .[1] as $booster |
             $proj * {
-                scripts: (($proj.scripts // {}) + ($blue.scripts // {})),
-                devDependencies: (($proj.devDependencies // {}) + ($blue.devDependencies // {})),
-                volta: (($proj.volta // {}) + ($blue.volta // {}))
+                scripts: (($proj.scripts // {}) + ($booster.scripts // {})),
+                devDependencies: (($proj.devDependencies // {}) + ($booster.devDependencies // {})),
+                volta: (($proj.volta // {}) + ($booster.volta // {}))
             }
-            ' "$project_pkg" "$blueprint_pkg" >"$tmp_pkg" || error "Failed to merge package.json using jq."
+            ' "$project_pkg" "$booster_pkg" >"$tmp_pkg" || error "Failed to merge package.json using jq."
 
         mv "$tmp_pkg" "$project_pkg"
         success "package.json updated with merged scripts, devDependencies, and volta info."
     fi
 
     # Copy commitlint config regardless
-    if [ -f "$blueprint_commitlint" ]; then
-        cp "$blueprint_commitlint" . || warn "Failed to copy commitlint config."
+    if [ -f "$booster_commitlint" ]; then
+        cp "$booster_commitlint" . || warn "Failed to copy commitlint config."
         success "commitlint.config.js copied."
     else
         warn "Blueprint 'commitlint.config.js' not found. Skipping copy."
@@ -236,8 +236,8 @@ function update_package_json() {
 
 # --- Updated merge_scripts Function ---
 function merge_scripts() {
-    local COMPOSER1="composer.json"                            # Project composer.json
-    local COMPOSER2="${BLUEPRINT_INTERNAL_PATH}/composer.json" # Booster composer.json
+    local COMPOSER1="composer.json"                          # Project composer.json
+    local COMPOSER2="${BOOSTER_INTERNAL_PATH}/composer.json" # Booster composer.json
     local OUTPUT="composer.json.merged.tmp"
 
     # Ensure jq is available
@@ -259,50 +259,50 @@ function merge_scripts() {
         rm "$OUTPUT" # Clean up temp file
         return 0
     fi
-    local blue_keys=$(jq -r '.scripts | keys_unsorted | .[]' "$COMPOSER2")
+    local booster_keys=$(jq -r '.scripts | keys_unsorted | .[]' "$COMPOSER2")
 
-    # Iterate over each script key from the blueprint
-    echo "$blue_keys" | while IFS= read -r key; do
+    # Iterate over each script key from the booster
+    echo "$booster_keys" | while IFS= read -r key; do
         log "  Processing script key: $key"
 
         # Get values and types using jq
         local proj_script_json=$(jq --arg key "$key" '(.scripts // {})[$key]' "$OUTPUT")
-        local blue_script_json=$(jq --arg key "$key" '.scripts[$key]' "$COMPOSER2") # Assumes .scripts exists from check above
+        local booster_script_json=$(jq --arg key "$key" '.scripts[$key]' "$COMPOSER2") # Assumes .scripts exists from check above
         local proj_type=$(jq -r 'type' <<<"$proj_script_json")
-        local blue_type=$(jq -r 'type' <<<"$blue_script_json")
+        local booster_type=$(jq -r 'type' <<<"$booster_script_json")
 
-        log "    Project type: $proj_type, Booster type: $blue_type"
+        log "    Project type: $proj_type, Booster type: $booster_type"
 
         local merged_script_json
 
         if [ "$proj_type" == "null" ]; then
-            # Script only exists in blueprint, add it
-            log "    Adding script from blueprint."
-            merged_script_json="$blue_script_json"
+            # Script only exists in booster, add it
+            log "    Adding script from booster."
+            merged_script_json="$booster_script_json"
         else
-            # Script exists in both project and blueprint, merge based on type
-            if [ "$proj_type" == "string" ] && [ "$blue_type" == "string" ]; then
-                if [ "$proj_script_json" == "$blue_script_json" ]; then
+            # Script exists in both project and booster, merge based on type
+            if [ "$proj_type" == "string" ] && [ "$booster_type" == "string" ]; then
+                if [ "$proj_script_json" == "$booster_script_json" ]; then
                     log "    Scripts are identical strings, keeping project version."
                     merged_script_json="$proj_script_json"
                 else
                     log "    Scripts are different strings, merging into unique array."
                     # Ensure output is valid JSON array
-                    merged_script_json=$(jq -n --argjson p "$proj_script_json" --argjson b "$blue_script_json" '[$p, $b] | unique')
+                    merged_script_json=$(jq -n --argjson p "$proj_script_json" --argjson b "$booster_script_json" '[$p, $b] | unique')
                 fi
-            elif [ "$proj_type" == "array" ] && [ "$blue_type" == "array" ]; then
+            elif [ "$proj_type" == "array" ] && [ "$booster_type" == "array" ]; then
                 log "    Both scripts are arrays, merging uniquely."
-                merged_script_json=$(jq -n --argjson p "$proj_script_json" --argjson b "$blue_script_json" '($p + $b) | unique')
-            elif [ "$proj_type" == "string" ] && [ "$blue_type" == "array" ]; then
+                merged_script_json=$(jq -n --argjson p "$proj_script_json" --argjson b "$booster_script_json" '($p + $b) | unique')
+            elif [ "$proj_type" == "string" ] && [ "$booster_type" == "array" ]; then
                 log "    Project is string, booster is array. Merging uniquely."
-                merged_script_json=$(jq -n --argjson p "$proj_script_json" --argjson b "$blue_script_json" '([$p] + $b) | unique')
-            elif [ "$proj_type" == "array" ] && [ "$blue_type" == "string" ]; then
+                merged_script_json=$(jq -n --argjson p "$proj_script_json" --argjson b "$booster_script_json" '([$p] + $b) | unique')
+            elif [ "$proj_type" == "array" ] && [ "$booster_type" == "string" ]; then
                 log "    Project is array, booster is string. Merging uniquely."
-                merged_script_json=$(jq -n --argjson p "$proj_script_json" --argjson b "$blue_script_json" '($p + [$b]) | unique')
+                merged_script_json=$(jq -n --argjson p "$proj_script_json" --argjson b "$booster_script_json" '($p + [$b]) | unique')
             else
-                # Handle other mismatches (e.g., object vs string) - prefer blueprint? Or keep project? Let's prefer blueprint.
-                log "    Type mismatch ($proj_type vs $blue_type). Using booster version."
-                merged_script_json="$blue_script_json"
+                # Handle other mismatches (e.g., object vs string) - prefer booster? Or keep project? Let's prefer booster.
+                log "    Type mismatch ($proj_type vs $booster_type). Using booster version."
+                merged_script_json="$booster_script_json"
             fi
         fi
 
@@ -327,11 +327,11 @@ function merge_scripts() {
 # --- Function to Update Tool Paths Dynamically ---
 function update_tool_paths() {
     # --- Copy Documentation Directory ---
-    local blueprint_doc_path="${BLUEPRINT_INTERNAL_PATH}/documentation"
-    if [ -d "$blueprint_doc_path" ]; then
-        log "  Copying '$blueprint_doc_path' to 'documentation'..."
+    local booster_doc_path="${BOOSTER_INTERNAL_PATH}/documentation"
+    if [ -d "$booster_doc_path" ]; then
+        log "  Copying '$booster_doc_path' to 'documentation'..."
         # Use standard recursive copy -R
-        cp -R "$blueprint_doc_path/." "documentation" || warn "Failed to copy documentation directory."
+        cp -R "$booster_doc_path/." "documentation" || warn "Failed to copy documentation directory."
     else
         log "  Booster documentation directory not found. Skipping."
     fi
@@ -339,7 +339,7 @@ function update_tool_paths() {
     # --- Copy Config Files ---
     local cq_files=("rector.php" "phpstan.neon.dist" "ecs.php" "psalm.xml")
     for file in "${cq_files[@]}"; do
-        local src_path="${BLUEPRINT_INTERNAL_PATH}/${file}"
+        local src_path="${BOOSTER_INTERNAL_PATH}/${file}"
         if [ -f "$src_path" ]; then
             cp "$src_path" . || warn "Failed to copy '$src_path'."
         else
@@ -359,7 +359,7 @@ function update_tool_paths() {
         -name "*.php" \
         -not -path "./vendor/*" \
         -not -path "./node_modules/*" \
-        -not -path "./php-blueprint/*" \
+        -not -path "./php-booster/*" \
         -not -path "./.ddev/*" \
         -exec dirname {} \; | sort -u | grep -v ^.$ | cut -d '/' -f2 | sort -u >"$php_dirs_file" || {
         warn "find command failed or produced unexpected output while searching for PHP directories."
@@ -495,7 +495,7 @@ function update_tool_paths() {
 function add_code_quality_tools() {
     log "Adding code quality tools..."
     local project_composer="composer.json"
-    local blueprint_composer="${BLUEPRINT_INTERNAL_PATH}/composer.json"
+    local booster_composer="${BOOSTER_INTERNAL_PATH}/composer.json"
 
     # --- Update composer.json ---
     log "Updating composer.json..."
@@ -503,8 +503,8 @@ function add_code_quality_tools() {
         warn "'$project_composer' not found. Cannot merge scripts or add dependencies. Consider copying booster composer.json first."
         return
     fi
-    if [ ! -f "$blueprint_composer" ]; then
-        warn "Blueprint composer.json '$blueprint_composer' not found. Skipping composer update."
+    if [ ! -f "$booster_composer" ]; then
+        warn "Blueprint composer.json '$booster_composer' not found. Skipping composer update."
         return
     fi
 
@@ -521,10 +521,10 @@ function add_code_quality_tools() {
 
     # Install production dependencies
     # Check if require section exists and is an object
-    if jq -e '.require | type == "object"' "$blueprint_composer" >/dev/null; then
-        local prod_deps=$(jq -r '.require | keys_unsorted | .[]' "$blueprint_composer")
+    if jq -e '.require | type == "object"' "$booster_composer" >/dev/null; then
+        local prod_deps=$(jq -r '.require | keys_unsorted | .[]' "$booster_composer")
         if [ -n "$prod_deps" ]; then
-            log "Adding composer 'require' dependencies from blueprint..."
+            log "Adding composer 'require' dependencies from booster..."
             # Pass dependencies line by line to xargs
             # Use --no-scripts during require to prevent hooks from running prematurely
             echo "$prod_deps" | xargs "${composer_cmd[@]}" require --no-scripts || warn "Failed to add some production dependencies (require step)."
@@ -539,10 +539,10 @@ function add_code_quality_tools() {
 
     # Install dev dependencies
     # Check if require-dev section exists and is an object
-    if jq -e '.["require-dev"] | type == "object"' "$blueprint_composer" >/dev/null; then
-        local dev_deps=$(jq -r '.["require-dev"] | keys_unsorted | .[]' "$blueprint_composer")
+    if jq -e '.["require-dev"] | type == "object"' "$booster_composer" >/dev/null; then
+        local dev_deps=$(jq -r '.["require-dev"] | keys_unsorted | .[]' "$booster_composer")
         if [ -n "$dev_deps" ]; then
-            log "Adding composer 'require-dev' dependencies from blueprint..."
+            log "Adding composer 'require-dev' dependencies from booster..."
             # Pass dependencies line by line to xargs
             # Run composer require --dev normally, allowing its scripts to run *after* install/update
             echo "$dev_deps" | xargs "${composer_cmd[@]}" require --dev || warn "Failed to install/update some dev dependencies. Check composer output."
@@ -559,18 +559,18 @@ function add_code_quality_tools() {
 function update_readme() {
     log "Updating README.md..."
     local project_readme="README.md"
-    local blueprint_snippet="${BLUEPRINT_INTERNAL_PATH}/README_SNIPPET.md"
+    local booster_snippet="${BOOSTER_INTERNAL_PATH}/README_SNIPPET.md"
 
     if [ -f "$project_readme" ]; then
         log "'$project_readme' already exists. Skipping creation."
         # Future enhancement: Append snippet if a placeholder exists?
     else
-        if [ -f "$blueprint_snippet" ]; then
+        if [ -f "$booster_snippet" ]; then
             warn "'$project_readme' not found. Creating new README.md from booster snippet..."
-            cp "$blueprint_snippet" "$project_readme" || error "Failed to copy README snippet."
-            success "New README.md created with content from '$blueprint_snippet'."
+            cp "$booster_snippet" "$project_readme" || error "Failed to copy README snippet."
+            success "New README.md created with content from '$booster_snippet'."
         else
-            warn "'$project_readme' not found, and booster snippet '$blueprint_snippet' also not found. Skipping."
+            warn "'$project_readme' not found, and booster snippet '$booster_snippet' also not found. Skipping."
         fi
     fi
 }
@@ -578,10 +578,10 @@ function update_readme() {
 function update_gitignore() {
     log "Updating .gitignore..."
     local project_gitignore=".gitignore"
-    local blueprint_gitignore="${BLUEPRINT_INTERNAL_PATH}/.gitignore"
+    local booster_gitignore="${BOOSTER_INTERNAL_PATH}/.gitignore"
 
-    if [ ! -f "$blueprint_gitignore" ]; then
-        warn "Blueprint .gitignore '$blueprint_gitignore' not found. Skipping update."
+    if [ ! -f "$booster_gitignore" ]; then
+        warn "Blueprint .gitignore '$booster_gitignore' not found. Skipping update."
         return
     fi
 
@@ -618,13 +618,13 @@ function update_gitignore() {
                 [ -s "$project_gitignore" ] && echo >>"$project_gitignore"
                 # Add spacing newline and header
                 echo "" >>"$project_gitignore" # Ensure separation
-                echo "# --- Added by php-blueprint integration ---" >>"$project_gitignore"
+                echo "# --- Added by php-booster integration ---" >>"$project_gitignore"
                 log "  Added header to .gitignore"
             fi
             echo "$line" >>"$project_gitignore"
             added_count=$((added_count + 1))
         fi
-    done <"$blueprint_gitignore"
+    done <"$booster_gitignore"
 
     if [ $added_count -gt 0 ]; then
         success ".gitignore updated with $added_count new entries."
@@ -637,13 +637,13 @@ function cleanup_silent() {
     # Used for cleanup during error exit, without verbose logging
     # Need to declare vars used in merge_scripts locally or pass them if needed,
     # but rm -f is safe even if vars are empty/undefined in this context.
-    rm -rf "$BLUEPRINT_TARGET_DIR"
+    rm -rf "$BOOSTER_TARGET_DIR"
     rm -f composer.json.merged.tmp composer.json.merged.tmp.next hooks.yaml.tmp .ddev/config.yaml.tmp package.json.tmp # Clean up temp files
 }
 
 function cleanup() {
     log "Cleaning up temporary files..."
-    rm -rf "$BLUEPRINT_TARGET_DIR"
+    rm -rf "$BOOSTER_TARGET_DIR"
     # Remove potential temp files just in case they weren't cleaned up
     rm -f composer.json.merged.tmp composer.json.merged.tmp.next hooks.yaml.tmp .ddev/config.yaml.tmp package.json.tmp
     success "Temporary files cleaned up."
@@ -663,7 +663,7 @@ function main() {
     done
     shift $((OPTIND - 1))
 
-    log "Starting php-blueprint integration..."
+    log "Starting php-booster integration..."
     IS_DDEV_PROJECT=$(is_ddev_project)
 
     if [ $IS_DDEV_PROJECT -eq 1 ]; then
@@ -678,7 +678,7 @@ function main() {
     fi
 
     check_dependencies
-    download_php_blueprint
+    download_php_booster
 
     copy_files
     update_package_json # Merges package.json sections
