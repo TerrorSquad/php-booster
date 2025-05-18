@@ -9,7 +9,7 @@ Follow these steps to integrate the PHP Development Booster into your existing P
 2. **Run the Integration Script**:
    Execute the following command in your project root to integrate the booster:
    ```bash
-   curl -sSL https://raw.githubusercontent.com/TerrorSquad/php-blueprint/main/blueprint/integrate_blueprint.sh | bash
+   curl -sSL https://raw.githubusercontent.com/TerrorSquad/php-blueprint/main/booster/integrate_booster.sh | bash
    ```
 
 3. **Complete the Integration**:

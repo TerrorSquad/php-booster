@@ -3,9 +3,9 @@
 # This script is used to integrate the php-booster into your project (potentially DDEV)
 
 # --- Configuration ---
-BOOSTER_REPO_URL="https://github.com/TerrorSquad/php-blueprint.git" # Changed to Git URL
-BOOSTER_TARGET_DIR="php-booster"                                    # Directory to clone into
-BOOSTER_INTERNAL_PATH="${BOOSTER_TARGET_DIR}/booster"               # Actual content is inside 'booster' subdir
+BOOSTER_REPO_URL="https://github.com/TerrorSquad/php-blueprint.git"
+BOOSTER_TARGET_DIR="php-booster"
+BOOSTER_INTERNAL_PATH="${BOOSTER_TARGET_DIR}/booster"
 
 # --- ANSI color codes ---
 GREEN='\033[0;32m'
@@ -93,8 +93,7 @@ function download_php_booster() {
 
     if [ ! -d "$BOOSTER_INTERNAL_PATH" ]; then
         warn "The expected internal structure '$BOOSTER_INTERNAL_PATH' was not found within the cloned repository."
-        # Decide if this is fatal
-        # error "Blueprint content directory '$BOOSTER_INTERNAL_PATH' not found."
+        error "Blueprint content directory '$BOOSTER_INTERNAL_PATH' not found."
     fi
     success "php-booster cloned successfully into '$BOOSTER_TARGET_DIR'."
 }
@@ -383,7 +382,7 @@ function update_tool_paths() {
 
         if [ ! -f "$config_file" ]; then
             log "    File '$config_file' not found. Skipping."
-            return 0 # Not an error if the config file isn't there
+            return 0
         fi
 
         log "    Processing '$config_file'..."
@@ -398,7 +397,7 @@ function update_tool_paths() {
         sed -e "$placeholder_regex r $formatted_dirs_file" "$config_file" >"$tmp_config_file" || {
             warn "sed 'r' command failed for '$config_file'."
             rm -f "$tmp_config_file"
-            return 1 # Signal failure
+            return 1
         }
 
         # Pass 2: Delete the placeholder line from the temp file, overwrite original
@@ -407,7 +406,7 @@ function update_tool_paths() {
             rm -f "$tmp_config_file"
             # Restore original from backup if it exists
             [ -f "${config_file}.bak" ] && mv "${config_file}.bak" "$config_file"
-            return 1 # Signal failure
+            return 1
         }
 
         mv "$tmp_config_file" "$config_file"
@@ -426,10 +425,8 @@ function update_tool_paths() {
         while IFS= read -r dir; do
             printf "        __DIR__ . '/%s',\n" "$dir" >>"$rector_dirs_file"
         done <"$php_dirs_file"
-        # Remove trailing newline potentially added by loop/printf
-        # sed -i '' -e '$a\' is complex; let's assume tools tolerate trailing comma/newline ok
     fi
-    # Replace placeholder
+
     replace_placeholder "$rector_file" "$rector_placeholder_regex" "$rector_dirs_file" || return_code=1
     rm -f "$rector_dirs_file" # Clean up
 
@@ -437,14 +434,14 @@ function update_tool_paths() {
     local ecs_file="ecs.php"
     local ecs_dirs_file="ecs_dirs.txt"
     local ecs_placeholder_regex="/^[[:space:]]*__DIR__ \. '\/DIRECTORY',[[:space:]]*$/"
-    # Create formatted dirs file
+
     rm -f "$ecs_dirs_file" && touch "$ecs_dirs_file"
     if [ -s "$php_dirs_file" ]; then
         while IFS= read -r dir; do
             printf "        __DIR__ . '/%s',\n" "$dir" >>"$ecs_dirs_file"
         done <"$php_dirs_file"
     fi
-    # Replace placeholder
+
     replace_placeholder "$ecs_file" "$ecs_placeholder_regex" "$ecs_dirs_file" || return_code=1
     rm -f "$ecs_dirs_file" # Clean up
 
@@ -452,7 +449,7 @@ function update_tool_paths() {
     local psalm_file="psalm.xml"
     local psalm_dirs_file="psalm_dirs.txt"
     local psalm_placeholder_regex='/^[[:space:]]*<directory name="DIRECTORY" \/>[[:space:]]*$/'
-    # Create formatted dirs file
+
     rm -f "$psalm_dirs_file" && touch "$psalm_dirs_file"
     if [ -s "$php_dirs_file" ]; then
         while IFS= read -r dir; do
@@ -461,7 +458,7 @@ function update_tool_paths() {
             printf '        <directory name="%s" />\n' "$escaped_dir" >>"$psalm_dirs_file"
         done <"$php_dirs_file"
     fi
-    # Replace placeholder
+
     replace_placeholder "$psalm_file" "$psalm_placeholder_regex" "$psalm_dirs_file" || return_code=1
     rm -f "$psalm_dirs_file" # Clean up
 
@@ -469,14 +466,14 @@ function update_tool_paths() {
     local phpstan_file="phpstan.neon.dist"
     local phpstan_dirs_file="phpstan_dirs.txt"
     local phpstan_placeholder_regex='/^[[:space:]]*-[[:space:]]*DIRECTORY[[:space:]]*$/'
-    # Create formatted dirs file
+
     rm -f "$phpstan_dirs_file" && touch "$phpstan_dirs_file"
     if [ -s "$php_dirs_file" ]; then
         while IFS= read -r dir; do
             printf '    - %s\n' "$dir" >>"$phpstan_dirs_file"
         done <"$php_dirs_file"
     fi
-    # Replace placeholder
+
     replace_placeholder "$phpstan_file" "$phpstan_placeholder_regex" "$phpstan_dirs_file" || return_code=1
     rm -f "$phpstan_dirs_file" # Clean up
 
@@ -508,8 +505,7 @@ function add_code_quality_tools() {
         return
     fi
 
-    # Merge scripts using the updated function
-    merge_scripts # This now handles the merging idempotently
+    merge_scripts
 
     # --- Install Composer Dependencies ---
     local composer_cmd
@@ -519,17 +515,11 @@ function add_code_quality_tools() {
         composer_cmd=(composer)
     fi
 
-    # Install production dependencies
-    # Check if require section exists and is an object
     if jq -e '.require | type == "object"' "$booster_composer" >/dev/null; then
         local prod_deps=$(jq -r '.require | keys_unsorted | .[]' "$booster_composer")
         if [ -n "$prod_deps" ]; then
             log "Adding composer 'require' dependencies from booster..."
-            # Pass dependencies line by line to xargs
-            # Use --no-scripts during require to prevent hooks from running prematurely
             echo "$prod_deps" | xargs "${composer_cmd[@]}" require --no-scripts || warn "Failed to add some production dependencies (require step)."
-            # Run update afterwards to ensure scripts run if needed, though maybe not desired here?
-            # "${composer_cmd[@]}" update --lock # Or just rely on the dev require below
         else
             log "No production dependencies found in booster composer.json 'require' section."
         fi
@@ -537,14 +527,10 @@ function add_code_quality_tools() {
         log "No 'require' object found in booster composer.json."
     fi
 
-    # Install dev dependencies
-    # Check if require-dev section exists and is an object
     if jq -e '.["require-dev"] | type == "object"' "$booster_composer" >/dev/null; then
         local dev_deps=$(jq -r '.["require-dev"] | keys_unsorted | .[]' "$booster_composer")
         if [ -n "$dev_deps" ]; then
             log "Adding composer 'require-dev' dependencies from booster..."
-            # Pass dependencies line by line to xargs
-            # Run composer require --dev normally, allowing its scripts to run *after* install/update
             echo "$dev_deps" | xargs "${composer_cmd[@]}" require --dev || warn "Failed to install/update some dev dependencies. Check composer output."
         else
             log "No development dependencies found in booster composer.json 'require-dev' section."
@@ -563,7 +549,6 @@ function update_readme() {
 
     if [ -f "$project_readme" ]; then
         log "'$project_readme' already exists. Skipping creation."
-        # Future enhancement: Append snippet if a placeholder exists?
     else
         if [ -f "$booster_snippet" ]; then
             warn "'$project_readme' not found. Creating new README.md from booster snippet..."
@@ -585,38 +570,34 @@ function update_gitignore() {
         return
     fi
 
-    # Create .gitignore if it doesn't exist
     touch "$project_gitignore"
 
     local added_count=0
-    # Read booster gitignore line by line
+
     while IFS= read -r line || [[ -n "$line" ]]; do
-        # Trim whitespace (optional, depends on desired behavior)
+
         line=$(echo "$line" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
-        # Skip empty lines and comments
+
         if [ -z "$line" ]; then
             continue
         fi
-        # Escape line for grep pattern matching (basic)
-        # local escaped_line=$(sed 's/[^^]/[&]/g; s/\^/\\^/g' <<< "$line")
-        # Using fixed string grep (-F) avoids need for complex escaping
-        # Check if the exact line (or commented out) already exists
+
         if ! grep -q -x -F "$line" "$project_gitignore" && ! grep -q -x -F "# $line" "$project_gitignore" && ! grep -q -x -F "#$line" "$project_gitignore"; then
-            # Check if line starting with / exists if original doesn't start with /
+
             if [[ "$line" != /* ]] && grep -q -x -F "/$line" "$project_gitignore"; then
                 continue
             fi
-            # Check if line without / exists if original starts with /
+
             if [[ "$line" == /* ]] && grep -q -x -F "${line#/}" "$project_gitignore"; then
                 continue
             fi
 
             log "  Adding '$line' to .gitignore"
-            # Add a header if this is the first addition in this run
+
             if [ $added_count -eq 0 ]; then
-                # Add newline before header if file is not empty
+
                 [ -s "$project_gitignore" ] && echo >>"$project_gitignore"
-                # Add spacing newline and header
+
                 echo "" >>"$project_gitignore" # Ensure separation
                 echo "# --- Added by php-booster integration ---" >>"$project_gitignore"
                 log "  Added header to .gitignore"
@@ -634,9 +615,6 @@ function update_gitignore() {
 }
 
 function cleanup_silent() {
-    # Used for cleanup during error exit, without verbose logging
-    # Need to declare vars used in merge_scripts locally or pass them if needed,
-    # but rm -f is safe even if vars are empty/undefined in this context.
     rm -rf "$BOOSTER_TARGET_DIR"
     rm -f composer.json.merged.tmp composer.json.merged.tmp.next hooks.yaml.tmp .ddev/config.yaml.tmp package.json.tmp # Clean up temp files
 }
@@ -644,7 +622,7 @@ function cleanup_silent() {
 function cleanup() {
     log "Cleaning up temporary files..."
     rm -rf "$BOOSTER_TARGET_DIR"
-    # Remove potential temp files just in case they weren't cleaned up
+
     rm -f composer.json.merged.tmp composer.json.merged.tmp.next hooks.yaml.tmp .ddev/config.yaml.tmp package.json.tmp
     success "Temporary files cleaned up."
 }
@@ -652,7 +630,7 @@ function cleanup() {
 # --- Main Execution ---
 
 function main() {
-    # Parse arguments (verbose, cleanup)
+
     while getopts ":vc" opt; do
         case $opt in
         v) VERBOSE=true ;;
@@ -672,7 +650,6 @@ function main() {
         log "Standard PHP project detected (no .ddev directory found)."
     fi
 
-    # Basic check if running from project root
     if [ ! -f "composer.json" ] && [ ! -d ".git" ]; then
         warn "Script might not be running from the project root (composer.json or .git not found). Results may be unexpected."
     fi
@@ -681,14 +658,14 @@ function main() {
     download_php_booster
 
     copy_files
-    update_package_json # Merges package.json sections
+    update_package_json
     update_readme
     update_gitignore
     update_tool_paths
 
     if [ $IS_DDEV_PROJECT -eq 1 ]; then
         log "Updating DDEV files..."
-        # ddev start might fail, ensure it's running by repeating the command max 3 times
+
         local attempts=0
         local max_attempts=3
         while [ $attempts -lt $max_attempts ]; do
@@ -697,12 +674,12 @@ function main() {
             else
                 warn "ddev start failed. Retrying... ($((attempts + 1))/$max_attempts)"
                 ((attempts++))
-                sleep 5 # Wait before retrying
+                sleep 5
             fi
         done
         update_ddev_files
         update_ddev_config
-        ddev restart # Restart DDEV to apply changes
+        ddev restart
     fi
 
     add_code_quality_tools # Merges composer scripts & installs deps

@@ -26,7 +26,7 @@ To integrate the booster into your existing PHP project:
 2. Run the following command to integrate the booster into your project:
 
     ```bash
-    curl -sSL https://raw.githubusercontent.com/TerrorSquad/php-blueprint/main/blueprint/integrate_blueprint.sh | bash
+    curl -sSL https://raw.githubusercontent.com/TerrorSquad/php-blueprint/main/booster/integrate_booster.sh | bash
     ```
 
 3. Follow the instructions on the screen.
