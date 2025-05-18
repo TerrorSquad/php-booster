@@ -1,4 +1,4 @@
-# Blueprint
+# Booster
 
 A curated collection of tools and best practices for PHP development.
 
@@ -10,7 +10,7 @@ A curated collection of tools and best practices for PHP development.
 
 ## Requirements
 
-You can use this blueprint with or without [DDEV](https://ddev.com/).  
+You can use this booster with or without [DDEV](https://ddev.com/).  
 If you wish to use DDEV for local development, please install it by following their [installation instructions](https://ddev.com/).
 
 ## Documentation
@@ -19,11 +19,11 @@ The documentation is available at [https://terrorsquad.github.io/php-blueprint/]
 
 ## Adding to an Existing PHP Project
 
-To integrate the blueprint into your existing PHP project:
+To integrate the booster into your existing PHP project:
 
 1. In your PHP project root, check out a new branch and make sure you have no uncommitted changes.
 
-2. Run the following command to integrate the blueprint into your project:
+2. Run the following command to integrate the booster into your project:
 
     ```bash
     curl -sSL https://raw.githubusercontent.com/TerrorSquad/php-blueprint/main/blueprint/integrate_blueprint.sh | bash

@@ -85,7 +85,7 @@ function download_php_blueprint() {
     rm -rf "$BLUEPRINT_TARGET_DIR" # Remove target dir if it exists
 
     # Clone only the main branch and only the latest commit for speed
-    git clone --depth 1 --branch main "$BLUEPRINT_REPO_URL" "$BLUEPRINT_TARGET_DIR" || error "Failed to clone blueprint repository."
+    git clone --depth 1 --branch main "$BLUEPRINT_REPO_URL" "$BLUEPRINT_TARGET_DIR" || error "Failed to clone booster repository."
 
     if [ ! -d "$BLUEPRINT_TARGET_DIR" ]; then
         error "Target directory '$BLUEPRINT_TARGET_DIR' not found after clone."
@@ -121,7 +121,7 @@ function update_ddev_files() {
             # Copy the source directory *into* the destination directory
             cp -R $src_path/. "$dest_path" || warn "Failed to copy '$src_path'. Check permissions."
         else
-            log "  Blueprint DDEV subdirectory '$subdir' not found at '$src_path'. Skipping."
+            log "  Booster DDEV subdirectory '$subdir' not found at '$src_path'. Skipping."
         fi
     done
     success "ddev files updated."
@@ -143,8 +143,8 @@ function update_ddev_config() {
         return
     fi
 
-    # 1. Extract hooks from blueprint config (handle potential errors)
-    log "  Extracting hooks from blueprint config..."
+    # 1. Extract hooks from booster config (handle potential errors)
+    log "  Extracting hooks from booster config..."
     if ! yq '.hooks' "$blueprint_config" >"$hooks_tmp"; then
         warn "Failed to extract hooks using yq from '$blueprint_config'. Skipping hook merge."
         rm -f "$hooks_tmp"
@@ -186,7 +186,7 @@ function copy_files() {
             # Use standard recursive copy -R. This copies the source item into the dest dir.
             cp -R "$src_path" "${dest_path}" || warn "Failed to copy '$src_path'. Check permissions."
         else
-            log "  Blueprint item '$item' not found at '$src_path'. Skipping."
+            log "  Booster item '$item' not found at '$src_path'. Skipping."
         fi
     done
     success "Common files copied. Verify the copied files and their paths."
@@ -206,11 +206,11 @@ function update_package_json() {
 
     if [ ! -f "$project_pkg" ]; then
         log "'$project_pkg' not found. Copying from blueprint..."
-        cp "$blueprint_pkg" "$project_pkg" || error "Failed to copy blueprint package.json."
+        cp "$blueprint_pkg" "$project_pkg" || error "Failed to copy booster package.json."
         success "package.json copied from blueprint."
     else
         log "'$project_pkg' already exists. Merging scripts, devDependencies, and volta sections..."
-        # Merge using jq: project + blueprint (blueprint overwrites simple keys, merges objects)
+        # Merge using jq: project + booster (blueprint overwrites simple keys, merges objects)
         # This merges top-level objects like scripts, devDependencies, volta
         jq -s '
             .[0] as $proj | .[1] as $blue |
@@ -237,7 +237,7 @@ function update_package_json() {
 # --- Updated merge_scripts Function ---
 function merge_scripts() {
     local COMPOSER1="composer.json"                            # Project composer.json
-    local COMPOSER2="${BLUEPRINT_INTERNAL_PATH}/composer.json" # Blueprint composer.json
+    local COMPOSER2="${BLUEPRINT_INTERNAL_PATH}/composer.json" # Booster composer.json
     local OUTPUT="composer.json.merged.tmp"
 
     # Ensure jq is available
@@ -252,10 +252,10 @@ function merge_scripts() {
     # Create a temporary copy to work on
     cp "$COMPOSER1" "$OUTPUT"
 
-    # Get script keys from blueprint composer.json, handle null/missing scripts section
+    # Get script keys from booster composer.json, handle null/missing scripts section
     # Use jq -e to check exit status if .scripts is null or not an object
     if ! jq -e '(.scripts // {}) | type == "object"' "$COMPOSER2" >/dev/null; then
-        log "No valid 'scripts' object found in blueprint composer.json. Nothing to merge."
+        log "No valid 'scripts' object found in booster composer.json. Nothing to merge."
         rm "$OUTPUT" # Clean up temp file
         return 0
     fi
@@ -271,7 +271,7 @@ function merge_scripts() {
         local proj_type=$(jq -r 'type' <<<"$proj_script_json")
         local blue_type=$(jq -r 'type' <<<"$blue_script_json")
 
-        log "    Project type: $proj_type, Blueprint type: $blue_type"
+        log "    Project type: $proj_type, Booster type: $blue_type"
 
         local merged_script_json
 
@@ -294,14 +294,14 @@ function merge_scripts() {
                 log "    Both scripts are arrays, merging uniquely."
                 merged_script_json=$(jq -n --argjson p "$proj_script_json" --argjson b "$blue_script_json" '($p + $b) | unique')
             elif [ "$proj_type" == "string" ] && [ "$blue_type" == "array" ]; then
-                log "    Project is string, blueprint is array. Merging uniquely."
+                log "    Project is string, booster is array. Merging uniquely."
                 merged_script_json=$(jq -n --argjson p "$proj_script_json" --argjson b "$blue_script_json" '([$p] + $b) | unique')
             elif [ "$proj_type" == "array" ] && [ "$blue_type" == "string" ]; then
-                log "    Project is array, blueprint is string. Merging uniquely."
+                log "    Project is array, booster is string. Merging uniquely."
                 merged_script_json=$(jq -n --argjson p "$proj_script_json" --argjson b "$blue_script_json" '($p + [$b]) | unique')
             else
                 # Handle other mismatches (e.g., object vs string) - prefer blueprint? Or keep project? Let's prefer blueprint.
-                log "    Type mismatch ($proj_type vs $blue_type). Using blueprint version."
+                log "    Type mismatch ($proj_type vs $blue_type). Using booster version."
                 merged_script_json="$blue_script_json"
             fi
         fi
@@ -333,7 +333,7 @@ function update_tool_paths() {
         # Use standard recursive copy -R
         cp -R "$blueprint_doc_path/." "documentation" || warn "Failed to copy documentation directory."
     else
-        log "  Blueprint documentation directory not found. Skipping."
+        log "  Booster documentation directory not found. Skipping."
     fi
 
     # --- Copy Config Files ---
@@ -343,7 +343,7 @@ function update_tool_paths() {
         if [ -f "$src_path" ]; then
             cp "$src_path" . || warn "Failed to copy '$src_path'."
         else
-            log "  Blueprint config '$file' not found. Skipping."
+            log "  Booster config '$file' not found. Skipping."
         fi
     done
 
@@ -500,7 +500,7 @@ function add_code_quality_tools() {
     # --- Update composer.json ---
     log "Updating composer.json..."
     if [ ! -f "$project_composer" ]; then
-        warn "'$project_composer' not found. Cannot merge scripts or add dependencies. Consider copying blueprint composer.json first."
+        warn "'$project_composer' not found. Cannot merge scripts or add dependencies. Consider copying booster composer.json first."
         return
     fi
     if [ ! -f "$blueprint_composer" ]; then
@@ -531,10 +531,10 @@ function add_code_quality_tools() {
             # Run update afterwards to ensure scripts run if needed, though maybe not desired here?
             # "${composer_cmd[@]}" update --lock # Or just rely on the dev require below
         else
-            log "No production dependencies found in blueprint composer.json 'require' section."
+            log "No production dependencies found in booster composer.json 'require' section."
         fi
     else
-        log "No 'require' object found in blueprint composer.json."
+        log "No 'require' object found in booster composer.json."
     fi
 
     # Install dev dependencies
@@ -547,10 +547,10 @@ function add_code_quality_tools() {
             # Run composer require --dev normally, allowing its scripts to run *after* install/update
             echo "$dev_deps" | xargs "${composer_cmd[@]}" require --dev || warn "Failed to install/update some dev dependencies. Check composer output."
         else
-            log "No development dependencies found in blueprint composer.json 'require-dev' section."
+            log "No development dependencies found in booster composer.json 'require-dev' section."
         fi
     else
-        log "No 'require-dev' object found in blueprint composer.json."
+        log "No 'require-dev' object found in booster composer.json."
     fi
 
     success "composer.json updated with merged scripts and new dependencies."
@@ -566,11 +566,11 @@ function update_readme() {
         # Future enhancement: Append snippet if a placeholder exists?
     else
         if [ -f "$blueprint_snippet" ]; then
-            warn "'$project_readme' not found. Creating new README.md from blueprint snippet..."
+            warn "'$project_readme' not found. Creating new README.md from booster snippet..."
             cp "$blueprint_snippet" "$project_readme" || error "Failed to copy README snippet."
             success "New README.md created with content from '$blueprint_snippet'."
         else
-            warn "'$project_readme' not found, and blueprint snippet '$blueprint_snippet' also not found. Skipping."
+            warn "'$project_readme' not found, and booster snippet '$blueprint_snippet' also not found. Skipping."
         fi
     fi
 }
@@ -589,7 +589,7 @@ function update_gitignore() {
     touch "$project_gitignore"
 
     local added_count=0
-    # Read blueprint gitignore line by line
+    # Read booster gitignore line by line
     while IFS= read -r line || [[ -n "$line" ]]; do
         # Trim whitespace (optional, depends on desired behavior)
         line=$(echo "$line" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
@@ -622,7 +622,7 @@ function update_gitignore() {
                 log "  Added header to .gitignore"
             fi
             echo "$line" >>"$project_gitignore"
-            added_count=$((added_count+1))
+            added_count=$((added_count + 1))
         fi
     done <"$blueprint_gitignore"
 
