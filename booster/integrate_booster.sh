@@ -515,11 +515,40 @@ function add_code_quality_tools() {
         composer_cmd=(composer)
     fi
 
+    # Helper function to check if a package is already installed
+    function is_package_present() {
+        local package="$1"
+
+        # Use composer show to check if package is actually installed
+        if [ $IS_DDEV_PROJECT -eq 1 ]; then
+            ddev composer show --installed "$package" >/dev/null 2>&1
+        else
+            composer show --installed "$package" >/dev/null 2>&1
+        fi
+    }
+
+    # Process production dependencies
     if jq -e '.require | type == "object"' "$booster_composer" >/dev/null; then
         local prod_deps=$(jq -r '.require | keys_unsorted | .[]' "$booster_composer")
+        local missing_prod_deps=()
+
         if [ -n "$prod_deps" ]; then
-            log "Adding composer 'require' dependencies from booster..."
-            echo "$prod_deps" | xargs "${composer_cmd[@]}" require --no-scripts || warn "Failed to add some production dependencies (require step)."
+            log "Checking production dependencies..."
+            while IFS= read -r dep; do
+                if ! is_package_present "$dep" "require"; then
+                    log "  Missing production dependency: $dep"
+                    missing_prod_deps+=("$dep")
+                else
+                    log "  Production dependency already present: $dep"
+                fi
+            done <<<"$prod_deps"
+
+            if [ ${#missing_prod_deps[@]} -gt 0 ]; then
+                log "Adding missing composer 'require' dependencies from booster..."
+                "${composer_cmd[@]}" require --no-scripts "${missing_prod_deps[@]}" || warn "Failed to add some production dependencies (require step)."
+            else
+                log "All production dependencies are already present."
+            fi
         else
             log "No production dependencies found in booster composer.json 'require' section."
         fi
@@ -527,11 +556,28 @@ function add_code_quality_tools() {
         log "No 'require' object found in booster composer.json."
     fi
 
+    # Process development dependencies
     if jq -e '.["require-dev"] | type == "object"' "$booster_composer" >/dev/null; then
         local dev_deps=$(jq -r '.["require-dev"] | keys_unsorted | .[]' "$booster_composer")
+        local missing_dev_deps=()
+
         if [ -n "$dev_deps" ]; then
-            log "Adding composer 'require-dev' dependencies from booster..."
-            echo "$dev_deps" | xargs "${composer_cmd[@]}" require --dev || warn "Failed to install/update some dev dependencies. Check composer output."
+            log "Checking development dependencies..."
+            while IFS= read -r dep; do
+                if ! is_package_present "$dep" "require-dev"; then
+                    log "  Missing dev dependency: $dep"
+                    missing_dev_deps+=("$dep")
+                else
+                    log "  Dev dependency already present: $dep"
+                fi
+            done <<<"$dev_deps"
+
+            if [ ${#missing_dev_deps[@]} -gt 0 ]; then
+                log "Adding missing composer 'require-dev' dependencies from booster..."
+                "${composer_cmd[@]}" require --dev "${missing_dev_deps[@]}" || warn "Failed to install/update some dev dependencies. Check composer output."
+            else
+                log "All development dependencies are already present."
+            fi
         else
             log "No development dependencies found in booster composer.json 'require-dev' section."
         fi
