@@ -17,7 +17,7 @@ if ! echo "$current_branch" | grep -qiE "$branch_regex"; then
     exit 1
 fi
 
-bash "$runner" pnpm dlx commitlint --edit "$1"
+bash "$runner" node_modules/.bin/commitlint --edit "$1"
 
 # Extract ticket Id from the branch name
 ticket_id=$(echo "$current_branch" | grep -oE '(PRJ|ERM)-[0-9]+') # Use -oE to extract ticket ID
