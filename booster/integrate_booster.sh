@@ -709,6 +709,9 @@ EOF
     # Use sed to add the content after the location ~ \.php$ line (cross-platform compatible)
     sed -i.bak '/location ~ \\\.php\$ {/r '"$temp_insert_file" "$nginx_config" || warn "Failed to add XDEBUG_TRIGGER to nginx config."
 
+    # Remove #ddev generated comment if it exists
+    sed -i.bak '/# ddev generated/d' "$nginx_config" || warn "Failed to remove DDEV generated comment."
+
     # Clean up temp file
     rm -f "$temp_insert_file"
 
