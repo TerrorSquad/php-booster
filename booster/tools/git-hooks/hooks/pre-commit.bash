@@ -22,9 +22,9 @@ STAGED_FILES=$(git diff --diff-filter=ACMR --cached --name-only -- . ":(exclude)
 # Filter for only PHP files and store in a new variable
 PHP_FILES=""
 for FILE in $STAGED_FILES; do
-  if [[ "$FILE" =~ \.php$ ]]; then
-    PHP_FILES="$PHP_FILES $FILE"
-  fi
+    if [[ "$FILE" =~ \.php$ ]]; then
+        PHP_FILES="$PHP_FILES $FILE"
+    fi
 done
 
 # Trim whitespace from the list of PHP files
@@ -48,8 +48,6 @@ for FILE in $PHP_FILES; do
     fi
 done
 echo "PHP Lint check passed."
-
-
 
 # --- Rector (Run FIRST among modifiers) ---
 if [ -f "$ROOT/vendor/bin/rector" ]; then
@@ -80,9 +78,9 @@ if [ -f "$ROOT/vendor/bin/deptrac" ]; then
         echo "Deptrac failed. Please fix the architectural issues before committing."
         exit $DEPTRAC_RESULT # Usually, deptrac failures should block commits
     fi
-     # Optional: Generate and add deptrac image if configured
-     bash "$runner" composer deptrac:image
-     bash "$runner" git add deptrac.png # Add generated image if applicable
+    # Optional: Generate and add deptrac image if configured
+    bash "$runner" composer deptrac:image
+    bash "$runner" git add deptrac.png # Add generated image if applicable
     echo "Deptrac check passed."
 fi
 
@@ -93,8 +91,8 @@ if [ -f "$ROOT/vendor/bin/phpstan" ]; then
     bash "$runner" "vendor/bin/phpstan" analyse -c phpstan.neon.dist $PHP_FILES
     PHPSTAN_RESULT=$?
     if [ $PHPSTAN_RESULT -ne 0 ]; then
-      echo "PHPStan failed. Please fix the issues before commit."
-      exit $PHPSTAN_RESULT # Exit if errors and bypass is not enabled
+        echo "PHPStan failed. Please fix the issues before commit."
+        exit $PHPSTAN_RESULT # Exit if errors and bypass is not enabled
     fi
     echo "PHPStan check passed."
 fi
@@ -103,7 +101,7 @@ fi
 # Check for psalm first, then psalm.phar
 PSALM_BIN="vendor/bin/psalm"
 if [ ! -f "$ROOT/vendor/bin/psalm" ]; then
-  PSALM_BIN="vendor/bin/psalm.phar"
+    PSALM_BIN="vendor/bin/psalm.phar"
 fi
 
 if [ -f "$PSALM_BIN" ]; then
@@ -113,8 +111,8 @@ if [ -f "$PSALM_BIN" ]; then
     PSALM_RESULT=$?
 
     if [ $PSALM_RESULT -ne 0 ]; then
-      echo "Psalm failed. Please fix the issues before commit."
-      exit $PSALM_RESULT # Exit if errors and bypass is not enabled
+        echo "Psalm failed. Please fix the issues before commit."
+        exit $PSALM_RESULT # Exit if errors and bypass is not enabled
     fi
     echo "Psalm check passed."
 fi
