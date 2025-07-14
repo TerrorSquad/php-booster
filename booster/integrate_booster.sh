@@ -675,7 +675,7 @@ function cleanup() {
 
 function update_nginx_config() {
     log "Updating nginx configuration..."
-    local nginx_config=".ddev/nginx-full/nginx-site.conf"
+    local nginx_config=".ddev/nginx_full/nginx-site.conf"
 
     if [ ! -f "$nginx_config" ]; then
         log "Nginx config file '$nginx_config' not found. Skipping nginx update."
