@@ -41,8 +41,12 @@ def create_xdebug_config():
         os.remove(FILE)
     with open(FILE, "w") as f:
         f.write("[xdebug]\n")
-        # https://xdebug.org/docs/upgrade_guide#changed-xdebug.remote_host
-        f.write("xdebug.client_host=" + get_docker_ip() + "\n")
+        # if macos then use host.docker.internal
+        if os.uname().sysname == "Darwin":
+            f.write("xdebug.client_host=host.docker.internal\n")
+        else:
+            # https://xdebug.org/docs/upgrade_guide#changed-xdebug.remote_host
+            f.write("xdebug.client_host=" + get_docker_ip() + "\n")
 
 
 create_xdebug_config()
