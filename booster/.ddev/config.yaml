@@ -24,6 +24,7 @@ hooks:
     - exec: bash ./tools/git-hooks/setup.sh
     - exec: composer install --prefer-dist --no-progress --no-interaction
     - exec: python3 .phpstorm/update_xdebug_config.py
+    - exec: python3 .ddev/php/post-start.py
 # Key features of DDEV's config.yaml:
 
 # name: <projectname> # Name of the project, automatically provides
