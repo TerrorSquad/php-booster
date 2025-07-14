@@ -627,6 +627,51 @@ function cleanup() {
     success "Temporary files cleaned up."
 }
 
+function update_nginx_config() {
+    log "Updating nginx configuration..."
+    local nginx_config=".ddev/nginx-full/nginx-site.conf"
+
+    if [ ! -f "$nginx_config" ]; then
+        log "Nginx config file '$nginx_config' not found. Skipping nginx update."
+        return
+    fi
+
+    log "Found nginx config file, updating..."
+
+    # Remove the DDEV-generated comment to track the file
+    if grep -q "# ddev generated" "$nginx_config"; then
+        log "  Removing DDEV generated comment to track the file..."
+        sed -i.bak '/# ddev generated/d' "$nginx_config" || warn "Failed to remove DDEV generated comment."
+    fi
+
+    # Check if XDEBUG_TRIGGER is already configured
+    if grep -q "fastcgi_param XDEBUG_TRIGGER" "$nginx_config"; then
+        log "  XDEBUG_TRIGGER already configured in nginx config."
+        return
+    fi
+
+    # Add XDEBUG_TRIGGER to the location ~ \.php$ block
+    log "  Adding XDEBUG_TRIGGER environment variable to php location block..."
+
+    # Create temporary content to insert
+    local temp_insert_file="nginx_insert.tmp"
+    cat >"$temp_insert_file" <<'EOF'
+        # Always trigger Xdebug for web requests (CLI remains unaffected due to start_with_request=trigger)
+        fastcgi_param XDEBUG_TRIGGER 1;
+EOF
+
+    # Use sed to add the content after the location ~ \.php$ line (cross-platform compatible)
+    sed -i.bak '/location ~ \\\.php\$ {/r '"$temp_insert_file" "$nginx_config" || warn "Failed to add XDEBUG_TRIGGER to nginx config."
+
+    # Clean up temp file
+    rm -f "$temp_insert_file"
+
+    # Clean up backup file
+    rm -f "$nginx_config.bak"
+
+    success "Nginx configuration updated with XDEBUG_TRIGGER."
+}
+
 # --- Main Execution ---
 
 function main() {
@@ -679,6 +724,7 @@ function main() {
         done
         update_ddev_files
         update_ddev_config
+        update_nginx_config
         ddev restart
     fi
 
