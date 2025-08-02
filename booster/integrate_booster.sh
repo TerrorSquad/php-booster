@@ -515,15 +515,39 @@ function add_code_quality_tools() {
         composer_cmd=(composer)
     fi
 
-    # Helper function to check if a package is already installed
+    # Helper function to check if a package is already declared in composer.json
     function is_package_present() {
         local package="$1"
+        local section="$2"  # "require" or "require-dev"
 
-        # Use composer show to check if package is actually installed
-        if [ $IS_DDEV_PROJECT -eq 1 ]; then
-            ddev composer show --installed "$package" >/dev/null 2>&1
+        log "    Checking if package '$package' is present in section '$section'..."
+        
+        # Check if package is declared in the appropriate section of composer.json
+        if [ "$section" = "require" ]; then
+            if jq -e --arg pkg "$package" '.require[$pkg] != null' "$project_composer" >/dev/null 2>&1; then
+                log "    Package '$package' found in require section."
+                return 0
+            else
+                log "    Package '$package' NOT found in require section."
+                return 1
+            fi
+        elif [ "$section" = "require-dev" ]; then
+            if jq -e --arg pkg "$package" '.["require-dev"][$pkg] != null' "$project_composer" >/dev/null 2>&1; then
+                log "    Package '$package' found in require-dev section."
+                return 0
+            else
+                log "    Package '$package' NOT found in require-dev section."
+                return 1
+            fi
         else
-            composer show --installed "$package" >/dev/null 2>&1
+            # If no section specified, check both require and require-dev
+            if jq -e --arg pkg "$package" '(.require[$pkg] != null) or (.["require-dev"][$pkg] != null)' "$project_composer" >/dev/null 2>&1; then
+                log "    Package '$package' found in either require or require-dev section."
+                return 0
+            else
+                log "    Package '$package' NOT found in either section."
+                return 1
+            fi
         fi
     }
 
@@ -561,6 +585,8 @@ function add_code_quality_tools() {
         local dev_deps=$(jq -r '.["require-dev"] | keys_unsorted | .[]' "$booster_composer")
         local missing_dev_deps=()
 
+        log "Booster require-dev packages found: $(echo "$dev_deps" | tr '\n' ' ')"
+
         if [ -n "$dev_deps" ]; then
             log "Checking development dependencies..."
             while IFS= read -r dep; do
@@ -571,6 +597,8 @@ function add_code_quality_tools() {
                     log "  Dev dependency already present: $dep"
                 fi
             done <<<"$dev_deps"
+
+            log "Missing dev dependencies to install: ${missing_dev_deps[*]}"
 
             if [ ${#missing_dev_deps[@]} -gt 0 ]; then
                 log "Adding missing composer 'require-dev' dependencies from booster..."
