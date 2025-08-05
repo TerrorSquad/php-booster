@@ -1,6 +1,13 @@
 #!/usr/bin/env bash
 
+# Set -eu
+# -e: Exit immediately if a command exits with a non-zero status.
+# -u: Treat unset variables as an error and exit immediately.
+# This ensures that the script fails fast and avoids silent errors.
+set -eu
+
 ROOT=$(git rev-parse --show-toplevel)
+GIT_DIR=$(git rev-parse --git-dir)
 runner="$ROOT/tools/runner.sh"
 
 # Check if MERGE_HEAD exists

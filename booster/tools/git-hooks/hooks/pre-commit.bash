@@ -1,5 +1,20 @@
 #!/usr/bin/env bash
 
+# Set -eu
+# -e: Exit immediately if a command exits with a non-zero status.
+# -u: Treat unset variables as an error and exit immediately.
+# This ensures that the script fails fast and avoids silent errors.
+set -eu
+
+ROOT=$(git rev-parse --show-toplevel)
+GIT_DIR=$(git rev-parse --git-dir)
+
+# Check if MERGE_HEAD exists
+if [ -f "$GIT_DIR/MERGE_HEAD" ]; then
+    # Skip the hook during a merge
+    exit 0
+fi
+
 ALLOW_ANALYSIS_VAR="BYPASS_PHP_ANALYSIS"
 
 if [ "${!ALLOW_ANALYSIS_VAR}" == "1" ]; then
@@ -7,13 +22,6 @@ if [ "${!ALLOW_ANALYSIS_VAR}" == "1" ]; then
     exit 0
 fi
 
-# Check if MERGE_HEAD exists
-if [ -f "$GIT_DIR/MERGE_HEAD" ]; then
-    echo "Merge in progress. Skipping pre-commit hook."
-    exit 0
-fi
-
-ROOT=$(git rev-parse --show-toplevel)
 runner="$ROOT/tools/runner.sh"
 
 # Filter for only .php files (using grep)

@@ -1,12 +1,20 @@
 #!/usr/bin/env bash
 
+# Set -eu
+# -e: Exit immediately if a command exits with a non-zero status.
+# -u: Treat unset variables as an error and exit immediately.
+# This ensures that the script fails fast and avoids silent errors.
+set -eu
+
+ROOT=$(git rev-parse --show-toplevel)
+GIT_DIR=$(git rev-parse --git-dir)
+
 # Check if MERGE_HEAD exists
 if [ -f "$GIT_DIR/MERGE_HEAD" ]; then
     # Skip the hook during a merge
     exit 0
 fi
 
-ROOT=$(git rev-parse --show-toplevel)
 runner="$ROOT/tools/runner.sh"
 current_branch=$(git symbolic-ref --short HEAD)
 branch_regex='^(feature|fix|chore|story|task|bug|sub-task)/(PRJ|ERM)-[0-9]+(-.+)?$'
