@@ -16,6 +16,11 @@ if [ -f "$GIT_DIR/MERGE_HEAD" ]; then
 fi
 
 ALLOW_ANALYSIS_VAR="BYPASS_PHP_ANALYSIS"
+# Check if the environment variable is set to allow bypassing analysis
+if [ -z "${!ALLOW_ANALYSIS_VAR+x}" ]; then
+    # If the variable is not set, default to 0 (not allowed)
+    export $ALLOW_ANALYSIS_VAR=0
+fi
 
 if [ "${!ALLOW_ANALYSIS_VAR}" == "1" ]; then
     echo "BYPASS_PHP_ANALYSIS is set to 1. Skipping code quality checks."
