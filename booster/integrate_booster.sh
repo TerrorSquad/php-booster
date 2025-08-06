@@ -167,6 +167,18 @@ function update_ddev_config() {
         warn "Failed to set 'xdebug_enabled = true' using yq. Check '$project_config'."
     fi
 
+    # 4. Copy nodejs_version key from booster config
+    log "  Copying 'nodejs_version' from booster config..."
+    nodejs_version=$(yq eval '.nodejs_version' "$booster_config")
+    if ! yq eval ".nodejs_version = \"$nodejs_version\"" -i "$project_config"; then
+        warn "Failed to copy 'nodejs_version' from booster config. Check '$project_config'."
+    fi
+
+    # 5. Ensure corepack_enable is true
+    if ! yq eval '.corepack_enable = true' -i "$project_config"; then
+        warn "Failed to set 'corepack_enable = true' using yq. Check '$project_config'."
+    fi
+
     success "ddev config updated. Ensure the paths in the config are correct."
 }
 
@@ -194,7 +206,7 @@ function update_package_json() {
     log "Updating package.json..."
     local project_pkg="package.json"
     local booster_pkg="${BOOSTER_INTERNAL_PATH}/package.json"
-    local booster_commitlint="${BOOSTER_INTERNAL_PATH}/commitlint.config.js"
+    local booster_commitlint="${BOOSTER_INTERNAL_PATH}/commitlint.config.ts"
     local tmp_pkg="package.json.tmp"
 
     if [ ! -f "$booster_pkg" ]; then
@@ -225,9 +237,9 @@ function update_package_json() {
     # Copy commitlint config regardless
     if [ -f "$booster_commitlint" ]; then
         cp "$booster_commitlint" . || warn "Failed to copy commitlint config."
-        success "commitlint.config.js copied."
+        success "commitlint.config.ts copied."
     else
-        warn "Blueprint 'commitlint.config.js' not found. Skipping copy."
+        warn "Blueprint 'commitlint.config.ts' not found. Skipping copy."
     fi
 }
 
