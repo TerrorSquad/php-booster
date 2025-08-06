@@ -57,7 +57,6 @@ function check_dependencies() {
         command -v ddev >/dev/null 2>&1 || missing_deps+=("ddev")
     else
         command -v composer >/dev/null 2>&1 || missing_deps+=("composer")
-        command -v volta >/dev/null 2>&1 || missing_deps+=("volta")
         command -v pnpm >/dev/null 2>&1 || missing_deps+=("pnpm")
     fi
 
@@ -208,20 +207,19 @@ function update_package_json() {
         cp "$booster_pkg" "$project_pkg" || error "Failed to copy booster package.json."
         success "package.json copied from booster."
     else
-        log "'$project_pkg' already exists. Merging scripts, devDependencies, and volta sections..."
+        log "'$project_pkg' already exists. Merging scripts, devDependencies, and sections..."
         # Merge using jq: project + booster (booster overwrites simple keys, merges objects)
-        # This merges top-level objects like scripts, devDependencies, volta
+        # This merges top-level objects like scripts, devDependencies
         jq -s '
             .[0] as $proj | .[1] as $booster |
             $proj * {
                 scripts: (($proj.scripts // {}) + ($booster.scripts // {})),
-                devDependencies: (($proj.devDependencies // {}) + ($booster.devDependencies // {})),
-                volta: (($proj.volta // {}) + ($booster.volta // {}))
+                devDependencies: (($proj.devDependencies // {}) + ($booster.devDependencies // {}))
             }
             ' "$project_pkg" "$booster_pkg" >"$tmp_pkg" || error "Failed to merge package.json using jq."
 
         mv "$tmp_pkg" "$project_pkg"
-        success "package.json updated with merged scripts, devDependencies, and volta info."
+        success "package.json updated with merged scripts and devDependencies."
     fi
 
     # Copy commitlint config regardless
@@ -521,7 +519,7 @@ function add_code_quality_tools() {
         local section="$2"  # "require" or "require-dev"
 
         log "    Checking if package '$package' is present in section '$section'..."
-        
+
         # Check if package is declared in the appropriate section of composer.json
         if [ "$section" = "require" ]; then
             if jq -e --arg pkg "$package" '.require[$pkg] != null' "$project_composer" >/dev/null 2>&1; then
@@ -807,7 +805,6 @@ function main() {
 
     add_code_quality_tools # Merges composer scripts & installs deps
     success "Integration process completed."
-    log "Ensure you are using Volta for Node.js version management and PNPM as the package manager inside the DDEV container."
 
     if [ $IS_DDEV_PROJECT -eq 1 ]; then
         success "Please run 'ddev restart' to apply the DDEV configuration changes."

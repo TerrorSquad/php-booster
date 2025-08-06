@@ -1,7 +1,0 @@
-#!/bin/bash
-
-## Description: Run volta
-## Usage: volta [command]
-## Example: volta -v
-
-"volta" "$@"

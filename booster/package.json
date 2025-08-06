@@ -16,8 +16,5 @@
     "@redocly/cli": "^2.0.2",
     "husky": "^9.1.7"
   },
-  "volta": {
-    "node": "22.8.0"
-  },
   "packageManager": "pnpm@10.14.0"
 }
