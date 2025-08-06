@@ -27,8 +27,12 @@ fi
 
 bash "$runner" node_modules/.bin/commitlint --edit "$1"
 
-# Extract ticket Id from the branch name
-ticket_id=$(echo "$current_branch" | grep -oE '(PRJ|ERM)-[0-9]+') # Use -oE to extract ticket ID
+ticket_id=$(echo "$current_branch" | grep -oiE '(PRJ|ERM)-[0-9]+' || true) # Use -oE to extract ticket ID
+
+if [ -z "$ticket_id" ]; then
+    echo "ERROR: No ticket ID found in branch name."
+    exit 1
+fi
 
 # Append Ticket ID to Commit Body
 commit_body=$(sed '1d;/^#/d' "$1") # Remove first line and comments
