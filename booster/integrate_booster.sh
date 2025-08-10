@@ -183,23 +183,65 @@ function update_ddev_config() {
 }
 
 function copy_files() {
-    log "Copying common files..."
-    local common_files=(".github" ".vscode" "tools" ".phpstorm" ".editorconfig") # Add other files/dirs if needed
+    log "Copying common files (excluding internal test helpers)..."
 
-    for item in "${common_files[@]}"; do
+    # Copy simple top-level directories wholesale
+    local top_level=(".github" ".vscode" ".phpstorm" ".editorconfig")
+    for item in "${top_level[@]}"; do
         local src_path="${BOOSTER_INTERNAL_PATH}/${item}"
-        # Destination is the current directory, the item will be created inside it
-        local dest_path="."
-
         if [ -e "$src_path" ]; then
-            log "  Copying '$src_path' to '${dest_path}/${item}'..."
-            # Use standard recursive copy -R. This copies the source item into the dest dir.
-            cp -R "$src_path" "${dest_path}" || warn "Failed to copy '$src_path'. Check permissions."
+            log "  Copying '$src_path' -> '$item'"
+            cp -R "$src_path" . || warn "Failed to copy '$src_path'."
         else
-            log "  Booster item '$item' not found at '$src_path'. Skipping."
+            log "  Missing optional item '$item', skipping."
         fi
     done
-    success "Common files copied. Verify the copied files and their paths."
+
+    # Copy selected tool scripts instead of entire tools directory
+    local tools_src="${BOOSTER_INTERNAL_PATH}/tools"
+    if [ -d "$tools_src" ]; then
+        mkdir -p tools/git-hooks/hooks
+        # List of tool files to copy (public runtime helpers only)
+        local tool_files=(
+            "runner.sh"
+            "commit-utils.js"
+            "validate-branch.sh"
+        )
+        for f in "${tool_files[@]}"; do
+            if [ -f "$tools_src/$f" ]; then
+                log "  Copying tool '$f'"
+                cp "$tools_src/$f" tools/
+            else
+                warn "  Expected tool file missing: $f"
+            fi
+        done
+        # Git hook scripts (bash variants only)
+        local hook_dir="$tools_src/git-hooks/hooks"
+        if [ -d "$hook_dir" ]; then
+            for hook in commit-msg.bash pre-commit.bash pre-push.bash; do
+                if [ -f "$hook_dir/$hook" ]; then
+                    cp "$hook_dir/$hook" tools/git-hooks/hooks/
+                    # Also provide executable shorter names without .bash if desired
+                    local short_name=${hook%.bash}
+                    cp "$hook_dir/$hook" "tools/git-hooks/hooks/$short_name" 2>/dev/null || true
+                fi
+            done
+        else
+            warn "  Hook directory not found in booster; skipping hooks copy."
+        fi
+    else
+        warn "  Booster tools directory not found; skipping tools copy."
+    fi
+
+    # Copy validate-branch-name config (needed by hooks & scripts)
+    local branch_cfg="${BOOSTER_INTERNAL_PATH}/validate-branch-name.config.cjs"
+    if [ -f "$branch_cfg" ]; then
+        cp "$branch_cfg" . || warn "Failed to copy validate-branch-name.config.cjs"
+    else
+        warn "validate-branch-name.config.cjs missing in booster."
+    fi
+
+    success "Common files copied (tools filtered to runtime essentials)."
 }
 
 function update_package_json() {
@@ -268,17 +310,22 @@ function merge_scripts() {
         rm "$OUTPUT" # Clean up temp file
         return 0
     fi
-    local booster_keys=$(jq -r '.scripts | keys_unsorted | .[]' "$COMPOSER2")
+    local booster_keys
+    booster_keys=$(jq -r '.scripts | keys_unsorted | .[]' "$COMPOSER2")
 
     # Iterate over each script key from the booster
     echo "$booster_keys" | while IFS= read -r key; do
         log "  Processing script key: $key"
 
         # Get values and types using jq
-        local proj_script_json=$(jq --arg key "$key" '(.scripts // {})[$key]' "$OUTPUT")
-        local booster_script_json=$(jq --arg key "$key" '.scripts[$key]' "$COMPOSER2") # Assumes .scripts exists from check above
-        local proj_type=$(jq -r 'type' <<<"$proj_script_json")
-        local booster_type=$(jq -r 'type' <<<"$booster_script_json")
+    local proj_script_json
+    proj_script_json=$(jq --arg key "$key" '(.scripts // {})[$key]' "$OUTPUT")
+    local booster_script_json
+    booster_script_json=$(jq --arg key "$key" '.scripts[$key]' "$COMPOSER2") # Assumes .scripts exists from check above
+    local proj_type
+    proj_type=$(jq -r 'type' <<<"$proj_script_json")
+    local booster_type
+    booster_type=$(jq -r 'type' <<<"$booster_script_json")
 
         log "    Project type: $proj_type, Booster type: $booster_type"
 
@@ -464,7 +511,8 @@ function update_tool_paths() {
     if [ -s "$php_dirs_file" ]; then
         while IFS= read -r dir; do
             # Basic XML escaping for dir name (only & and < are strictly needed here, but > and " are good practice)
-            local escaped_dir=$(echo "$dir" | sed -e 's/&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g' -e 's/"/\&quot;/g')
+            local escaped_dir
+            escaped_dir=$(echo "$dir" | sed -e 's/&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g' -e 's/"/\&quot;/g')
             printf '        <directory name="%s" />\n' "$escaped_dir" >>"$psalm_dirs_file"
         done <"$php_dirs_file"
     fi
@@ -563,7 +611,8 @@ function add_code_quality_tools() {
 
     # Process production dependencies
     if jq -e '.require | type == "object"' "$booster_composer" >/dev/null; then
-        local prod_deps=$(jq -r '.require | keys_unsorted | .[]' "$booster_composer")
+    local prod_deps
+    prod_deps=$(jq -r '.require | keys_unsorted | .[]' "$booster_composer")
         local missing_prod_deps=()
 
         if [ -n "$prod_deps" ]; then
@@ -592,7 +641,8 @@ function add_code_quality_tools() {
 
     # Process development dependencies
     if jq -e '.["require-dev"] | type == "object"' "$booster_composer" >/dev/null; then
-        local dev_deps=$(jq -r '.["require-dev"] | keys_unsorted | .[]' "$booster_composer")
+    local dev_deps
+    dev_deps=$(jq -r '.["require-dev"] | keys_unsorted | .[]' "$booster_composer")
         local missing_dev_deps=()
 
         log "Booster require-dev packages found: $(echo "$dev_deps" | tr '\n' ' ')"
