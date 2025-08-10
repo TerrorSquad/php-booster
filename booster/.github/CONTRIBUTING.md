@@ -9,6 +9,10 @@ contribution.
   - [Initial Setup](#initial-setup)
   - [Contributing](#contributing)
   - [Branch Naming](#branch-naming)
+  - [Developer Tooling](#developer-tooling)
+  - [Scripts](#scripts)
+  - [Environment Variables](#environment-variables)
+  - [Hook Footers](#hook-footers)
   - [Commit Messages](#commit-messages)
   - [Tools We Use](#tools-we-use)
     - [Required Visual Studio Code Extensions](#required-visual-studio-code-extensions)
@@ -39,18 +43,24 @@ clean and readable.
 
 ### Branch Naming
 
-Branches must be named in the following format:
+Enforced automatically via `validate-branch-name` (see `validate-branch-name.config.cjs`).
 
-`<type>/<prefix>-<ticket_number>-<description>`
+Format:
+```
+<type>/[<ticket-id>-]<description>
+```
+Where:
+* `type` ∈ `feature|fix|chore|story|task|bug|sub-task`
+* Optional `ticket-id` matches `(PRJ|ERM)-<number>` and when present must be followed by a dash and description parts
+* Description: alphanumeric segments separated by single dashes (no leading/trailing/consecutive dashes)
+* Skipped branches (not validated): `wip`, `main`, `master`, `develop/test`, `develop/host1`, `develop/host2`
 
-Where the prefix can be either `PRJ` (for JIRA tickets) or `ERM` (for Easy RedMine tickets).
+Examples:
+* `feature/PRJ-1234-add-login-feature`
+* `fix/ERM-5678-correct-auth-bug`
+* `chore/update-dependencies`
 
-#### Examples:
-- `feature/PRJ-1234-add-login-feature`
-- `fix/ERM-5678-correct-auth-bug`
-- `chore/PRJ-9101-update-dependencies`
-
-This naming convention ensures branches are easily identifiable and traceable to their corresponding tasks or issues.
+If the ticket pattern is enabled in config and you use a ticket prefix, it must include the number (e.g. `PRJ-123-...`).
 
 ### Commits and commit messages
 
@@ -96,7 +106,54 @@ Each commit message should adhere to the following format:
 - `chore: update dependencies`
 - `docs: improve installation instructions`
 
-Commitlint will automatically append the ticket ID to the commit message `footer`. Focus on the title and optionally the body.
+Commitlint plus the `commit-msg` hook will append the ticket footer automatically (see Hook Footers). Focus on the title and optional body.
+
+### Developer Tooling
+
+Git hooks (managed via Husky) enforce naming, formatting and static analysis:
+* `commit-msg`: branch validation, commitlint, ticket footer insertion
+* `pre-commit`: PHP lint, Rector, ECS, Deptrac, PHPStan, Psalm (auto-fix where possible)
+* `pre-push`: deptrac, tests, API spec & HTML doc generation (conditional)
+
+### Scripts
+
+| Script | Purpose |
+|--------|---------|
+| `pnpm validate:branch` | Validate current (or specified) branch name. |
+| `pnpm hooks:test` | Self-test `commit-msg` hook (footer behavior). |
+
+### Environment Variables
+
+| Variable | Effect |
+|----------|--------|
+| `BYPASS_PHP_ANALYSIS=1` | Skips PHP static analysis in `pre-commit` (temporary/emergency). |
+
+### Hook Footers
+
+If a ticket is required & detected, the hook appends a footer:
+```
+Closes: PRJ-123
+```
+Footer label is configurable via `commitFooterLabel` in `validate-branch-name.config.cjs`. Valid characters: alphanumeric, `_`, `-` (must start with a letter). Default: `Closes`.
+
+### Configuration Reference (`validate-branch-name.config.cjs`)
+
+| Key | Description |
+|-----|-------------|
+| `types` | Allowed branch type prefixes. |
+| `ticketIdPrefix` | Alternation of allowed ticket prefixes (e.g. `PRJ|ERM`). |
+| `ticketNumberPattern` | Numeric pattern for ticket IDs. |
+| `namePattern` | Pattern for the descriptive part. |
+| `skipped` | Branch names bypassing validation. |
+| `commitFooterLabel` | Footer label appended with ticket ID. |
+
+### Troubleshooting
+
+| Issue | Resolution |
+|-------|------------|
+| Branch rejected | Run `pnpm validate:branch` and adjust name. |
+| Missing footer | Ensure branch has valid ticket segment & config has prefixes. |
+| Slow pre-commit | Temporarily export `BYPASS_PHP_ANALYSIS=1` (avoid committing with unchecked code routinely). |
 
 ## Tools We Use
 

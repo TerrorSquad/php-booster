@@ -15,7 +15,8 @@ If you wish to use DDEV for local development, please install it by following th
 
 ## Documentation
 
-The documentation is available at [https://terrorsquad.github.io/php-blueprint/](https://terrorsquad.github.io/php-blueprint/)
+- Site: [https://terrorsquad.github.io/php-blueprint/](https://terrorsquad.github.io/php-blueprint/)
+- Copilot repository guidance: [.github/copilot-instructions.md](./.github/copilot-instructions.md)
 
 ## Adding to an Existing PHP Project
 
