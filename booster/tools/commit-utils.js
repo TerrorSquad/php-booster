@@ -1,81 +1,143 @@
 #!/usr/bin/env node
-// Usage:
-//   node commit-utils.js --need-ticket        -> prints 'yes' or 'no'
-//   node commit-utils.js --footer-label       -> prints footer label (e.g. Closes)
-//   node commit-utils.js --extract-ticket <branch-name> -> prints ticket ID (exit 0) or exits 1 if not found
-//   node commit-utils.js                      -> legacy 2-line NEED_TICKET / FOOTER_LABEL output
-//
-// Exit codes:
-//   0 success / (for --extract-ticket: ticket found OR ticket not required by config)
-//   1 generic failure (including ticket required but not found)
-//   2 usage / flag errors
-//
-// Notes:
-// - Works in both CJS and ESM contexts by dynamically creating require if needed.
-// - Ticket extraction is only enforced if both ticketIdPrefix and ticketNumberPattern are present in config.
 
-(async () => {
-  try {
-    let _require = (typeof require !== 'undefined') ? require : null;
-    if (!_require) {
-      const { createRequire } = await import('module');
-      _require = createRequire(import.meta.url);
+/**
+ * Commit Utilities - Helper script for Git hooks
+ * 
+ * Usage:
+ *   node commit-utils.js --need-ticket              -> prints 'yes' or 'no'
+ *   node commit-utils.js --footer-label             -> prints footer label (e.g. 'Closes')
+ *   node commit-utils.js --extract-ticket <branch>  -> prints ticket ID or exits with error
+
+ *
+ * Exit codes:
+ *   0 - Success (for --extract-ticket: ticket found OR ticket not required)
+ *   1 - Failure (including ticket required but not found)
+ *   2 - Usage/argument errors
+ *
+ * Features:
+ *   - Works in both CJS and ESM contexts by dynamically creating require
+ *   - Ticket extraction enforced only if both ticketIdPrefix and ticketNumberPattern exist
+ *   - Safe footer label sanitization with fallback to 'Closes'
+ */
+
+// --- Configuration Loading ---
+async function loadConfig() {
+    try {
+        let _require = (typeof require !== 'undefined') ? require : null;
+        if (!_require) {
+            const { createRequire } = await import('module');
+            _require = createRequire(import.meta.url);
+        }
+
+        const mod = _require('../validate-branch-name.config.cjs');
+        return mod.config || mod.patterns || mod;
+    } catch (error) {
+        throw new Error(`Failed to load branch validation config: ${error.message}`);
     }
+}
 
-    const mod = _require('../validate-branch-name.config.cjs');
-    const cfg = mod.config || mod.patterns || mod;
-
+// --- Configuration Processing ---
+function processConfig(cfg) {
     const needTicket = !!(cfg.ticketIdPrefix && cfg.ticketNumberPattern);
+    
     let footerLabel = (cfg.commitFooterLabel || 'Closes').toString().trim();
-    if (!/^[A-Za-z][A-Za-z0-9_-]*$/.test(footerLabel)) footerLabel = 'Closes';
-    if (footerLabel.includes('=') || footerLabel.includes('\n')) footerLabel = 'Closes';
-
-    const [,, arg1, arg2] = process.argv;
-
-    switch (arg1) {
-      case '--need-ticket': {
-        process.stdout.write(needTicket ? 'yes' : 'no');
-        return; }
-      case '--footer-label': {
-        process.stdout.write(footerLabel);
-        return; }
-      case '--extract-ticket': {
-        const branchName = arg2;
-        if (!branchName) {
-          process.stderr.write('Missing <branch-name> for --extract-ticket\n');
-          process.exit(2);
-        }
-        if (!needTicket) {
-          // Ticket not mandated: succeed silently (previous behavior was exit 0)
-          return;
-        }
-        const prefixPattern = cfg.ticketIdPrefix;
-        const numberPattern = cfg.ticketNumberPattern;
-        try {
-          const ticketRegex = new RegExp(`((?:${prefixPattern})-${numberPattern})`, 'i');
-          const match = branchName.match(ticketRegex);
-          if (match) {
-            process.stdout.write(match[1]);
-            return; // exit 0
-          } else {
-            process.exit(1); // required but not found
-          }
-        } catch (rxErr) {
-          process.stderr.write(`Ticket regex error: ${rxErr && rxErr.message}\n`);
-          process.exit(1);
-        }
-        return; }
-      case undefined: {
-        // Legacy output mode
-        process.stdout.write(`NEED_TICKET=${needTicket ? 'yes' : 'no'}\n`);
-        process.stdout.write(`FOOTER_LABEL=${footerLabel}\n`);
-        return; }
-      default: {
-        process.stderr.write(`Unknown flag: ${arg1}\n`);
-        process.exit(2); }
+    
+    // Sanitize footer label - must be valid identifier, no special chars
+    if (!/^[A-Za-z][A-Za-z0-9_-]*$/.test(footerLabel)) {
+        footerLabel = 'Closes';
     }
-  } catch (e) {
-    process.stderr.write(`commit-utils error: ${e && e.message}\n`);
+    if (footerLabel.includes('=') || footerLabel.includes('\n')) {
+        footerLabel = 'Closes';
+    }
+    
+    return { needTicket, footerLabel, config: cfg };
+}
+
+// --- Command Handlers ---
+function handleNeedTicket(needTicket) {
+    process.stdout.write(needTicket ? 'yes' : 'no');
+}
+
+function handleFooterLabel(footerLabel) {
+    process.stdout.write(footerLabel);
+}
+
+function handleExtractTicket(branchName, { needTicket, config }) {
+    if (!branchName) {
+        process.stderr.write('Missing <branch-name> for --extract-ticket\n');
+        process.exit(2);
+    }
+    
+    if (!needTicket) {
+        // Ticket not mandated: succeed silently for backward compatibility
+        return;
+    }
+    
+    const { ticketIdPrefix, ticketNumberPattern } = config;
+    
+    try {
+        const ticketRegex = new RegExp(`((?:${ticketIdPrefix})-${ticketNumberPattern})`, 'i');
+        const match = branchName.match(ticketRegex);
+        
+        if (match) {
+            process.stdout.write(match[1]);
+        } else {
+            process.exit(1); // Required but not found
+        }
+    } catch (regexError) {
+        process.stderr.write(`Ticket regex error: ${regexError.message}\n`);
+        process.exit(1);
+    }
+}
+
+// --- Argument Processing ---
+function parseArguments() {
+    const [,, command, argument] = process.argv;
+    
+    if (!command) {
+        process.stderr.write('Missing command. Use --need-ticket, --footer-label, or --extract-ticket <branch>\n');
+        process.exit(2);
+    }
+    
+    return {
+        command,
+        argument
+    };
+}
+
+// --- Main Execution ---
+async function main() {
+    try {
+        const config = await loadConfig();
+        const { needTicket, footerLabel, config: rawConfig } = processConfig(config);
+        const { command, argument } = parseArguments();
+        
+        switch (command) {
+            case '--need-ticket':
+                handleNeedTicket(needTicket);
+                break;
+                
+            case '--footer-label':
+                handleFooterLabel(footerLabel);
+                break;
+                
+            case '--extract-ticket':
+                handleExtractTicket(argument, { needTicket, config: rawConfig });
+                break;
+                
+            default:
+                process.stderr.write(`Unknown command: ${command}\n`);
+                process.stderr.write('Use --need-ticket, --footer-label, or --extract-ticket <branch>\n');
+                process.exit(2);
+        }
+    } catch (error) {
+        process.stderr.write(`commit-utils error: ${error.message}\n`);
+        process.exit(1);
+    }
+}
+
+// Execute main function
+main().catch((error) => {
+    process.stderr.write(`Unexpected error: ${error.message}\n`);
     process.exit(1);
-  }
-})();
+});

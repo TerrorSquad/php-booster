@@ -24,13 +24,11 @@ fi
 branch=$(git symbolic-ref --short HEAD 2>/dev/null || echo "unknown")
 echo "Running hook self-test on current branch: $branch"
 
-tmp_msg=$(mktemp)
-trap 'rm -f "$tmp_msg"' EXIT
-printf 'chore: hook self-test' >"$tmp_msg"
+branch=$(git symbolic-ref --short HEAD 2>/dev/null || echo "unknown")
+echo "Running hook self-test on current branch: $branch"
 
 need_ticket=$(node "$util_js" --need-ticket 2>/dev/null || echo no)
 footer_label=$(node "$util_js" --footer-label 2>/dev/null || echo Closes)
-
 ticket_id=""
 if [ "$need_ticket" = "yes" ]; then
   ticket_id=$(node "$util_js" --extract-ticket "$branch" 2>/dev/null || true)
@@ -38,6 +36,17 @@ if [ "$need_ticket" = "yes" ]; then
     echo "NOTE: Branch requires ticket but none extracted; expecting hook failure." >&2
   fi
 fi
+
+echo "Hook location: $hook"
+echo "Need ticket: $need_ticket"
+echo "Footer label: $footer_label"
+echo "Ticket ID: $ticket_id"
+
+# Create and test with temporary commit message
+tmp_msg="$ROOT/.git/COMMIT_TEST_MSG"
+echo 'chore: hook self-test' > "$tmp_msg"
+
+
 
 set +e
 bash "$hook" "$tmp_msg"
@@ -76,4 +85,6 @@ else
   echo "✔ Hook passed (ticket not required)"
 fi
 
+# Clean up test file
+rm -f "$tmp_msg"
 exit 0

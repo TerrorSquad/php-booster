@@ -3,58 +3,70 @@
 # Runner script that executes commands either in a DDEV container or directly on the host
 # Automatically detects the environment and routes commands appropriately
 
-set -euo pipefail # Exit on error, undefined variables, and pipe failures
+set -euo pipefail
+IFS=$'\n\t'
 
-# Get the root directory of the git repository
-ROOT_DIR=$(git rev-parse --show-toplevel)
-
-# Check if DDEV is available by testing if .ddev directory exists
-# Returns true if DDEV is available, false otherwise
-DDEV_AVAILABLE=false
-if [ -d "$ROOT_DIR/.ddev" ]; then
-  DDEV_AVAILABLE=true
-fi
-
-#
-# Main execution function that routes commands based on environment
-#
-function run_command() {
-  if [ "$DDEV_AVAILABLE" = false ]; then
-    # DDEV not available, run command directly on host
-    execute_command_directly "$@"
-  else
-    # DDEV available, run command in container
-    execute_command_in_ddev "$@"
-  fi
+# --- Environment Setup ---
+setup_environment() {
+    local root_dir
+    root_dir=$(git rev-parse --show-toplevel)
+    readonly ROOT_DIR="$root_dir"
+    readonly DDEV_CONFIG="$ROOT_DIR/.ddev/config.yaml"
+    
+    local is_ddev
+    is_ddev=$([ -d "$ROOT_DIR/.ddev" ] && echo true || echo false)
+    readonly IS_DDEV_PROJECT="$is_ddev"
 }
 
-#
-# Execute command directly on the host system
-#
-function execute_command_directly() {
-  "$@"
+# --- Environment Detection ---
+is_inside_ddev_container() {
+    if [ "$IS_DDEV_PROJECT" = "false" ]; then
+        return 1
+    fi
+    
+    local project_name current_hostname
+    
+    # Extract project name from DDEV configuration
+    if [ ! -f "$DDEV_CONFIG" ]; then
+        return 1
+    fi
+    
+    project_name=$(grep "name: " "$DDEV_CONFIG" | head -1 | cut -f 2 -d ' ' 2>/dev/null || echo "")
+    current_hostname=$(hostname 2>/dev/null || echo "")
+    
+    # Check if we're already inside the DDEV web container
+    [ "$current_hostname" = "${project_name}-web" ]
 }
 
-#
-# Execute command in DDEV container, handling both inside and outside container scenarios
-#
-function execute_command_in_ddev() {
-  local project_name
-  local current_hostname
-
-  # Extract project name from DDEV configuration
-  project_name=$(grep "name: " "$ROOT_DIR/.ddev/config.yaml" | head -1 | cut -f 2 -d ' ')
-  current_hostname=$(hostname)
-
-  # Check if we're already inside the DDEV web container
-  if [ "$current_hostname" == "${project_name}-web" ]; then
-    # Already inside container, execute directly
+# --- Command Execution ---
+execute_command_directly() {
     "$@"
-  else
-    # Outside container, use ddev exec to run command inside
-    ddev exec "$@"
-  fi
 }
 
-# Execute the main function with all command line arguments
-run_command "$@"
+execute_command_in_ddev() {
+    if is_inside_ddev_container; then
+        # Already inside container, execute directly
+        execute_command_directly "$@"
+    else
+        # Outside container, use ddev exec to run command inside
+        ddev exec "$@"
+    fi
+}
+
+run_command() {
+    if [ "$IS_DDEV_PROJECT" = "false" ]; then
+        # DDEV not available, run command directly on host
+        execute_command_directly "$@"
+    else
+        # DDEV available, run command in container
+        execute_command_in_ddev "$@"
+    fi
+}
+
+# --- Main Execution ---
+main() {
+    setup_environment
+    run_command "$@"
+}
+
+main "$@"

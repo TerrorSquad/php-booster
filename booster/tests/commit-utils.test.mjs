@@ -56,12 +56,10 @@ function run(args) {
   assert.strictEqual(r.code, 2, 'unknown flag exit code');
 }
 
-// Legacy mode (no flags) prints two lines including NEED_TICKET and FOOTER_LABEL
+// Test missing command
 {
   const r = run([]);
-  assert.strictEqual(r.code, 0, 'legacy mode exit code');
-  assert.match(r.stdout, /NEED_TICKET=yes/);
-  assert.match(r.stdout, /FOOTER_LABEL=Closes/);
+  assert.strictEqual(r.code, 2, 'missing command exit code');
 }
 
 console.log('commit-utils tests passed.');

@@ -206,29 +206,21 @@ function copy_files() {
             "runner.sh"
             "commit-utils.js"
             "validate-branch.sh"
+            "git-hooks"
         )
         for f in "${tool_files[@]}"; do
             if [ -f "$tools_src/$f" ]; then
                 log "  Copying tool '$f'"
                 cp "$tools_src/$f" tools/
+            elif [ -d "$tools_src/$f" ]; then
+                log "  Copying tool directory '$f'"
+                cp -R "$tools_src/$f" tools/
             else
                 warn "  Expected tool file missing: $f"
             fi
         done
-        # Git hook scripts (bash variants only)
-        local hook_dir="$tools_src/git-hooks/hooks"
-        if [ -d "$hook_dir" ]; then
-            for hook in commit-msg.bash pre-commit.bash pre-push.bash; do
-                if [ -f "$hook_dir/$hook" ]; then
-                    cp "$hook_dir/$hook" tools/git-hooks/hooks/
-                    # Also provide executable shorter names without .bash if desired
-                    local short_name=${hook%.bash}
-                    cp "$hook_dir/$hook" "tools/git-hooks/hooks/$short_name" 2>/dev/null || true
-                fi
-            done
-        else
-            warn "  Hook directory not found in booster; skipping hooks copy."
-        fi
+
+
     else
         warn "  Booster tools directory not found; skipping tools copy."
     fi
@@ -276,6 +268,12 @@ function update_package_json() {
         success "package.json updated with merged scripts and devDependencies."
     fi
 
+    # Remove booster specific scripts
+    jq 'del(.scripts."hooks:test", .scripts."validate:branch", .scripts."test")' "$project_pkg" >"$tmp_pkg" || error "Failed to remove specific scripts from package.json."
+
+
+    mv "$tmp_pkg" "$project_pkg"
+    success "Removed specific scripts from package.json."
     # Copy commitlint config regardless
     if [ -f "$booster_commitlint" ]; then
         cp "$booster_commitlint" . || warn "Failed to copy commitlint config."
