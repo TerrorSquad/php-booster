@@ -2,8 +2,11 @@
   "name": "php_booster",
   "private": true,
   "type": "module",
+  "version": "0.3.0",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "node tests/branch-name-validation.test.mjs && node tests/commit-utils.test.mjs",
+    "validate:branch": "bash tools/validate-branch.sh",
+  "hooks:test": "bash tools/internal-test/hooks-test.sh",
     "prepare": "husky",
     "commit": "commit",
     "generate:api-doc:html": "redocly build-docs documentation/openapi.yml --output=documentation/openapi.html"
@@ -14,7 +17,8 @@
     "@commitlint/prompt-cli": "^19.8.1",
     "@commitlint/types": "^19.8.1",
     "@redocly/cli": "^2.0.2",
-    "husky": "^9.1.7"
+    "husky": "^9.1.7",
+    "validate-branch-name": "^1.3.2"
   },
   "packageManager": "pnpm@10.14.0"
 }
