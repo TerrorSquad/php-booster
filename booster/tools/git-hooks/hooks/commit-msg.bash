@@ -1,12 +1,16 @@
 #!/usr/bin/env bash
 
-# Set -eu
-# -e: Exit immediately if a command exits with a non-zero status.
-# -u: Treat unset variables as an error and exit immediately.
-# This ensures that the script fails fast and avoids silent errors.
-set -eu
+# Strict mode
+set -euo pipefail
+IFS=$'\n\t'
 
 ROOT=$(git rev-parse --show-toplevel)
+# Determine whether we're running inside the booster repository (tools under booster/) or an integrated project (tools at root/tools)
+if [ -f "$ROOT/booster/tools/runner.sh" ]; then
+    BASE="$ROOT/booster"
+else
+    BASE="$ROOT"
+fi
 GIT_DIR=$(git rev-parse --git-dir)
 
 # Check if MERGE_HEAD exists
@@ -15,28 +19,42 @@ if [ -f "$GIT_DIR/MERGE_HEAD" ]; then
     exit 0
 fi
 
-runner="$ROOT/tools/runner.sh"
+runner="$BASE/tools/runner.sh"
 current_branch=$(git symbolic-ref --short HEAD)
-branch_regex='^(feature|fix|chore|story|task|bug|sub-task)/(PRJ|ERM)-[0-9]+(-.+)?$'
 
-if ! echo "$current_branch" | grep -qiE "$branch_regex"; then
-    echo "ERROR: Invalid branch name format. Use <type>/<prefix>-<ticket_number>-<description>."
-    echo "Example: feature/PRJ-1234-amazing-new-feature"
-    exit 1
+error() { echo "ERROR: $*" >&2; exit 1; }
+
+# 1. Branch validation (shows rich error if fails)
+if ! bash "$runner" node_modules/.bin/validate-branch-name -t "$current_branch"; then
+    error "Branch name validation failed. See rules in validate-branch-name.config.cjs."
 fi
 
+# 2. Commitlint (lint commit message before we mutate it)
 bash "$runner" node_modules/.bin/commitlint --edit "$1"
 
-ticket_id=$(echo "$current_branch" | grep -oiE '(PRJ|ERM)-[0-9]+' || true) # Use -oE to extract ticket ID
-
-if [ -z "$ticket_id" ]; then
-    echo "ERROR: No ticket ID found in branch name."
-    exit 1
+# 3. Determine if ticket required & extract via unified util
+util_script="$BASE/tools/commit-utils.js"
+if [ ! -f "$util_script" ]; then
+    error "Missing commit-utils.js helper script."
 fi
 
-# Append Ticket ID to Commit Body
-commit_body=$(sed '1d;/^#/d' "$1") # Remove first line and comments
-if ! echo "$commit_body" | grep -qE "$ticket_id"; then
-    echo "" >>"$1"
-    echo "Closes: $ticket_id" >>"$1"
+# Query NEED_TICKET & FOOTER_LABEL via helper script (no eval usage)
+if ! NEED_TICKET=$(bash "$runner" node "$util_script" --need-ticket 2>/dev/null); then
+    error "Failed to determine ticket requirement."
 fi
+if ! FOOTER_LABEL=$(bash "$runner" node "$util_script" --footer-label 2>/dev/null); then
+    error "Failed to determine footer label."
+fi
+
+if [ "${NEED_TICKET}" = "yes" ]; then
+    ticket_id=$(bash "$runner" node "$util_script" --extract-ticket "$current_branch" 2>/dev/null || true)
+    if [ -z "${ticket_id:-}" ]; then
+        error "No ticket ID found in branch name."
+    fi
+    commit_body=$(sed '1d;/^#/d' "$1") || commit_body=""
+    if ! printf '%s' "$commit_body" | grep -qE "\\b${ticket_id}\\b"; then
+        { echo ""; echo "${FOOTER_LABEL:-Closes}: $ticket_id"; } >> "$1"
+    fi
+fi
+
+exit 0
