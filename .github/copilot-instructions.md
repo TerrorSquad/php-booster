@@ -115,7 +115,7 @@ Copilot SHOULD NOT:
 If user asks about improvements, Copilot may propose:
 - Dry-run mode for integration script.
 - Version stamp file for upgrade tracking (e.g., `.php-booster-version`).
-- Test harness for hooks (use `tools/hooks-test.sh`).
+- Test harness for hooks (use `tools/internal/hooks-test.sh`).
 
 ---
 ## 13. Quick Reference Snippets
