@@ -1,5 +1,7 @@
 # Booster
 
+[![Integration Tests](https://github.com/TerrorSquad/php-blueprint/actions/workflows/integration-tests.yml/badge.svg)](https://github.com/TerrorSquad/php-blueprint/actions/workflows/integration-tests.yml)
+
 A curated collection of tools and best practices for PHP development.
 
 ## Key Features

@@ -1,0 +1,161 @@
+name: Integration Tests
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  schedule:
+    # Run weekly on Sunday at 2 AM UTC
+    - cron: '0 2 * * 0'
+  workflow_dispatch:
+    inputs:
+      project_type:
+        description: 'Project type to test'
+        required: false
+        default: 'laravel'
+        type: choice
+        options:
+        - laravel
+        - symfony
+      test_action:
+        description: 'Test action to run'
+        required: false
+        default: 'full'
+        type: choice
+        options:
+        - full
+        - setup
+        - integrate
+        - verify
+        - test-hooks
+
+jobs:
+  integration-test:
+    name: Integration Test (${{ matrix.project_type }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        project_type: [laravel, symfony]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+      
+    - name: Install DDEV
+      run: |
+        # Install DDEV
+        curl -fsSL https://apt.fury.io/drud/gpg.key | gpg --dearmor | sudo tee /etc/apt/trusted.gpg.d/ddev.gpg > /dev/null
+        echo "deb [signed-by=/etc/apt/trusted.gpg.d/ddev.gpg] https://apt.fury.io/drud/ * *" | sudo tee /etc/apt/sources.list.d/ddev.list
+        sudo apt-get update
+        sudo apt-get install -y ddev
+        
+        # Configure DDEV
+        ddev config global --instrumentation-opt-in=false
+        ddev config global --omit-containers=ddev-ssh-agent
+        
+        # Start DDEV
+        ddev version
+        
+    - name: Check requirements
+      run: |
+        ./tools/internal-test/test-integration.py env-check
+        
+    - name: Run integration test
+      run: |
+        # Use manual input if workflow_dispatch, otherwise use matrix
+        if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+          PROJECT_TYPE="${{ github.event.inputs.project_type }}"
+          TEST_ACTION="${{ github.event.inputs.test_action }}"
+        else
+          PROJECT_TYPE="${{ matrix.project_type }}"
+          TEST_ACTION="full"
+        fi
+        
+        echo "Running test: $TEST_ACTION for project type: $PROJECT_TYPE"
+        ./tools/internal-test/test-integration.py $TEST_ACTION $PROJECT_TYPE ci-test-${{ github.run_number }}
+        
+    - name: Show test results
+      if: always()
+      run: |
+        echo "Test completed. Checking status..."
+        ./tools/internal-test/test-integration.py status || true
+        
+    - name: Clean up test environment
+      if: always()
+      run: |
+        echo "Cleaning up test environment..."
+        ./tools/internal-test/test-integration.py clean || true
+        
+        # Additional cleanup for CI
+        docker system prune -af || true
+        ddev clean --all || true
+
+  manual-test:
+    name: Manual Test (workflow_dispatch only)
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+      
+    - name: Install DDEV
+      run: |
+        # Install DDEV
+        curl -fsSL https://apt.fury.io/drud/gpg.key | gpg --dearmor | sudo tee /etc/apt/trusted.gpg.d/ddev.gpg > /dev/null
+        echo "deb [signed-by=/etc/apt/trusted.gpg.d/ddev.gpg] https://apt.fury.io/drud/ * *" | sudo tee /etc/apt/sources.list.d/ddev.list
+        sudo apt-get update
+        sudo apt-get install -y ddev
+        
+        # Configure DDEV
+        ddev config global --instrumentation-opt-in=false
+        ddev config global --omit-containers=ddev-ssh-agent
+        
+        # Start DDEV
+        ddev version
+        
+    - name: Check requirements
+      run: |
+        ./tools/internal-test/test-integration.py env-check
+        
+    - name: Run manual test
+      run: |
+        PROJECT_TYPE="${{ github.event.inputs.project_type }}"
+        TEST_ACTION="${{ github.event.inputs.test_action }}"
+        
+        echo "Running manual test: $TEST_ACTION for project type: $PROJECT_TYPE"
+        ./tools/internal-test/test-integration.py $TEST_ACTION $PROJECT_TYPE manual-test-${{ github.run_number }}
+        
+    - name: Show test results
+      if: always()
+      run: |
+        echo "Manual test completed. Checking status..."
+        ./tools/internal-test/test-integration.py status || true
+        
+    - name: Clean up test environment
+      if: always()
+      run: |
+        echo "Cleaning up test environment..."
+        ./tools/internal-test/test-integration.py clean || true
+        
+        # Additional cleanup for CI
+        docker system prune -af || true
+        ddev clean --all || true

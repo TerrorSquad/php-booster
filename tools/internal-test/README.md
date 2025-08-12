@@ -43,6 +43,18 @@ Run the comprehensive Python test script for full end-to-end testing:
 - `laravel` (default)
 - `symfony`
 
+## GitHub Actions
+
+Integration tests are automatically run via GitHub Actions on:
+- Push to main/develop branches (tests both Laravel and Symfony)
+- Pull requests targeting main/develop (tests both Laravel and Symfony)  
+- Weekly schedule (Sunday at 2 AM UTC)
+- Manual trigger from GitHub UI with customizable options:
+  - Choose project type (Laravel or Symfony)
+  - Choose test action (full, setup, integrate, verify, test-hooks)
+
+The workflow uses the same Python test script and provides the same comprehensive testing in a CI environment.
+
 ## Test Features
 
 The Python test script provides comprehensive verification:
