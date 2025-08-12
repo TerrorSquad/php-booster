@@ -7,6 +7,12 @@ BOOSTER_REPO_URL="https://github.com/TerrorSquad/php-blueprint.git"
 BOOSTER_TARGET_DIR="php-booster"
 BOOSTER_INTERNAL_PATH="${BOOSTER_TARGET_DIR}/booster"
 
+# --- Local Development Mode ---
+# Set BOOSTER_LOCAL_DEV=1 to use local booster directory instead of cloning from GitHub
+# Set BOOSTER_LOCAL_PATH to specify the local booster directory path (default: ../booster)
+BOOSTER_LOCAL_DEV="${BOOSTER_LOCAL_DEV:-0}"
+BOOSTER_LOCAL_PATH="${BOOSTER_LOCAL_PATH:-../booster}"
+
 # --- ANSI color codes ---
 GREEN='\033[0;32m'
 RED='\033[0;31m'
@@ -79,22 +85,43 @@ function is_ddev_project() {
 # --- Core Logic Functions ---
 
 function download_php_booster() {
-    log "Cloning php-booster from $BOOSTER_REPO_URL..."
-    # Clean up previous attempts first
-    rm -rf "$BOOSTER_TARGET_DIR" # Remove target dir if it exists
+    if [ "$BOOSTER_LOCAL_DEV" = "1" ]; then
+        log "Using local php-booster for development..."
+        # Clean up previous attempts first
+        rm -rf "$BOOSTER_TARGET_DIR" # Remove target dir if it exists
 
-    # Clone only the main branch and only the latest commit for speed
-    git clone --depth 1 --branch main "$BOOSTER_REPO_URL" "$BOOSTER_TARGET_DIR" || error "Failed to clone booster repository."
+        # Check if local booster path exists
+        if [ ! -d "$BOOSTER_LOCAL_PATH" ]; then
+            error "Local booster directory not found at '$BOOSTER_LOCAL_PATH'. Set BOOSTER_LOCAL_PATH or ensure the directory exists."
+        fi
+        
+        # Copy the local booster instead of cloning
+        mkdir -p "$BOOSTER_TARGET_DIR"
+        cp -R "$BOOSTER_LOCAL_PATH" "$BOOSTER_INTERNAL_PATH" || error "Failed to copy local booster directory."
 
-    if [ ! -d "$BOOSTER_TARGET_DIR" ]; then
-        error "Target directory '$BOOSTER_TARGET_DIR' not found after clone."
+        if [ ! -d "$BOOSTER_INTERNAL_PATH" ]; then
+            error "Target directory '$BOOSTER_INTERNAL_PATH' not found after copy."
+        fi
+        
+        success "Local php-booster copied successfully from '$BOOSTER_LOCAL_PATH'."
+    else
+        log "Cloning php-booster from $BOOSTER_REPO_URL..."
+        # Clean up previous attempts first
+        rm -rf "$BOOSTER_TARGET_DIR" # Remove target dir if it exists
+        
+        # Clone only the main branch and only the latest commit for speed
+        git clone --depth 1 --branch main "$BOOSTER_REPO_URL" "$BOOSTER_TARGET_DIR" || error "Failed to clone booster repository."
+        
+        if [ ! -d "$BOOSTER_TARGET_DIR" ]; then
+            error "Target directory '$BOOSTER_TARGET_DIR' not found after clone."
+        fi
+
+        if [ ! -d "$BOOSTER_INTERNAL_PATH" ]; then
+            warn "The expected internal structure '$BOOSTER_INTERNAL_PATH' was not found within the cloned repository."
+            error "Blueprint content directory '$BOOSTER_INTERNAL_PATH' not found."
+        fi
+        success "php-booster cloned successfully into '$BOOSTER_TARGET_DIR'."
     fi
-
-    if [ ! -d "$BOOSTER_INTERNAL_PATH" ]; then
-        warn "The expected internal structure '$BOOSTER_INTERNAL_PATH' was not found within the cloned repository."
-        error "Blueprint content directory '$BOOSTER_INTERNAL_PATH' not found."
-    fi
-    success "php-booster cloned successfully into '$BOOSTER_TARGET_DIR'."
 }
 
 function update_ddev_files() {
@@ -212,9 +239,16 @@ function copy_files() {
             if [ -f "$tools_src/$f" ]; then
                 log "  Copying tool '$f'"
                 cp "$tools_src/$f" tools/
+                # Set execute permissions for shell scripts
+                if [[ "$f" == *.sh ]]; then
+                    chmod +x "tools/$f"
+                fi
             elif [ -d "$tools_src/$f" ]; then
                 log "  Copying tool directory '$f'"
                 cp -R "$tools_src/$f" tools/
+                # Set execute permissions for shell scripts in the directory
+                find "tools/$f" -name "*.sh" -exec chmod +x {} \;
+                find "tools/$f" -name "*.bash" -exec chmod +x {} \;
             else
                 warn "  Expected tool file missing: $f"
             fi

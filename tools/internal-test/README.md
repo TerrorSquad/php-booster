@@ -2,67 +2,113 @@
 
 This directory contains tools to test the PHP Booster integration on clean projects.
 
-## Test Methods
+## Test Script
 
-### 1. Local Test Script
-
-Run the test script directly on your system:
+Run the comprehensive Python test script for full end-to-end testing:
 
 ```bash
-# Basic usage
-./test-integration.sh symfony test-project
+# Full test with defaults (Laravel project)
+./test-integration.py
 
-# With custom parameters
-./test-integration.sh laravel custom-project /path/to/target no
+# Full test with specific framework
+./test-integration.py full symfony my-project
+
+# Individual test steps
+./test-integration.py setup            # Only create and set up project
+./test-integration.py integrate        # Only run booster integration
+./test-integration.py verify           # Only verify integration worked
+./test-integration.py test-hooks       # Only test git hooks and branch validation
+./test-integration.py status           # Show current test environment status
+./test-integration.py clean            # Clean up test environment
+
+# Environment check
+./test-integration.py env-check
+
+# Custom target directory
+./test-integration.py full laravel custom-project /path/to/target
 ```
 
-Parameters:
-- Project type: `symfony` or `laravel` (default: symfony)
-- Project name: Name for the project (default: test-project)
-- Target directory: Where to create the project (default: /tmp/php-booster-test)
-- DDEV enable: `yes` or `no` (default: yes)
+**Available Actions:**
+- `full` - Run the complete test suite (default)
+- `env-check` - Check environment and requirements only
+- `setup` - Create and set up a new project
+- `setup-resume` - Resume setup for existing project
+- `integrate` - Run booster integration on existing project  
+- `verify` - Verify the integration is working
+- `test-hooks` - Test git hooks and branch validation
+- `clean` - Clean up the test environment
+- `status` - Show current test environment status
 
-### 2. Docker-based Testing
+**Supported Frameworks:**
+- `laravel` (default)
+- `symfony`
 
-For isolated testing without affecting your local environment:
+## Test Features
 
-```bash
-# Start both test containers
-docker-compose up
+The Python test script provides comprehensive verification:
 
-# Test specific framework only
-docker-compose up symfony-test
-docker-compose up laravel-test
+### Project Setup
+- Creates fresh Laravel or Symfony projects using DDEV
+- Initializes git repository with proper configuration
+- Sets up DDEV containers and services
 
-# Interactive mode (for debugging)
-docker-compose run --rm symfony-test bash
-```
+### Integration Testing
+- Tests local development mode integration
+- Verifies all expected files are created
+- Checks composer dependencies are installed
+- Tests all quality tools are working
 
-### 3. GitHub Actions
+### Git Hooks Testing
+- Tests branch naming validation (valid and invalid scenarios)
+- Verifies commit message linting with conventional commits
+- Tests automatic ticket ID appending to commit messages
+- Validates pre-commit hooks with PHP quality checks
 
-Integration tests are automatically run on:
-- Push to main/develop branches
-- Pull requests targeting main/develop
-- Weekly schedule (Sunday at 2 AM)
-- Manual trigger from GitHub UI
+### Environment Support
+- Local development mode for testing changes before commit
+- DDEV containerization for isolated testing
+- Automatic cleanup and environment management
 
-## Test Verification
+## Requirements
 
-The test script verifies:
+- Python 3.7+
+- Git
+- DDEV
+- curl
 
-1. File structure (expected booster files present)
-2. Tool execution (composer scripts work)
-3. Git hooks (branch validation, commit message formatting)
+The script will check requirements and provide clear error messages for missing tools.
 
-## Output
+## Test Output
 
-Test results are displayed in the terminal. For GitHub Actions, test output is archived as artifacts.
+The test script provides:
+- Color-coded progress indicators
+- Detailed logging of each step
+- Clear success/failure messages
+- Debugging information when tests fail
+- Instructions for cleanup and next steps
 
 ## Cleaning Up
 
-Local testing creates files in `/tmp/php-booster-test` by default, which you can safely delete.
-For Docker testing, volumes are created but can be removed with:
+The Python script creates test projects in `tests/laravel/test-project` or `tests/symfony/test-project` by default.
+
+To clean up:
+```bash
+# Automatic cleanup
+./test-integration.py clean
+
+# Manual cleanup
+cd tests/laravel/test-project && ddev delete -y
+rm -rf tests/laravel/test-project
+```
+
+## Local Development Mode
+
+For testing local changes to the booster before committing:
 
 ```bash
-docker-compose down -v
+# The script automatically uses local development mode
+# Set these environment variables if needed:
+export BOOSTER_LOCAL_DEV=1
+export BOOSTER_LOCAL_PATH="/path/to/booster"
+./test-integration.py full
 ```
