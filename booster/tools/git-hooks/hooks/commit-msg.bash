@@ -4,93 +4,55 @@
 set -euo pipefail
 IFS=$'\n\t'
 
-# --- Environment Setup ---
-setup_environment() {
-    ROOT=$(git rev-parse --show-toplevel)
-    if [ -f "$ROOT/booster/tools/runner.sh" ]; then
-        BASE="$ROOT/booster"
-    else
-        BASE="$ROOT"
-    fi
-    readonly ROOT BASE
-
-    local git_dir
-    git_dir=$(git rev-parse --git-dir)
-    readonly GIT_DIR="$git_dir"
-    readonly RUNNER="$BASE/tools/runner.sh"
-
-    local current_branch
-    current_branch=$(git symbolic-ref --short HEAD)
-    readonly CURRENT_BRANCH="$current_branch"
-
-    # Use relative path for DDEV compatibility
-    readonly UTIL_SCRIPT="./tools/commit-utils.js"
-}
+# Source common library
+PROJECT_ROOT="$(git rev-parse --show-toplevel)"
+source "$PROJECT_ROOT/tools/git-hooks/lib/common.sh"
 
 # --- Early Exit Conditions ---
-should_skip_hook() {
-    # Skip during merge
-    if [ -f "$GIT_DIR/MERGE_HEAD" ]; then
-        echo "Merge in progress. Skipping commit message checks."
+should_skip_commit_checks() {
+    if should_skip_during_merge; then
         return 0
     fi
-
     return 1
 }
 
 check_dependencies() {
-    if [ ! -d "$BASE/node_modules" ]; then
-        local install_cmd
-        if [ -d "$ROOT/.ddev" ]; then
-            install_cmd="ddev pnpm install"
-        else
-            install_cmd="pnpm install"
-        fi
-        echo "ERROR: No node_modules directory detected. Please run '$install_cmd' before committing." >&2
-        exit 1
-    fi
-}
-
-error() {
-    echo "ERROR: $*" >&2
-    exit 1
+    check_node_modules
 }
 
 # --- Validation Functions ---
 validate_branch_name() {
-    if ! bash "$RUNNER" node_modules/.bin/validate-branch-name -t "$CURRENT_BRANCH" > /dev/null 2>&1; then
+    if ! run_command_quiet node_modules/.bin/validate-branch-name -t "$CURRENT_BRANCH"; then
         # Run again without suppression to show the error details
         bash "$RUNNER" node_modules/.bin/validate-branch-name -t "$CURRENT_BRANCH"
-        error "Branch name validation failed. See rules in validate-branch-name.config.cjs."
+        error_exit "Branch name validation failed. See rules in validate-branch-name.config.cjs."
     fi
 }
 
 lint_commit_message() {
     local commit_file="$1"
-    bash "$RUNNER" node_modules/.bin/commitlint --edit "$commit_file"
+    run_command "commitlint" node_modules/.bin/commitlint --edit "$commit_file"
 }
 
 append_ticket_footer() {
     local commit_file="$1"
 
-    if [ ! -f "$UTIL_SCRIPT" ]; then
-        error "Missing commit-utils.js helper script."
-    fi
+    check_file_exists "$UTIL_SCRIPT" "commit-utils.js helper script"
 
     # Query NEED_TICKET & FOOTER_LABEL via helper script
     local need_ticket footer_label
     if ! need_ticket=$(bash "$RUNNER" node "$UTIL_SCRIPT" --need-ticket 2>/dev/null); then
-        error "Failed to determine ticket requirement."
+        error_exit "Failed to determine ticket requirement."
     fi
     if ! footer_label=$(bash "$RUNNER" node "$UTIL_SCRIPT" --footer-label 2>/dev/null); then
-        error "Failed to determine footer label."
+        error_exit "Failed to determine footer label."
     fi
 
     if [ "${need_ticket}" = "yes" ]; then
         local ticket_id
         ticket_id=$(bash "$RUNNER" node "$UTIL_SCRIPT" --extract-ticket "$CURRENT_BRANCH" 2>/dev/null || true)
         if [ -z "${ticket_id:-}" ]; then
-            error "No ticket ID found in branch name."
+            error_exit "No ticket ID found in branch name."
         fi
 
         local commit_body
@@ -105,9 +67,9 @@ append_ticket_footer() {
 main() {
     local commit_file="$1"
 
-    setup_environment
+    init_common
 
-    if should_skip_hook; then
+    if should_skip_commit_checks; then
         exit 0
     fi
 

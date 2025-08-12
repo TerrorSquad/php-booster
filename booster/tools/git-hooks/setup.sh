@@ -3,46 +3,28 @@
 set -euo pipefail
 IFS=$'\n\t'
 
+# Source common library
+PROJECT_ROOT="$(git rev-parse --show-toplevel 2>/dev/null)" || PROJECT_ROOT="$(pwd)"
+source "$PROJECT_ROOT/tools/git-hooks/lib/common.sh"
+
 # --- Configuration ---
 readonly HUSKY_DIR=".husky"
 readonly HOOKS_SOURCE="./tools/git-hooks/hooks"
 readonly RUNNER_SCRIPT="./tools/runner.sh"
 
-# --- Environment Setup ---
-setup_environment() {
-    readonly IS_CI_ENV="${CI:-}"
-
-    # ANSI color codes for output formatting (only if interactive terminal)
-    if [[ -t 1 ]]; then
-        readonly RED='\033[0;31m'
-        readonly GREEN='\033[0;32m'
-        readonly NC='\033[0m' # No Color
-    else
-        readonly RED=''
-        readonly GREEN=''
-        readonly NC=''
-    fi
-}
-
-# --- Output Functions ---
-echo_color() {
-    echo -e "$1"
-}
-
 # --- Early Exit Conditions ---
-should_skip_in_ci() {
-    if [ -n "$IS_CI_ENV" ]; then
-        echo "CI environment detected, skipping git hooks installation"
+should_skip_installation() {
+    if is_ci_environment; then
+        log_info "CI environment detected, skipping git hooks installation"
         return 0
     fi
     return 1
 }
 
 # --- Dependency Checks ---
-check_runner_available() {
+check_runner_script() {
     if [ ! -f "$RUNNER_SCRIPT" ]; then
-        echo_color "${RED}ERROR: Runner script not found at '$RUNNER_SCRIPT'${NC}" >&2
-        exit 1
+        error_exit "Runner script not found at '$RUNNER_SCRIPT'"
     fi
 }
 
@@ -76,23 +58,22 @@ EOF
 
 # --- Installation Functions ---
 setup_husky_directory() {
-    echo "Setting up Husky directory..."
+    log_step "Setting up Husky directory..."
 
     if [ -d "$HUSKY_DIR" ]; then
-        echo "Removing existing $HUSKY_DIR directory..."
+        log_info "Removing existing $HUSKY_DIR directory..."
         rm -rf "$HUSKY_DIR"
     fi
 
     mkdir "$HUSKY_DIR"
-    echo "Created $HUSKY_DIR directory"
+    log_success "$HUSKY_DIR directory created"
 }
 
 copy_hook_files() {
-    echo "Copying hook files from $HOOKS_SOURCE to $HUSKY_DIR..."
+    log_step "Copying hook files from $HOOKS_SOURCE to $HUSKY_DIR..."
 
     if [ ! -d "$HOOKS_SOURCE" ]; then
-        echo_color "${RED}ERROR: Hook source directory '$HOOKS_SOURCE' not found${NC}" >&2
-        exit 1
+        error_exit "Hook source directory '$HOOKS_SOURCE' not found"
     fi
 
     cp -r "$HOOKS_SOURCE"/* "$HUSKY_DIR/"
@@ -100,37 +81,36 @@ copy_hook_files() {
     # Make hooks executable
     chmod +x "$HUSKY_DIR"/*
 
-    echo_color "${GREEN}Hook files copied and made executable${NC}"
+    log_success "Hook files copied and made executable"
 }
 
 install_dependencies() {
-    echo "Installing npm dependencies..."
+    log_step "Installing npm dependencies..."
 
     if ! bash "$RUNNER_SCRIPT" pnpm install; then
-        echo_color "${RED}ERROR: Failed to install dependencies with pnpm${NC}" >&2
-        exit 1
+        error_exit "Failed to install dependencies with pnpm"
     fi
 
-    echo_color "${GREEN}Dependencies installed successfully${NC}"
+    log_success "Dependencies installed successfully"
 }
 
 # --- Main Execution ---
 main() {
-    setup_environment
+    init_common
 
-    if should_skip_in_ci; then
+    if should_skip_installation; then
         exit 0
     fi
 
-    echo "Installing Git hooks..."
+    log_step "Installing Git hooks..."
 
-    check_runner_available
+    check_runner_script
     check_pnpm_installed
     setup_husky_directory
     copy_hook_files
     install_dependencies
 
-    echo_color "${GREEN}Git hooks installation completed successfully!${NC}"
+    log_celebrate "Git hooks installation completed successfully!"
 }
 
 main "$@"
