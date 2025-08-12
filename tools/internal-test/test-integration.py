@@ -636,7 +636,7 @@ echo "Another test";
                 try:
                     self.run_command(["ddev", "stop"], cwd=self.config.target_dir)
                     self.run_command(
-                        ["ddev", "delete", "-y"],
+                        ["ddev", "delete", "--omit-snapshot", "--yes"],
                         cwd=self.config.target_dir,
                         check=False,
                     )
