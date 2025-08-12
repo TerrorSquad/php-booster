@@ -11,7 +11,10 @@ Run the comprehensive Python test script for full end-to-end testing:
 ./test-integration.py
 
 # Full test with specific framework
-./test-integration.py full symfony my-project
+./test-integration.py full symfony
+
+# Full test with custom project name
+./test-integration.py full laravel my-custom-project
 
 # Individual test steps
 ./test-integration.py setup            # Only create and set up project
@@ -60,9 +63,10 @@ The workflow uses the same Python test script and provides the same comprehensiv
 The Python test script provides comprehensive verification:
 
 ### Project Setup
-- Creates fresh Laravel or Symfony projects using DDEV
+- Creates fresh Laravel or Symfony projects using DDEV with framework-specific naming
+- Framework-specific project names prevent DDEV conflicts (e.g., `booster-test-laravel`, `booster-test-symfony`)
 - Initializes git repository with proper configuration
-- Sets up DDEV containers and services
+- Sets up DDEV containers and services with unique project identification
 
 ### Integration Testing
 - Tests local development mode integration
@@ -101,16 +105,21 @@ The test script provides:
 
 ## Cleaning Up
 
-The Python script creates test projects in `tests/laravel/test-project` or `tests/symfony/test-project` by default.
+The Python script creates test projects with framework-specific naming:
+- Laravel: `tests/laravel/booster-test-laravel` 
+- Symfony: `tests/symfony/booster-test-symfony`
+
+This prevents DDEV project name conflicts when testing multiple frameworks.
 
 To clean up:
 ```bash
-# Automatic cleanup
-./test-integration.py clean
+# Automatic cleanup (specify framework)
+./test-integration.py clean laravel
+./test-integration.py clean symfony
 
-# Manual cleanup
-cd tests/laravel/test-project && ddev delete -y
-rm -rf tests/laravel/test-project
+# Manual cleanup example
+cd tests/laravel/booster-test-laravel && ddev delete -y
+rm -rf tests/laravel/booster-test-laravel
 ```
 
 ## Local Development Mode

@@ -11,7 +11,7 @@ readonly RUNNER_SCRIPT="./tools/runner.sh"
 # --- Environment Setup ---
 setup_environment() {
     readonly IS_CI_ENV="${CI:-}"
-    
+
     # ANSI color codes for output formatting (only if interactive terminal)
     if [[ -t 1 ]]; then
         readonly RED='\033[0;31m'
@@ -77,59 +77,59 @@ EOF
 # --- Installation Functions ---
 setup_husky_directory() {
     echo "Setting up Husky directory..."
-    
+
     if [ -d "$HUSKY_DIR" ]; then
         echo "Removing existing $HUSKY_DIR directory..."
         rm -rf "$HUSKY_DIR"
     fi
-    
+
     mkdir "$HUSKY_DIR"
     echo "Created $HUSKY_DIR directory"
 }
 
 copy_hook_files() {
     echo "Copying hook files from $HOOKS_SOURCE to $HUSKY_DIR..."
-    
+
     if [ ! -d "$HOOKS_SOURCE" ]; then
         echo_color "${RED}ERROR: Hook source directory '$HOOKS_SOURCE' not found${NC}" >&2
         exit 1
     fi
-    
+
     cp -r "$HOOKS_SOURCE"/* "$HUSKY_DIR/"
-    
+
     # Make hooks executable
     chmod +x "$HUSKY_DIR"/*
-    
+
     echo_color "${GREEN}Hook files copied and made executable${NC}"
 }
 
 install_dependencies() {
     echo "Installing npm dependencies..."
-    
+
     if ! bash "$RUNNER_SCRIPT" pnpm install; then
         echo_color "${RED}ERROR: Failed to install dependencies with pnpm${NC}" >&2
         exit 1
     fi
-    
+
     echo_color "${GREEN}Dependencies installed successfully${NC}"
 }
 
 # --- Main Execution ---
 main() {
     setup_environment
-    
+
     if should_skip_in_ci; then
         exit 0
     fi
-    
+
     echo "Installing Git hooks..."
-    
+
     check_runner_available
     check_pnpm_installed
     setup_husky_directory
     copy_hook_files
     install_dependencies
-    
+
     echo_color "${GREEN}Git hooks installation completed successfully!${NC}"
 }
 

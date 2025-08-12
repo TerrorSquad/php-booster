@@ -26,6 +26,10 @@ IS_DDEV_PROJECT=0
 # Set the memory limit for Composer to unlimited (can help with large dependency trees)
 export COMPOSER_MEMORY_LIMIT=-1
 
+# Set Symfony recipe auto-acceptance to avoid interactive prompts during composer require/update
+# This automatically accepts all recipes from both main and contrib repositories
+export SYMFONY_FLEX_RECIPES_AUTO_ACCEPT=1
+
 # --- Helper Functions ---
 
 function log() {
@@ -314,6 +318,15 @@ function update_package_json() {
         success "commitlint.config.ts copied."
     else
         warn "Blueprint 'commitlint.config.ts' not found. Skipping copy."
+    fi
+
+    # Copy pnpm-workspace.yaml if it exists
+    local booster_pnpm_workspace="${BOOSTER_INTERNAL_PATH}/pnpm-workspace.yaml"
+    if [ -f "$booster_pnpm_workspace" ]; then
+        cp "$booster_pnpm_workspace" . || warn "Failed to copy pnpm-workspace.yaml."
+        success "pnpm-workspace.yaml copied."
+    else
+        warn "Blueprint 'pnpm-workspace.yaml' not found. Skipping copy."
     fi
 }
 

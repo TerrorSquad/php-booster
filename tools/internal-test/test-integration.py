@@ -286,13 +286,27 @@ class TestEnvironment:
         )
 
         self.run_command(["ddev", "start"], cwd=self.config.target_dir)
+        
+        # Use Symfony LTS for better stability
         self.run_command(
             [
                 "ddev",
                 "composer",
                 "create-project",
-                "symfony/website-skeleton",
+                "symfony/skeleton:^7.1",
                 ".",
+                "--no-interaction",
+            ],
+            cwd=self.config.target_dir,
+        )
+        
+        # Add some basic packages
+        self.run_command(
+            [
+                "ddev",
+                "composer",
+                "require",
+                "symfony/webapp-pack",
                 "--no-interaction",
             ],
             cwd=self.config.target_dir,
@@ -727,8 +741,8 @@ Examples:
     parser.add_argument(
         "project_name",
         nargs="?",
-        default="test-project",
-        help="Project name (default: test-project)",
+        default=None,
+        help="Project name (default: booster-test-{framework})",
     )
 
     parser.add_argument(
@@ -738,6 +752,10 @@ Examples:
     )
 
     args = parser.parse_args()
+
+    # Set default project name if not provided (framework-specific)
+    if args.project_name is None:
+        args.project_name = f"booster-test-{args.project_type}"
 
     # Calculate paths
     script_dir = Path(__file__).parent.absolute()
