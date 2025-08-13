@@ -98,7 +98,7 @@ function download_php_booster() {
         if [ ! -d "$BOOSTER_LOCAL_PATH" ]; then
             error "Local booster directory not found at '$BOOSTER_LOCAL_PATH'. Set BOOSTER_LOCAL_PATH or ensure the directory exists."
         fi
-        
+
         # Copy the local booster instead of cloning
         mkdir -p "$BOOSTER_TARGET_DIR"
         cp -R "$BOOSTER_LOCAL_PATH" "$BOOSTER_INTERNAL_PATH" || error "Failed to copy local booster directory."
@@ -106,16 +106,16 @@ function download_php_booster() {
         if [ ! -d "$BOOSTER_INTERNAL_PATH" ]; then
             error "Target directory '$BOOSTER_INTERNAL_PATH' not found after copy."
         fi
-        
+
         success "Local php-booster copied successfully from '$BOOSTER_LOCAL_PATH'."
     else
         log "Cloning php-booster from $BOOSTER_REPO_URL..."
         # Clean up previous attempts first
         rm -rf "$BOOSTER_TARGET_DIR" # Remove target dir if it exists
-        
+
         # Clone only the main branch and only the latest commit for speed
         git clone --depth 1 --branch main "$BOOSTER_REPO_URL" "$BOOSTER_TARGET_DIR" || error "Failed to clone booster repository."
-        
+
         if [ ! -d "$BOOSTER_TARGET_DIR" ]; then
             error "Target directory '$BOOSTER_TARGET_DIR' not found after clone."
         fi
@@ -235,16 +235,15 @@ function copy_files() {
         # List of tool files to copy (public runtime helpers only)
         local tool_files=(
             "runner.sh"
-            "commit-utils.js"
-            "validate-branch.sh"
+            "commit-utils.py"
             "git-hooks"
         )
         for f in "${tool_files[@]}"; do
             if [ -f "$tools_src/$f" ]; then
                 log "  Copying tool '$f'"
                 cp "$tools_src/$f" tools/
-                # Set execute permissions for shell scripts
-                if [[ "$f" == *.sh ]]; then
+                # Set execute permissions for shell scripts and Python files
+                if [[ "$f" == *.sh ]] || [[ "$f" == *.py ]]; then
                     chmod +x "tools/$f"
                 fi
             elif [ -d "$tools_src/$f" ]; then
@@ -306,12 +305,6 @@ function update_package_json() {
         success "package.json updated with merged scripts and devDependencies."
     fi
 
-    # Remove booster specific scripts
-    jq 'del(.scripts."hooks:test", .scripts."validate:branch", .scripts."test")' "$project_pkg" >"$tmp_pkg" || error "Failed to remove specific scripts from package.json."
-
-
-    mv "$tmp_pkg" "$project_pkg"
-    success "Removed specific scripts from package.json."
     # Copy commitlint config regardless
     if [ -f "$booster_commitlint" ]; then
         cp "$booster_commitlint" . || warn "Failed to copy commitlint config."

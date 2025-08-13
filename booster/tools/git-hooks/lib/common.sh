@@ -99,7 +99,7 @@ setup_branch_info() {
 }
 
 setup_common_paths() {
-    readonly UTIL_SCRIPT="./tools/commit-utils.js"
+    readonly UTIL_SCRIPT="./tools/commit-utils.py"
     export UTIL_SCRIPT
 }
 

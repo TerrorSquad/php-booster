@@ -4,9 +4,6 @@
   "type": "module",
   "version": "0.3.0",
   "scripts": {
-    "test": "node tests/branch-name-validation.test.mjs && node tests/commit-utils.test.mjs",
-    "validate:branch": "bash tools/validate-branch.sh",
-  "hooks:test": "bash tools/internal-test/hooks-test.sh",
     "prepare": "husky",
     "commit": "commit",
     "generate:api-doc:html": "redocly build-docs documentation/openapi.yml --output=documentation/openapi.html"

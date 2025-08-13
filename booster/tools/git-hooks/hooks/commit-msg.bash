@@ -37,20 +37,20 @@ lint_commit_message() {
 append_ticket_footer() {
     local commit_file="$1"
 
-    check_file_exists "$UTIL_SCRIPT" "commit-utils.js helper script"
+    check_file_exists "$UTIL_SCRIPT" "commit-utils.py helper script"
 
     # Query NEED_TICKET & FOOTER_LABEL via helper script
     local need_ticket footer_label
-    if ! need_ticket=$(bash "$RUNNER" node "$UTIL_SCRIPT" --need-ticket 2>/dev/null); then
+    if ! need_ticket=$(bash "$RUNNER" python3 "$UTIL_SCRIPT" --need-ticket 2>/dev/null); then
         error_exit "Failed to determine ticket requirement."
     fi
-    if ! footer_label=$(bash "$RUNNER" node "$UTIL_SCRIPT" --footer-label 2>/dev/null); then
+    if ! footer_label=$(bash "$RUNNER" python3 "$UTIL_SCRIPT" --footer-label 2>/dev/null); then
         error_exit "Failed to determine footer label."
     fi
 
     if [ "${need_ticket}" = "yes" ]; then
         local ticket_id
-        ticket_id=$(bash "$RUNNER" node "$UTIL_SCRIPT" --extract-ticket "$CURRENT_BRANCH" 2>/dev/null || true)
+        ticket_id=$(bash "$RUNNER" python3 "$UTIL_SCRIPT" --extract-ticket "$CURRENT_BRANCH" 2>/dev/null || true)
         if [ -z "${ticket_id:-}" ]; then
             error_exit "No ticket ID found in branch name."
         fi

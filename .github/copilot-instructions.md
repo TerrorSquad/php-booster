@@ -53,9 +53,10 @@ Copilot SHOULD NOT generate raw php-cs-fixer, phpstan, rector, or psalm command 
 
 ---
 ## 5. Git Hooks Architecture
-- Unified helper: `tools/commit-utils.js` handles: `--need-ticket`, `--footer-label`, `--extract-ticket`.
+- Unified helper: `tools/commit-utils.py` handles: `--need-ticket`, `--footer-label`, `--extract-ticket`.
+- Common library: `tools/git-hooks/lib/common.sh` provides shared functionality and colored logging.
 - `commit-msg` hook validates branch, lints message, appends footer if needed.
-- Copilot SHOULD reference `commit-utils.js` instead of legacy scripts (`commit-msg-config.js`, `extract-ticket-id.js` were removed).
+- Copilot SHOULD reference `commit-utils.py` and the common library instead of legacy scripts.
 
 ---
 ## 6. Configuration Files (Do Not Duplicate)
@@ -115,17 +116,17 @@ Copilot SHOULD NOT:
 If user asks about improvements, Copilot may propose:
 - Dry-run mode for integration script.
 - Version stamp file for upgrade tracking (e.g., `.php-booster-version`).
-- Test harness for hooks (use `tools/internal/hooks-test.sh`).
+- Test harness for hooks (use `tools/internal-test/test-integration.py`).
 
 ---
 ## 13. Quick Reference Snippets
 Check ticket requirement:
 ```
-node tools/commit-utils.js --need-ticket
+python3 tools/commit-utils.py --need-ticket
 ```
 Extract ticket from current branch:
 ```
-node tools/commit-utils.js --extract-ticket "$(git rev-parse --abbrev-ref HEAD)"
+python3 tools/commit-utils.py --extract-ticket "$(git rev-parse --abbrev-ref HEAD)"
 ```
 Run all analyzers (example if combined script exists, otherwise run individually):
 ```

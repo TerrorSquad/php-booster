@@ -137,7 +137,7 @@ class TestEnvironment:
 
     def is_booster_integrated(self) -> bool:
         """Check if booster has been integrated"""
-        return (self.config.target_dir / "tools/commit-utils.js").exists() and (
+        return (self.config.target_dir / "tools/commit-utils.py").exists() and (
             self.config.target_dir / "tools/runner.sh"
         ).exists()
 
@@ -286,7 +286,7 @@ class TestEnvironment:
         )
 
         self.run_command(["ddev", "start"], cwd=self.config.target_dir)
-        
+
         # Use Symfony LTS for better stability
         self.run_command(
             [
@@ -299,7 +299,7 @@ class TestEnvironment:
             ],
             cwd=self.config.target_dir,
         )
-        
+
         # Add some basic packages
         self.run_command(
             [
@@ -418,8 +418,13 @@ class TestEnvironment:
 
         # Check expected files
         expected_files = [
-            "tools/commit-utils.js",
+            "tools/commit-utils.py",
             "tools/git-hooks/hooks/commit-msg",
+            "tools/git-hooks/hooks/pre-commit",
+            "tools/git-hooks/hooks/pre-push",
+            "tools/git-hooks/hooks/commit-msg.bash",
+            "tools/git-hooks/hooks/pre-commit.bash",
+            "tools/git-hooks/hooks/pre-push.bash",
             "validate-branch-name.config.cjs",
             "tools/runner.sh",
         ]
