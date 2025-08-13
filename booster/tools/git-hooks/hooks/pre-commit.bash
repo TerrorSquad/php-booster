@@ -21,18 +21,6 @@ should_skip_checks() {
     return 1
 }
 
-check_staged_php_files() {
-    local php_files
-    php_files=$(get_staged_php_files)
-    
-    if [ -z "$php_files" ]; then
-        log_info "No staged PHP files found. Skipping PHP checks..."
-        exit 0
-    fi
-    
-    echo "$php_files"
-}
-
 # --- PHP Quality Checks ---
 run_php_syntax_check() {
     local php_files="$1"
@@ -139,7 +127,12 @@ main() {
     fi
     
     local php_files
-    php_files=$(check_staged_php_files)
+    php_files=$(get_staged_php_files)
+    
+    if [ -z "$php_files" ]; then
+        log_info "No staged PHP files found. Skipping PHP checks..."
+        exit 0
+    fi
     
     log_step "Running PHP Checks on Staged Files"
     
