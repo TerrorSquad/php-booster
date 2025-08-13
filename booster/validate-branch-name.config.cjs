@@ -1,16 +1,16 @@
 
-// Branch naming rules config (single source of truth)
+/* Branch naming rules config (single source of truth) */
 const config = {
-  // Allowed branch types
+  /** Allowed branch types */
   types: ['feature', 'fix', 'chore', 'story', 'task', 'bug', 'sub-task'],
-  // Optional ticket prefix and number (if not needed, set both to null)
-  ticketIdPrefix: 'PRJ|ERM', // e.g. 'PRJ|ERM' (no parentheses)
-  ticketNumberPattern: '[0-9]+', // e.g. '[0-9]+' or null
-  // Branch name (after type and optional ticket)
+  /** Optional ticket prefix and number (if not needed, set both to null) */
+  ticketIdPrefix: 'PRJ|ERM', /** e.g. 'PRJ|ERM' (no parentheses) */
+  ticketNumberPattern: '[0-9]+', /** e.g. '[0-9]+' or null */
+  /** Branch name (after type and optional ticket) */
   namePattern: '[a-zA-Z0-9]+(-[a-zA-Z0-9]+)*',
-  // Branches to skip validation
+  /** Branches to skip validation */
   skipped: ['wip', 'main', 'master', 'develop/test', 'develop/host1', 'develop/host2'],
-  // Commit footer label to append with ticket (configurable)
+  /** Commit footer label to append with ticket (configurable) */
   commitFooterLabel: 'Closes',
 };
 
