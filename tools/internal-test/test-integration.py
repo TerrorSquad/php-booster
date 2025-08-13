@@ -137,9 +137,28 @@ class TestEnvironment:
 
     def is_booster_integrated(self) -> bool:
         """Check if booster has been integrated"""
+        # Primary check: version stamp file (most reliable indicator)
+        version_stamp = self.config.target_dir / ".booster-version"
+        if version_stamp.exists():
+            return True
+        
+        # Fallback check: essential booster files
         return (self.config.target_dir / "tools/commit-utils.py").exists() and (
             self.config.target_dir / "tools/runner.sh"
         ).exists()
+
+    def get_integrated_version(self) -> Optional[str]:
+        """Get the currently integrated booster version"""
+        version_stamp = self.config.target_dir / ".booster-version"
+        if version_stamp.exists():
+            try:
+                content = version_stamp.read_text()
+                for line in content.splitlines():
+                    if line.startswith("VERSION="):
+                        return line.split("=", 1)[1]
+            except Exception as e:
+                self.log.warn(f"Failed to read version stamp: {e}")
+        return None
 
     def has_git_hooks(self) -> bool:
         """Check if git hooks are installed"""
@@ -178,7 +197,11 @@ class TestEnvironment:
             self.log.warn("⚠️ DDEV not running")
 
         if self.is_booster_integrated():
-            self.log.success("✅ Booster integrated")
+            version = self.get_integrated_version()
+            if version:
+                self.log.success(f"✅ Booster integrated (version {version})")
+            else:
+                self.log.success("✅ Booster integrated")
         else:
             self.log.warn("⚠️ Booster not integrated")
 
