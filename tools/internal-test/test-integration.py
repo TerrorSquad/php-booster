@@ -699,9 +699,8 @@ echo "Another test";
             with open("/etc/os-release") as f:
                 for line in f:
                     if line.startswith("PRETTY_NAME"):
-                        print(
-                            f"  - Distribution: {line.split('=', 1)[1].strip('\"\\n')}"
-                        )
+                        distro_name = line.split('=', 1)[1].strip('"\\n')
+                        print(f"  - Distribution: {distro_name}")
                         break
         except:
             print("  - Distribution: Unknown")
