@@ -10,7 +10,6 @@ contribution.
   - [Contributing](#contributing)
   - [Branch Naming](#branch-naming)
   - [Developer Tooling](#developer-tooling)
-  - [Scripts](#scripts)
   - [Environment Variables](#environment-variables)
   - [Hook Footers](#hook-footers)
   - [Commit Messages](#commit-messages)
@@ -43,7 +42,7 @@ clean and readable.
 
 ### Branch Naming
 
-Enforced automatically via `validate-branch-name` (see `validate-branch-name.config.cjs`).
+Enforced automatically via the `commit-msg` git hook (see `validate-branch-name.config.cjs`).
 
 Format:
 ```
@@ -115,13 +114,6 @@ Git hooks (managed via Husky) enforce naming, formatting and static analysis:
 * `pre-commit`: PHP lint, Rector, ECS, Deptrac, PHPStan, Psalm (auto-fix where possible)
 * `pre-push`: deptrac, tests, API spec & HTML doc generation (conditional)
 
-### Scripts
-
-| Script | Purpose |
-|--------|---------|
-| `pnpm validate:branch` | Validate current (or specified) branch name. |
-| `pnpm hooks:test` | Self-test `commit-msg` hook (footer behavior). |
-
 ### Environment Variables
 
 | Variable | Effect |
@@ -151,7 +143,7 @@ Footer label is configurable via `commitFooterLabel` in `validate-branch-name.co
 
 | Issue | Resolution |
 |-------|------------|
-| Branch rejected | Run `pnpm validate:branch` and adjust name. |
+| Branch rejected | Check branch name format against `validate-branch-name.config.cjs` rules. |
 | Missing footer | Ensure branch has valid ticket segment & config has prefixes. |
 | Slow pre-commit | Temporarily export `BYPASS_PHP_ANALYSIS=1` (avoid committing with unchecked code routinely). |
 
