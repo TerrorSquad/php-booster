@@ -1,19 +1,19 @@
 export default defineNuxtConfig({
   // https://github.com/nuxt-themes/docus
-  extends: ['@nuxt-themes/docus'],
+  extends: ["@nuxt-themes/docus"],
 
   devtools: { enabled: true },
 
   app: {
-    baseURL: '/php-blueprint/',
-    buildAssetsDir: 'assets',
+    baseURL: "/php-booster/",
+    buildAssetsDir: "assets",
   },
 
   modules: [
     // Remove it if you don't use Plausible analytics
     // https://github.com/nuxt-modules/plausible
-    '@nuxtjs/plausible'
+    "@nuxtjs/plausible",
   ],
 
-  compatibilityDate: '2024-09-08'
-})
+  compatibilityDate: "2024-09-08",
+});

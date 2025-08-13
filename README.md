@@ -1,6 +1,6 @@
 # Booster
 
-[![Integration Tests](https://github.com/TerrorSquad/php-blueprint/actions/workflows/integration-tests.yml/badge.svg)](https://github.com/TerrorSquad/php-blueprint/actions/workflows/integration-tests.yml)
+[![Integration Tests](https://github.com/TerrorSquad/php-booster/actions/workflows/integration-tests.yml/badge.svg)](https://github.com/TerrorSquad/php-booster/actions/workflows/integration-tests.yml)
 
 A curated collection of tools and best practices for PHP development.
 
@@ -17,7 +17,7 @@ If you wish to use DDEV for local development, please install it by following th
 
 ## Documentation
 
-- Site: [https://terrorsquad.github.io/php-blueprint/](https://terrorsquad.github.io/php-blueprint/)
+- Site: [https://terrorsquad.github.io/php-booster/](https://terrorsquad.github.io/php-booster/)
 - Copilot repository guidance: [.github/copilot-instructions.md](./.github/copilot-instructions.md)
 
 ## Adding to an Existing PHP Project
@@ -29,7 +29,7 @@ To integrate the booster into your existing PHP project:
 2. Run the following command to integrate the booster into your project:
 
     ```bash
-    curl -sSL https://raw.githubusercontent.com/TerrorSquad/php-blueprint/main/booster/integrate_booster.sh | bash
+    curl -sSL https://raw.githubusercontent.com/TerrorSquad/php-booster/main/booster/integrate_booster.sh | bash
     ```
 
 3. Follow the instructions on the screen.

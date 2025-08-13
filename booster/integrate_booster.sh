@@ -3,7 +3,7 @@
 # This script is used to integrate the php-booster into your project (potentially DDEV)
 
 # --- Configuration ---
-BOOSTER_REPO_URL="https://github.com/TerrorSquad/php-blueprint.git"
+BOOSTER_REPO_URL="https://github.com/TerrorSquad/php-booster.git"
 BOOSTER_TARGET_DIR="php-booster"
 BOOSTER_INTERNAL_PATH="${BOOSTER_TARGET_DIR}/booster"
 
@@ -57,7 +57,7 @@ function create_version_stamp() {
     local version="$1"
     local version_file=".booster-version"
     local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
-    
+
     cat > "$version_file" << EOF
 # PHP Booster Version Stamp
 # This file tracks which booster version was integrated into this project
@@ -67,7 +67,7 @@ VERSION=$version
 INSTALLED_DATE=$timestamp
 INTEGRATION_METHOD=script
 EOF
-    
+
     log "Created version stamp: $version (installed $timestamp)"
 }
 
@@ -76,11 +76,11 @@ function show_version_info() {
     local current_version="$1"
     local installed_version
     installed_version=$(get_installed_version)
-    
+
     if [ -n "$installed_version" ]; then
         echo -e "${GREEN}[INFO]${NC} Previous booster installation detected: $installed_version"
         echo -e "${GREEN}[INFO]${NC} Current booster version: $current_version"
-        
+
         if [ "$installed_version" != "$current_version" ]; then
             echo -e "${YELLOW}[UPGRADE]${NC} This will upgrade your booster from $installed_version to $current_version"
         else
@@ -183,7 +183,7 @@ function download_php_booster() {
 
         if [ ! -d "$BOOSTER_INTERNAL_PATH" ]; then
             warn "The expected internal structure '$BOOSTER_INTERNAL_PATH' was not found within the cloned repository."
-            error "Blueprint content directory '$BOOSTER_INTERNAL_PATH' not found."
+            error "Booster content directory '$BOOSTER_INTERNAL_PATH' not found."
         fi
         success "php-booster cloned successfully into '$BOOSTER_TARGET_DIR'."
     fi
@@ -195,7 +195,7 @@ function update_ddev_files() {
     local project_ddev_path=".ddev"
 
     if [ ! -d "$booster_ddev_path" ]; then
-        warn "Blueprint DDEV directory '$booster_ddev_path' not found. Skipping DDEV file update."
+        warn "Booster DDEV directory '$booster_ddev_path' not found. Skipping DDEV file update."
         return
     fi
 
@@ -229,7 +229,7 @@ function update_ddev_config() {
         return
     fi
     if [ ! -f "$booster_config" ]; then
-        warn "Blueprint DDEV config '$booster_config' not found. Skipping update."
+        warn "Booster DDEV config '$booster_config' not found. Skipping update."
         return
     fi
 
@@ -342,7 +342,7 @@ function update_package_json() {
     local tmp_pkg="package.json.tmp"
 
     if [ ! -f "$booster_pkg" ]; then
-        warn "Blueprint package.json '$booster_pkg' not found. Skipping update."
+        warn "Booster package.json '$booster_pkg' not found. Skipping update."
         return
     fi
 
@@ -371,7 +371,7 @@ function update_package_json() {
         cp "$booster_commitlint" . || warn "Failed to copy commitlint config."
         success "commitlint.config.ts copied."
     else
-        warn "Blueprint 'commitlint.config.ts' not found. Skipping copy."
+        warn "Booster 'commitlint.config.ts' not found. Skipping copy."
     fi
 
     # Copy pnpm-workspace.yaml if it exists
@@ -380,7 +380,7 @@ function update_package_json() {
         cp "$booster_pnpm_workspace" . || warn "Failed to copy pnpm-workspace.yaml."
         success "pnpm-workspace.yaml copied."
     else
-        warn "Blueprint 'pnpm-workspace.yaml' not found. Skipping copy."
+        warn "Booster 'pnpm-workspace.yaml' not found. Skipping copy."
     fi
 }
 
@@ -395,7 +395,7 @@ function merge_scripts() {
 
     # Check if files exist
     [ ! -f "$COMPOSER1" ] && error "Project composer.json not found at '$COMPOSER1'"
-    [ ! -f "$COMPOSER2" ] && error "Blueprint composer.json not found at '$COMPOSER2'"
+    [ ! -f "$COMPOSER2" ] && error "Booster composer.json not found at '$COMPOSER2'"
 
     log "Merging scripts from '$COMPOSER2' into '$COMPOSER1'..."
 
@@ -658,7 +658,7 @@ function add_code_quality_tools() {
         return
     fi
     if [ ! -f "$booster_composer" ]; then
-        warn "Blueprint composer.json '$booster_composer' not found. Skipping composer update."
+        warn "Booster composer.json '$booster_composer' not found. Skipping composer update."
         return
     fi
 
@@ -799,7 +799,7 @@ function update_gitignore() {
     local booster_gitignore="${BOOSTER_INTERNAL_PATH}/.gitignore"
 
     if [ ! -f "$booster_gitignore" ]; then
-        warn "Blueprint .gitignore '$booster_gitignore' not found. Skipping update."
+        warn "Booster .gitignore '$booster_gitignore' not found. Skipping update."
         return
     fi
 
@@ -939,11 +939,11 @@ function show_help() {
 function show_version_info_and_exit() {
     echo "PHP Booster Integration Script"
     echo ""
-    
+
     # Try to get installed version first
     local installed_version
     installed_version=$(get_installed_version)
-    
+
     if [ -n "$installed_version" ]; then
         echo "Installed version: $installed_version"
         if [ -f ".booster-version" ]; then
@@ -953,7 +953,7 @@ function show_version_info_and_exit() {
     else
         echo "No booster installation detected in current directory"
     fi
-    
+
     echo ""
     # Try to get available version, but handle errors gracefully
     local available_version
@@ -1033,10 +1033,10 @@ function main() {
     fi
 
     add_code_quality_tools # Merges composer scripts & installs deps
-    
+
     # --- Create Version Stamp ---
     create_version_stamp "$current_version"
-    
+
     success "Integration process completed."
 
     if [ $IS_DDEV_PROJECT -eq 1 ]; then
