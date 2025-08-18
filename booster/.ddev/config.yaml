@@ -20,12 +20,12 @@ router_http_port: "6666"
 timezone: Europe/Berlin
 hooks:
   pre-start:
-    - exec-host: python3 .ddev/php/pre-start.py
+    - exec-host: python3 .ddev/php/create-xdebug-local.py
   post-start:
     - exec: bash ./tools/git-hooks/setup.sh
     - exec: composer install --prefer-dist --no-progress --no-interaction
     - exec: python3 .phpstorm/update_xdebug_config.py
-    - exec: python3 .ddev/php/post-start.py
+    - exec: python3 .ddev/php/add-xdebug-trigger-to-nginx.py
 # Key features of DDEV's config.yaml:
 
 # name: <projectname> # Name of the project, automatically provides
