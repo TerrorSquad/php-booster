@@ -9,3 +9,4 @@ psalm_sonar.json
 .phpunit.result.cache
 .ddev/php/xdebug-local.ini
 .qodo
+.vscode/tasks.json
