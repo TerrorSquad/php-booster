@@ -3,7 +3,9 @@
 const config = {
   /** Allowed branch types */
   types: ['feature', 'fix', 'chore', 'story', 'task', 'bug', 'sub-task'],
-  /** Optional ticket prefix and number (if not needed, set both to null) */
+  /** Whether ticket IDs are required in commit messages (explicit control) */
+  requireTickets: true,
+  /** Optional ticket prefix and number (only used if requireTickets is true) */
   ticketIdPrefix: 'PRJ|ERM', /** e.g. 'PRJ|ERM' (no parentheses) */
   ticketNumberPattern: '[0-9]+', /** e.g. '[0-9]+' or null */
   /** Branch name (after type and optional ticket) */

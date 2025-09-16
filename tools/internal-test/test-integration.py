@@ -141,10 +141,12 @@ class TestEnvironment:
         version_stamp = self.config.target_dir / ".booster-version"
         if version_stamp.exists():
             return True
-        
-        # Fallback check: essential booster files
-        return (self.config.target_dir / "tools/commit-utils.py").exists() and (
-            self.config.target_dir / "tools/runner.sh"
+
+        # Fallback check: essential booster files (updated for ZX architecture)
+        return (
+            self.config.target_dir / "tools/git-hooks/shared/utils.mjs"
+        ).exists() and (
+            self.config.target_dir / "tools/git-hooks/hooks/commit-msg.mjs"
         ).exists()
 
     def get_integrated_version(self) -> Optional[str]:
@@ -162,16 +164,19 @@ class TestEnvironment:
 
     def has_git_hooks(self) -> bool:
         """Check if git hooks are installed"""
-        # Check for both traditional git hooks and Husky hooks
-        git_hooks_exist = (
-            self.config.target_dir / ".git/hooks/commit-msg"
-        ).exists() and (self.config.target_dir / ".git/hooks/pre-commit").exists()
+        # Check for the new ZX-based hook system with custom hooksPath
+        zx_hooks_exist = (
+            (self.config.target_dir / "tools/git-hooks/hooks/commit-msg").exists()
+            and (self.config.target_dir / "tools/git-hooks/hooks/pre-commit").exists()
+            and (
+                self.config.target_dir / "tools/git-hooks/hooks/commit-msg.mjs"
+            ).exists()
+            and (
+                self.config.target_dir / "tools/git-hooks/hooks/pre-commit.mjs"
+            ).exists()
+        )
 
-        husky_hooks_exist = (
-            self.config.target_dir / ".husky/commit-msg"
-        ).exists() and (self.config.target_dir / ".husky/pre-commit").exists()
-
-        return git_hooks_exist or husky_hooks_exist
+        return zx_hooks_exist
 
     # Action Methods
     def show_status(self):
@@ -304,6 +309,7 @@ class TestEnvironment:
                 "config",
                 f"--project-name={self.config.project_name}",
                 "--project-type=symfony",
+                "--docroot=public",
             ],
             cwd=self.config.target_dir,
         )
@@ -441,15 +447,15 @@ class TestEnvironment:
 
         # Check expected files
         expected_files = [
-            "tools/commit-utils.py",
             "tools/git-hooks/hooks/commit-msg",
             "tools/git-hooks/hooks/pre-commit",
             "tools/git-hooks/hooks/pre-push",
-            "tools/git-hooks/hooks/commit-msg.bash",
-            "tools/git-hooks/hooks/pre-commit.bash",
-            "tools/git-hooks/hooks/pre-push.bash",
+            "tools/git-hooks/hooks/commit-msg.mjs",
+            "tools/git-hooks/hooks/pre-commit.mjs",
+            "tools/git-hooks/hooks/pre-push.mjs",
+            "tools/git-hooks/shared/utils.mjs",
             "validate-branch-name.config.cjs",
-            "tools/runner.sh",
+            "package.json",
         ]
 
         missing_files = []
@@ -512,7 +518,7 @@ class TestEnvironment:
         # Return to main/master first
         try:
             self.run_command(
-                ["git", "checkout", "main"], cwd=self.config.target_dir, check=False
+                ["git", "checkout", "master"], cwd=self.config.target_dir, check=False
             )
         except:
             try:
@@ -699,7 +705,7 @@ echo "Another test";
             with open("/etc/os-release") as f:
                 for line in f:
                     if line.startswith("PRETTY_NAME"):
-                        distro_name = line.split('=', 1)[1].strip('"\\n')
+                        distro_name = line.split("=", 1)[1].strip('"\\n')
                         print(f"  - Distribution: {distro_name}")
                         break
         except:

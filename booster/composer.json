@@ -17,10 +17,10 @@
 	},
 	"scripts": {
 		"post-install-cmd": [
-			"bash ./tools/git-hooks/setup.sh"
+			"yes | pnpm install"
 		],
 		"post-update-cmd": [
-			"bash ./tools/git-hooks/setup.sh"
+			"yes | pnpm install"
 		],
 		"generate-api-spec": "php documentation/api.php",
 		"check-cs": "vendor/bin/ecs check --ansi",

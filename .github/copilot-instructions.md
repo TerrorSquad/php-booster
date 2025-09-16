@@ -53,10 +53,10 @@ Copilot SHOULD NOT generate raw php-cs-fixer, phpstan, rector, or psalm command 
 
 ---
 ## 5. Git Hooks Architecture
-- Unified helper: `tools/commit-utils.py` handles: `--need-ticket`, `--footer-label`, `--extract-ticket`.
-- Common library: `tools/git-hooks/lib/common.sh` provides shared functionality and colored logging.
-- `commit-msg` hook validates branch, lints message, appends footer if needed.
-- Copilot SHOULD reference `commit-utils.py` and the common library instead of legacy scripts.
+- Native ZX implementation: All git hooks use Google ZX for secure, cross-platform execution.
+- Common library: `tools/git-hooks/shared/utils.mjs` provides shared functionality and colored logging.
+- `commit-msg` hook validates branch, lints message, appends footer if needed - all functionality integrated natively.
+- Copilot SHOULD reference the ZX-based hook system and shared utilities instead of legacy scripts.
 
 ---
 ## 6. Configuration Files (Do Not Duplicate)
@@ -120,13 +120,13 @@ If user asks about improvements, Copilot may propose:
 
 ---
 ## 13. Quick Reference Snippets
-Check ticket requirement:
+Check current branch and validation:
 ```
-python3 tools/commit-utils.py --need-ticket
+git rev-parse --abbrev-ref HEAD
 ```
-Extract ticket from current branch:
+Validate branch manually:
 ```
-python3 tools/commit-utils.py --extract-ticket "$(git rev-parse --abbrev-ref HEAD)"
+./node_modules/.bin/validate-branch-name -t "$(git rev-parse --abbrev-ref HEAD)"
 ```
 Run all analyzers (example if combined script exists, otherwise run individually):
 ```

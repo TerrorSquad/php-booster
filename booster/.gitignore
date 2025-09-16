@@ -2,7 +2,6 @@ vendor
 .idea
 node_modules
 .pnpm-store
-.husky
 coverage.xml
 phpstan_sonar.json
 psalm_sonar.json

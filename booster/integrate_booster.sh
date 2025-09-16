@@ -292,33 +292,27 @@ function copy_files() {
     # Copy selected tool scripts instead of entire tools directory
     local tools_src="${BOOSTER_INTERNAL_PATH}/tools"
     if [ -d "$tools_src" ]; then
-        mkdir -p tools/git-hooks/hooks
-        # List of tool files to copy (public runtime helpers only)
-        local tool_files=(
-            "runner.sh"
-            "commit-utils.py"
-            "git-hooks"
-        )
-        for f in "${tool_files[@]}"; do
-            if [ -f "$tools_src/$f" ]; then
-                log "  Copying tool '$f'"
-                cp "$tools_src/$f" tools/
-                # Set execute permissions for shell scripts and Python files
-                if [[ "$f" == *.sh ]] || [[ "$f" == *.py ]]; then
-                    chmod +x "tools/$f"
-                fi
-            elif [ -d "$tools_src/$f" ]; then
-                log "  Copying tool directory '$f'"
-                cp -R "$tools_src/$f" tools/
-                # Set execute permissions for shell scripts in the directory
-                find "tools/$f" -name "*.sh" -exec chmod +x {} \;
-                find "tools/$f" -name "*.bash" -exec chmod +x {} \;
-            else
-                warn "  Expected tool file missing: $f"
-            fi
-        done
+        mkdir -p tools/git-hooks
 
+        # Copy git-hooks/hooks directory
+        if [ -d "$tools_src/git-hooks/hooks" ]; then
+            log "  Copying git-hooks/hooks directory"
+            cp -R "$tools_src/git-hooks/hooks" tools/git-hooks/
+            # Set execute permissions for all scripts in hooks directory
+            find "tools/git-hooks/hooks" -type f \( -name "*.sh" -o -name "*.bash" -o -name "*.mjs" \) -exec chmod +x {} \;
+        else
+            warn "  Expected tool directory missing: git-hooks/hooks"
+        fi
 
+        # Copy git-hooks/shared directory
+        if [ -d "$tools_src/git-hooks/shared" ]; then
+            log "  Copying git-hooks/shared directory"
+            cp -R "$tools_src/git-hooks/shared" tools/git-hooks/
+            # Set execute permissions for scripts in shared directory
+            find "tools/git-hooks/shared" -type f \( -name "*.sh" -o -name "*.bash" -o -name "*.mjs" \) -exec chmod +x {} \;
+        else
+            warn "  Expected tool directory missing: git-hooks/shared"
+        fi
     else
         warn "  Booster tools directory not found; skipping tools copy."
     fi
@@ -358,7 +352,8 @@ function update_package_json() {
             .[0] as $proj | .[1] as $booster |
             $proj * {
                 scripts: (($proj.scripts // {}) + ($booster.scripts // {})),
-                devDependencies: (($proj.devDependencies // {}) + ($booster.devDependencies // {}))
+                devDependencies: (($proj.devDependencies // {}) + ($booster.devDependencies // {})),
+                husky: (($proj.husky // {}) + ($booster.husky // {}))
             }
             ' "$project_pkg" "$booster_pkg" >"$tmp_pkg" || error "Failed to merge package.json using jq."
 

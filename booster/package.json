@@ -4,18 +4,24 @@
   "type": "module",
   "version": "0.6.0",
   "scripts": {
-    "prepare": "husky",
     "commit": "commit",
-    "generate:api-doc:html": "redocly build-docs documentation/openapi.yml --output=documentation/openapi.html"
+    "generate:api-doc:html": "redocly build-docs documentation/openapi.yml --output=documentation/openapi.html",
+    "test:hooks": "vitest run tools/git-hooks",
+    "test:hooks:watch": "vitest watch tools/git-hooks"
+  },
+  "husky": {
+    "hooksPath": "tools/git-hooks/hooks"
   },
   "devDependencies": {
     "@commitlint/cli": "^19.8.1",
     "@commitlint/config-conventional": "^19.8.1",
     "@commitlint/prompt-cli": "^19.8.1",
     "@commitlint/types": "^19.8.1",
-    "@redocly/cli": "^2.0.2",
+    "@redocly/cli": "^2.1.3",
     "husky": "^9.1.7",
-    "validate-branch-name": "^1.3.2"
+    "validate-branch-name": "^1.3.2",
+    "zx": "^8.8.1",
+    "vitest": "^3.2.4"
   },
   "packageManager": "pnpm@10.16.1"
 }

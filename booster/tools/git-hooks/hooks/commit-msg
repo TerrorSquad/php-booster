@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
 
-# Since git hooks must be POSIX compliant, we can't use bash features.
-# This script is a wrapper around the actual script that does the work.
+# Git hook wrapper for ZX implementation
+# This script calls the modern ZX-based commit-msg hook
 
-GIT_HOOKS_PATH=$(git config core.hooksPath)
-
-bash "$GIT_HOOKS_PATH/../commit-msg.bash" "$@"
+# Call the ZX-based hook
+pnpm zx "tools/git-hooks/hooks/commit-msg.mjs" "$@"
