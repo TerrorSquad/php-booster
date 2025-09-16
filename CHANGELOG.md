@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.0.0](https://github.com/TerrorSquad/php-booster/compare/v0.6.0...v1.0.0) (2025-09-16)
+
+
+### ⚠ BREAKING CHANGES
+
+* migrate git hooks to ZX
+
+### Features
+
+* migrate git hooks to ZX ([2bd5a28](https://github.com/TerrorSquad/php-booster/commit/2bd5a28b2471f4db614331244fc170e46bb00d1a))
+
 ## [0.6.0](https://github.com/TerrorSquad/php-booster/compare/v0.5.0...v0.6.0) (2025-08-13)
 
 
