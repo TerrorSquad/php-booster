@@ -3,5 +3,5 @@
 # Git hook wrapper for ZX implementation
 # This script calls the modern ZX-based pre-commit hook
 
-# Call the ZX-based hook
-pnpm zx "tools/git-hooks/hooks/pre-commit.mjs" "$@"
+# Call the ZX-based TypeScript hook
+pnpm zx "tools/git-hooks/hooks/pre-commit.ts" "$@"

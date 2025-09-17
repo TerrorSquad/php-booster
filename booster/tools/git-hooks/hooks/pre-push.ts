@@ -1,7 +1,7 @@
 #!/usr/bin/env zx
 
 /**
- * Pre-push hook - ZX implementation
+ * Pre-push hook - ZX TypeScript implementation
  *
  * Runs comprehensive checks before pushing:
  * - Architecture validation with Deptrac
@@ -12,12 +12,14 @@
 import { $, fs } from 'zx'
 import {
   log,
-  shouldSkipChecks,
+  shouldSkipDuringMerge,
   runVendorBin,
   runTool,
   hasVendorBin,
-  hasComposerPackage
-} from '../shared/utils.mjs'
+  hasComposerPackage,
+  runWithRunner,
+  exitIfChecksFailed,
+} from '../shared/utils.ts'
 
 // Configure zx
 $.verbose = false
@@ -25,7 +27,7 @@ $.verbose = false
 /**
  * Check if vendor directory exists
  */
-async function checkVendorDirectory() {
+async function checkVendorDirectory(): Promise<void> {
   if (!(await fs.pathExists('./vendor'))) {
     log.error('vendor/ directory not found. Run composer install.')
     process.exit(1)
@@ -35,7 +37,7 @@ async function checkVendorDirectory() {
 /**
  * Run tests using the specified tool
  */
-async function runTests(testTool, testBinary) {
+async function runTests(testTool: string, testBinary: string): Promise<boolean> {
   if (!(await hasComposerPackage(testTool))) {
     log.skip(`${testTool} not installed -> skipping tests`)
     return true
@@ -51,7 +53,7 @@ async function runTests(testTool, testBinary) {
 /**
  * Run Deptrac architecture analysis
  */
-async function runDeptrac() {
+async function runDeptrac(): Promise<boolean> {
   if (!(await hasVendorBin('deptrac'))) {
     log.skip('Deptrac not found -> skipping architecture analysis')
     return true
@@ -68,10 +70,10 @@ async function runDeptrac() {
     try {
       await runVendorBin('deptrac', ['--formatter=graphviz', '--output=deptrac.png'])
       if (await fs.pathExists('./deptrac.png')) {
-        await $`git add deptrac.png`
+        await runWithRunner(['git', 'add', 'deptrac.png'], { quiet: true })
         log.info('Added deptrac.png to staging area')
       }
-    } catch (error) {
+    } catch (error: unknown) {
       // Image generation is optional, don't fail if it doesn't work
       log.info('Deptrac image generation skipped (optional)')
     }
@@ -83,7 +85,7 @@ async function runDeptrac() {
 /**
  * Generate API documentation
  */
-async function generateApiDocs() {
+async function generateApiDocs(): Promise<boolean> {
   if (!(await hasComposerPackage('zircote/swagger-php'))) {
     log.skip('swagger-php not installed -> skipping API docs')
     return true
@@ -103,45 +105,55 @@ async function generateApiDocs() {
 
   // Check if OpenAPI file was modified
   try {
-    const diffResult = await $`git diff --name-only`.quiet()
+    const diffResult = await runWithRunner(['git', 'diff', '--name-only'], { quiet: true })
     const modifiedFiles = diffResult.toString().trim().split('\n')
 
     if (modifiedFiles.includes('documentation/openapi.yml')) {
       log.tool('API Documentation', 'Generating HTML documentation...')
 
       try {
-        await $`${runner} pnpm generate:api-doc:html`
+        await runWithRunner(['pnpm', 'generate:api-doc:html'])
         log.success('HTML documentation generated')
 
         // Stage the generated files
-        await $`git add documentation/openapi.html documentation/openapi.yml`
+        await runWithRunner(
+          ['git', 'add', 'documentation/openapi.html', 'documentation/openapi.yml'],
+          { quiet: true },
+        )
 
         // Check if there are staged changes and commit them
-        const stagedChanges = await $`git diff --cached --quiet`.quiet().catch(() => false)
-        if (!stagedChanges) {
-          await $`git commit -m "chore: update API documentation"`
+        try {
+          await runWithRunner(['git', 'diff', '--cached', '--quiet'], { quiet: true })
+          // If we get here, there are no staged changes
+          log.info('No staged changes for API documentation')
+        } catch {
+          // There are staged changes, commit them
+          await runWithRunner(['git', 'commit', '-m', 'chore: update API documentation'])
           log.success('API documentation committed')
         }
-      } catch (error) {
-        log.error('HTML documentation generation failed')
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : String(error)
+        log.error(`HTML documentation generation failed: ${errorMessage}`)
         return false
       }
     } else {
       log.info('No changes to OpenAPI specification, skipping HTML generation')
     }
-  } catch (error) {
+  } catch (error: unknown) {
     // Git operations failed, but this is not critical
-    log.warn('Could not check for OpenAPI changes')
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    log.warn(`Could not check for OpenAPI changes: ${errorMessage}`)
   }
 
   return true
 }
 
-async function main() {
+async function main(): Promise<void> {
   log.step('Starting pre-push checks...')
 
   // Check if we should skip all checks
-  if (await shouldSkipChecks()) {
+  if (await shouldSkipDuringMerge()) {
+    log.info('Skipping pre-push checks during merge')
     process.exit(0)
   }
 
@@ -167,19 +179,14 @@ async function main() {
   }
 
   // Final result
-  if (allSuccessful) {
-    log.celebrate('All pre-push checks passed!')
-    process.exit(0)
-  } else {
-    log.error('Some pre-push checks failed. Please fix the issues and try again.')
-    process.exit(1)
-  }
+  exitIfChecksFailed(allSuccessful)
 }
 
 // Run main function
 try {
   await main()
-} catch (error) {
-  log.error(`Unexpected error: ${error.message}`)
+} catch (error: unknown) {
+  const errorMessage = error instanceof Error ? error.message : String(error)
+  log.error(`Unexpected error: ${errorMessage}`)
   process.exit(1)
 }

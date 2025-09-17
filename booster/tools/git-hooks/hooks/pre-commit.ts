@@ -1,7 +1,7 @@
 #!/usr/bin/env zx
 
 /**
- * Pre-commit hook - ZX implementation
+ * Pre-commit hook - ZX TypeScript implementation
  *
  * Runs PHP quality tools on staged files:
  * - PHP Lint (syntax check)
@@ -16,21 +16,24 @@ import {
   log,
   getStagedPhpFiles,
   hasVendorBin,
-  shouldSkipChecks,
+  shouldSkipDuringMerge,
   runTool,
   checkPhpSyntax,
   stageFiles,
-  runVendorBin
-} from '../shared/utils.mjs'
+  runVendorBin,
+  runWithRunner,
+  exitIfChecksFailed,
+} from '../shared/utils.ts'
 
 // Configure zx
 $.verbose = false
 
-async function main() {
+async function main(): Promise<void> {
   log.step('Starting pre-commit checks...')
 
   // Check if we should skip all checks
-  if (await shouldSkipChecks()) {
+  if (await shouldSkipDuringMerge()) {
+    log.info('Skipping pre-commit checks during merge')
     process.exit(0)
   }
 
@@ -52,7 +55,7 @@ async function main() {
   // Track overall success
   let allSuccessful = true
 
-    // Run Rector if available
+  // Run Rector if available
   if (await hasVendorBin('rector')) {
     const success = await runTool('Rector', async () => {
       log.tool('Rector', 'Running automatic refactoring...')
@@ -116,11 +119,13 @@ async function main() {
       try {
         await runVendorBin('deptrac', ['--formatter=graphviz', '--output=deptrac.png'])
         if (await fs.pathExists('./deptrac.png')) {
-          await $`git add deptrac.png`
+          await runWithRunner(['git', 'add', 'deptrac.png'], { quiet: true })
           log.info('Added deptrac.png to staging area')
         }
-      } catch (error) {
+      } catch (error: unknown) {
         // Image generation is optional, don't fail if it doesn't work
+        const errorMessage = error instanceof Error ? error.message : String(error)
+        log.warn(`Deptrac image generation failed: ${errorMessage}`)
       }
     } else {
       allSuccessful = false
@@ -130,8 +135,8 @@ async function main() {
   }
 
   // Run Psalm if available
-  if (await hasVendorBin('psalm') || await hasVendorBin('psalm.phar')) {
-    const psalmBin = await hasVendorBin('psalm') ? 'psalm' : 'psalm.phar'
+  if ((await hasVendorBin('psalm')) || (await hasVendorBin('psalm.phar'))) {
+    const psalmBin = (await hasVendorBin('psalm')) ? 'psalm' : 'psalm.phar'
     const success = await runTool('Psalm', async () => {
       log.tool('Psalm', 'Running static analysis...')
       await runVendorBin(psalmBin, ['--show-info=false', ...phpFiles])
@@ -146,19 +151,14 @@ async function main() {
   }
 
   // Final result
-  if (allSuccessful) {
-    log.celebrate('All pre-commit checks passed!')
-    process.exit(0)
-  } else {
-    log.error('Some pre-commit checks failed. Please fix the issues and try again.')
-    process.exit(1)
-  }
+  exitIfChecksFailed(allSuccessful)
 }
 
 // Run main function
 try {
   await main()
-} catch (error) {
-  log.error(`Unexpected error: ${error.message}`)
+} catch (error: unknown) {
+  const errorMessage = error instanceof Error ? error.message : String(error)
+  log.error(`Unexpected error: ${errorMessage}`)
   process.exit(1)
 }

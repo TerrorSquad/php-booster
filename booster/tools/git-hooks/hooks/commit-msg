@@ -3,5 +3,5 @@
 # Git hook wrapper for ZX implementation
 # This script calls the modern ZX-based commit-msg hook
 
-# Call the ZX-based hook
-pnpm zx "tools/git-hooks/hooks/commit-msg.mjs" "$@"
+# Call the ZX-based TypeScript hook
+pnpm zx "tools/git-hooks/hooks/commit-msg.ts" "$@"
