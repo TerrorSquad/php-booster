@@ -109,10 +109,12 @@ export async function getStagedPhpFiles(): Promise<string[]> {
     )
     const allFiles = result.toString().trim().split('\n').filter(Boolean)
 
-    // Filter for PHP files that actually exist
+    // Filter for PHP files that actually exist and are not in vendor directory
     const phpFiles: string[] = []
     for (const file of allFiles) {
-      if (file.endsWith('.php') && (await fs.pathExists(file))) {
+      if (file.endsWith('.php') && 
+          !file.startsWith('vendor/') && 
+          (await fs.pathExists(file))) {
         phpFiles.push(file)
       }
     }
