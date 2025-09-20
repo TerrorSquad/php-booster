@@ -27,7 +27,7 @@ import {
   shouldSkipChecks,
   checkPhpSyntax,
   getRunnerPrefix
-} from '../shared/utils.mjs'
+} from '../shared/utils.ts'
 
 describe('Git Hooks Utils', () => {
   beforeEach(() => {
