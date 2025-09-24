@@ -7,19 +7,28 @@
  * - Branch name validation using validate-branch-name
  * - Commit message linting with commitlint
  * - Automatic ticket footer appending when required
+ *
+ * Environment Variables:
+ * - SKIP_COMMITMSG=1: Skip the entire commit-msg hook
+ * - COMMITMSG_VERBOSE=1: Enable verbose output for debugging
  */
 
 import { $, fs, path } from 'zx'
+import validateBranchNameConfig from '../../../validate-branch-name.config.cjs'
 import {
+  getCurrentBranch,
   log,
-  shouldSkipDuringMerge,
   runTool,
   runWithRunner,
-  getCurrentBranch,
+  shouldSkipDuringMerge,
 } from '../shared/utils.ts'
 
 // Configure zx
-$.verbose = false
+$.verbose = process.env.COMMITMSG_VERBOSE === '1' || process.env.COMMITMSG_VERBOSE === 'true'
+
+// Fix locale issues that can occur in VS Code
+process.env.LC_ALL = 'C'
+process.env.LANG = 'C'
 
 /**
  * Branch validation configuration interface
@@ -44,50 +53,20 @@ interface ProcessedConfig {
 }
 
 /**
- * Options for running commands with runner
- */
-interface RunnerOptions {
-  quiet?: boolean
-  showCommand?: boolean
-}
-
-/**
  * Load and parse validate-branch-name configuration
  */
-async function loadConfig(): Promise<BranchConfig> {
-  const configPath = path.resolve('./validate-branch-name.config.cjs')
+function loadConfig(): BranchConfig {
+  const config = validateBranchNameConfig.config
 
-  if (!(await fs.pathExists(configPath))) {
-    throw new Error(`Configuration file not found: ${configPath}`)
-  }
-
-  try {
-    const content = await fs.readFile(configPath, 'utf8')
-
-    // Extract the config object from the CommonJS module
-    const configMatch = content.match(/const config = ({.*?});/s)
-    if (!configMatch) {
-      throw new Error('Could not find config object in config file')
-    }
-
-    const configStr = configMatch[1]
-
-    // Safely evaluate the JavaScript object
-    const config = eval(`(${configStr})`)
-
-    // Validate required properties and apply defaults
-    return {
-      types: Array.isArray(config.types) ? config.types : [],
-      ticketIdPrefix: config.ticketIdPrefix || null,
-      ticketNumberPattern: config.ticketNumberPattern || null,
-      commitFooterLabel: config.commitFooterLabel || 'Closes',
-      requireTickets: Boolean(config.requireTickets),
-      skipped: Array.isArray(config.skipped) ? config.skipped : [],
-      namePattern: config.namePattern || null,
-    }
-  } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : String(error)
-    throw new Error(`Failed to load branch validation config: ${errorMessage}`)
+  // Validate required properties and apply defaults
+  return {
+    types: Array.isArray(config.types) ? config.types : [],
+    ticketIdPrefix: config.ticketIdPrefix || null,
+    ticketNumberPattern: config.ticketNumberPattern || null,
+    commitFooterLabel: config.commitFooterLabel || 'Closes',
+    requireTickets: Boolean(config.requireTickets),
+    skipped: Array.isArray(config.skipped) ? config.skipped : [],
+    namePattern: config.namePattern || null,
   }
 }
 
@@ -106,10 +85,6 @@ function processConfig(config: BranchConfig): ProcessedConfig {
   // Use explicit requireTickets flag, but validate that patterns exist if tickets are required
   const needTicket =
     config.requireTickets && !!(config.ticketIdPrefix && config.ticketNumberPattern)
-  console.log('Need ticket:', needTicket)
-  console.log('Ticket ID Prefix:', config.ticketIdPrefix)
-  console.log('Ticket Number Pattern:', config.ticketNumberPattern)
-  console.log('config.requireTickets:', config.requireTickets)
 
   let footerLabel = String(config.commitFooterLabel || 'Closes').trim()
 
@@ -216,7 +191,7 @@ async function lintCommitMessage(commitFile: string): Promise<boolean> {
  */
 async function appendTicketFooter(commitFile: string): Promise<void> {
   // Load and process configuration
-  const config = await loadConfig()
+  const config = loadConfig()
   const branchName = await getCurrentBranch()
 
   // Check if current branch is skipped (exempt from all validation)
@@ -271,6 +246,12 @@ async function main(): Promise<void> {
   }
 
   log.step('Starting commit-msg validation...')
+
+  // Check if we should skip the entire hook
+  if (process.env.SKIP_COMMITMSG === '1' || process.env.SKIP_COMMITMSG === 'true') {
+    log.info('Skipping commit-msg validation (SKIP_COMMITMSG environment variable set)')
+    process.exit(0)
+  }
 
   // Check if we should skip all checks (during merge)
   if (await shouldSkipDuringMerge()) {

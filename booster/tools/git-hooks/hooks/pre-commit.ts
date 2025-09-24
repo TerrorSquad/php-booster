@@ -9,27 +9,42 @@
  * - ECS (code style auto-fixes)
  * - PHPStan (static analysis)
  * - Psalm (static analysis)
+ *
+ * Environment Variables:
+ * - SKIP_PRECOMMIT=1: Skip the entire pre-commit hook
+ * - FORCE_COMMIT=1: Continue with commit even if PHPStan or Psalm fail
+ * - PRECOMMIT_VERBOSE=1: Enable verbose output for debugging
  */
 
 import { $, fs } from 'zx'
 import {
-  log,
+  checkPhpSyntax,
+  exitIfChecksFailed,
   getStagedPhpFiles,
   hasVendorBin,
-  shouldSkipDuringMerge,
+  log,
   runTool,
-  checkPhpSyntax,
-  stageFiles,
   runVendorBin,
   runWithRunner,
-  exitIfChecksFailed,
+  shouldSkipDuringMerge,
+  stageFiles,
 } from '../shared/utils.ts'
 
 // Configure zx
-$.verbose = false
+$.verbose = process.env.PRECOMMIT_VERBOSE === '1' || process.env.PRECOMMIT_VERBOSE === 'true'
+
+// Fix locale issues that can occur in VS Code
+process.env.LC_ALL = 'C'
+process.env.LANG = 'C'
 
 async function main(): Promise<void> {
   log.step('Starting pre-commit checks...')
+
+  // Check if we should skip the entire hook
+  if (process.env.SKIP_PRECOMMIT === '1' || process.env.SKIP_PRECOMMIT === 'true') {
+    log.info('Skipping pre-commit checks (SKIP_PRECOMMIT environment variable set)')
+    process.exit(0)
+  }
 
   // Check if we should skip all checks
   if (await shouldSkipDuringMerge()) {
@@ -54,6 +69,13 @@ async function main(): Promise<void> {
 
   // Track overall success
   let allSuccessful = true
+
+  // Check if we should force commit even if static analysis fails
+  const forceCommit = process.env.FORCE_COMMIT === '1' || process.env.FORCE_COMMIT === 'true'
+
+  if (forceCommit) {
+    log.info('Force commit mode enabled (FORCE_COMMIT environment variable set)')
+  }
 
   // Run Rector if available
   if (await hasVendorBin('rector')) {
@@ -100,7 +122,11 @@ async function main(): Promise<void> {
     })
 
     if (!success) {
-      allSuccessful = false
+      if (forceCommit) {
+        log.warn('PHPStan failed, but continuing due to FORCE_COMMIT flag')
+      } else {
+        allSuccessful = false
+      }
     }
   } else {
     log.skip('PHPStan not found in vendor/bin. Skipping...')
@@ -144,7 +170,11 @@ async function main(): Promise<void> {
     })
 
     if (!success) {
-      allSuccessful = false
+      if (forceCommit) {
+        log.warn('Psalm failed, but continuing due to FORCE_COMMIT flag')
+      } else {
+        allSuccessful = false
+      }
     }
   } else {
     log.skip('Psalm not found in vendor/bin. Skipping...')

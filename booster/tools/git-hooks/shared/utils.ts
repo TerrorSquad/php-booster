@@ -5,7 +5,7 @@
  * Provides consistent logging, file operations, and tool detection
  */
 
-import { $, fs, path, chalk } from 'zx'
+import { $, chalk, fs, path } from 'zx'
 
 // Configure zx behavior
 $.verbose = false
@@ -15,21 +15,6 @@ $.verbose = false
  */
 interface RunOptions {
   quiet?: boolean
-}
-
-/**
- * Detect if we're in a DDEV environment and DDEV is available
- */
-export async function isDdevRunning(): Promise<boolean> {
-  try {
-    // Check if DDEV is available and we're in a DDEV project
-    await $`ddev --version`.quiet()
-
-    // Check if .ddev directory exists (indicates DDEV project)
-    return await fs.pathExists('.ddev')
-  } catch (error) {
-    return false
-  }
 }
 
 /**
@@ -56,31 +41,33 @@ export async function runWithRunner(command: string[], options: RunOptions = {})
   let fullCommand: string[]
   let contextLabel: string
 
-  const isDdev = await isDdevRunning()
-  const isContainer = await isInsideDdevContainer()
+  const isInsideContainer = await isInsideDdevContainer()
 
-  if (isDdev && !isContainer) {
-    // We're in a DDEV project but not inside container - run via DDEV
+  if (!isInsideContainer) {
+    // We're not inside a container - run via DDEV
     fullCommand = ['ddev', 'exec', ...command]
     contextLabel = 'via DDEV'
   } else {
-    // Run directly (either no DDEV or already inside container)
+    // Run directly (already inside container)
     fullCommand = command
-    contextLabel = isContainer ? 'inside DDEV container' : 'direct'
+    contextLabel = isInsideContainer ? 'inside DDEV container' : 'direct'
   }
 
   // Log command execution if not quiet
   if (!quiet) {
     const commandStr = command.join(' ')
-    console.log(chalk.cyan(`🔧 Executing (${contextLabel}): ${commandStr}`))
+    log.info(`Executing (${contextLabel}): ${commandStr}`)
   }
 
-  // Execute with appropriate stdio handling
-  if (quiet) {
-    return await $({ stdio: 'pipe' })`${fullCommand}`
-  } else {
-    return await $({ stdio: 'inherit' })`${fullCommand}`
+  // Set clean environment to avoid locale warnings
+  const cleanEnv = {
+    ...process.env,
+    LC_ALL: 'C',
+    LANG: 'C',
   }
+
+  // Execute with appropriate stdio handling and clean environment
+  return await $({ stdio: quiet ? 'pipe' : 'inherit', env: cleanEnv })`${fullCommand}`
 }
 
 /**
@@ -112,7 +99,7 @@ export async function getStagedPhpFiles(): Promise<string[]> {
     // Filter for PHP files that actually exist
     const phpFiles: string[] = []
     for (const file of allFiles) {
-      if (file.endsWith('.php') && (await fs.pathExists(file))) {
+      if (file.endsWith('.php') && !file.includes('/vendor/') && (await fs.pathExists(file))) {
         phpFiles.push(file)
       }
     }
@@ -176,7 +163,24 @@ export async function getCurrentBranch(): Promise<string> {
     const result = await runWithRunner(['git', 'rev-parse', '--abbrev-ref', 'HEAD'], {
       quiet: true,
     })
-    return result.toString().trim()
+
+    // Clean the result to handle any locale warnings or extra output
+    const branchName = result.toString().trim()
+
+    // Extract just the last line if there are multiple lines (locale warnings, etc.)
+    const lines = branchName.split('\n').filter((line: string) => line.trim() !== '')
+    const cleanBranchName = lines[lines.length - 1].trim()
+
+    // Additional validation to ensure we have a valid branch name
+    if (
+      !cleanBranchName ||
+      cleanBranchName.includes('warning:') ||
+      cleanBranchName.includes('error:')
+    ) {
+      throw new Error(`Invalid branch name detected: "${cleanBranchName}"`)
+    }
+
+    return cleanBranchName
   } catch (error: unknown) {
     throw new Error(
       `Failed to get current branch: ${error instanceof Error ? error.message : String(error)}`,
