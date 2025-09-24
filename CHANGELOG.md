@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.0](https://github.com/TerrorSquad/php-booster/compare/v1.0.0...v1.1.0) (2025-09-24)
+
+
+### Features
+
+* enhance commit and pre-commit hooks with environment variable support and improved logging ([00ab3cb](https://github.com/TerrorSquad/php-booster/commit/00ab3cb3071958dbf38b129a644d1f112bafe91d))
+
 ## [1.0.0](https://github.com/TerrorSquad/php-booster/compare/v0.6.0...v1.0.0) (2025-09-16)
 
 
