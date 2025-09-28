@@ -11,14 +11,15 @@
 
 import { $, fs } from 'zx'
 import {
-  log,
-  shouldSkipDuringMerge,
-  runVendorBin,
-  runTool,
-  hasVendorBin,
-  hasComposerPackage,
-  runWithRunner,
   exitIfChecksFailed,
+  formatDuration,
+  hasComposerPackage,
+  hasVendorBin,
+  log,
+  runTool,
+  runVendorBin,
+  runWithRunner,
+  shouldSkipDuringMerge,
 } from '../shared/utils.ts'
 
 // Configure zx
@@ -147,6 +148,8 @@ async function generateApiDocs(): Promise<boolean> {
 }
 
 async function main(): Promise<void> {
+  const startTime = Date.now()
+
   log.step('Starting pre-push checks...')
 
   // Check if we should skip all checks
@@ -177,7 +180,18 @@ async function main(): Promise<void> {
   }
 
   // Final result
-  exitIfChecksFailed(allSuccessful)
+  // Final result with performance summary
+  const totalDuration = Date.now() - startTime
+  const formattedTotalDuration = formatDuration(totalDuration)
+
+  if (allSuccessful) {
+    log.celebrate(`All pre-push checks passed! (Total time: ${formattedTotalDuration})`)
+  } else {
+    log.error(
+      `Some pre-push checks failed after ${formattedTotalDuration}. Please fix the issues and try again.`,
+    )
+    process.exit(1)
+  }
 }
 
 // Run main function

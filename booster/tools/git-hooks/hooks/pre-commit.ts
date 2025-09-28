@@ -24,6 +24,7 @@ import { $, fs } from 'zx'
 import {
   checkPhpSyntax,
   exitIfChecksFailed,
+  formatDuration,
   getStagedPhpFiles,
   getPsalmBinary,
   hasVendorBin,
@@ -46,6 +47,8 @@ process.env.LC_ALL = 'C'
 process.env.LANG = 'C'
 
 async function main(): Promise<void> {
+  const startTime = Date.now()
+
   log.step('Starting pre-commit checks...')
 
   // Check if we should skip the entire hook
@@ -157,8 +160,18 @@ async function main(): Promise<void> {
     log.skip('Psalm skipped (SKIP_PSALM environment variable set)')
   }
 
-  // Final result
-  exitIfChecksFailed(allSuccessful)
+  // Final result with performance summary
+  const totalDuration = Date.now() - startTime
+  const formattedTotalDuration = formatDuration(totalDuration)
+
+  if (allSuccessful) {
+    log.celebrate(`All pre-commit checks passed! (Total time: ${formattedTotalDuration})`)
+  } else {
+    log.error(
+      `Some pre-commit checks failed after ${formattedTotalDuration}. Please fix the issues and try again.`,
+    )
+    process.exit(1)
+  }
 }
 
 // Run main function

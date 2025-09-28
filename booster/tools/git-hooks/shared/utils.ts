@@ -243,7 +243,20 @@ export async function getCurrentBranch(): Promise<string> {
 }
 
 /**
- * Run a tool with consistent error handling and logging
+ * Format duration in milliseconds to human-readable string
+ * @param ms Duration in milliseconds
+ */
+export function formatDuration(ms: number): string {
+  if (ms < 1000) {
+    return `${ms}ms`
+  }
+
+  const seconds = (ms / 1000).toFixed(1)
+  return `${seconds}s`
+}
+
+/**
+ * Run a tool with consistent error handling, logging, and performance monitoring
  * @param toolName Name of the tool being run
  * @param action Action being performed (e.g., 'Running static analysis...', 'Running code style fixes...')
  * @param fn Function that executes the tool
@@ -253,13 +266,26 @@ export async function runTool(
   action: string,
   fn: () => Promise<void>,
 ): Promise<boolean> {
+  const startTime = Date.now()
+
   try {
     log.tool(toolName, action)
     await fn()
-    log.success(`${toolName} completed successfully`)
+
+    const duration = Date.now() - startTime
+    const formattedDuration = formatDuration(duration)
+    log.success(`${toolName} completed successfully (${formattedDuration})`)
+
     return true
   } catch (error: unknown) {
-    log.error(`${toolName} failed: ${error instanceof Error ? error.message : String(error)}`)
+    const duration = Date.now() - startTime
+    const formattedDuration = formatDuration(duration)
+    log.error(
+      `${toolName} failed after ${formattedDuration}: ${
+        error instanceof Error ? error.message : String(error)
+      }`,
+    )
+
     return false
   }
 }

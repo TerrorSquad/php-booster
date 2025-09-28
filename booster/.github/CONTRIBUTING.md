@@ -162,14 +162,24 @@ SKIP_RECTOR=1 git commit -m "refactor: manual cleanup"
 SKIP_PRECOMMIT=1 SKIP_COMMITMSG=1 git commit -m "hotfix: emergency fix"
 ```
 
+### Performance Monitoring
+
+All git hooks now include built-in performance monitoring:
+
+- **Individual tool timing**: Each tool shows execution time (e.g., "PHPStan completed successfully (2.3s)")
+- **Total execution time**: Hooks display total time taken (e.g., "All pre-commit checks passed! (Total time: 8.7s)")
+- **Failed tool timing**: Even failed tools show how long they ran before failing
+- **Performance insights**: Use `PRECOMMIT_VERBOSE=1` to see detailed output and identify slow tools
+
 ### Troubleshooting
 
 | Issue | Resolution |
 |-------|------------|
 | Branch rejected | Check branch name format against `validate-branch-name.config.cjs` rules. |
 | Missing footer | Ensure branch has valid ticket segment & config has prefixes. |
-| Slow pre-commit | Use `SKIP_PRECOMMIT=1`, or tool-specific skips (e.g., `SKIP_PHPSTAN=1 SKIP_PSALM=1`). |
+| Slow pre-commit | Use `SKIP_PRECOMMIT=1`, or tool-specific skips (e.g., `SKIP_PHPSTAN=1 SKIP_PSALM=1`). Check performance timing to identify slow tools. |
 | Emergency commit needed | Use `SKIP_PRECOMMIT=1` + `SKIP_COMMITMSG=1` for complete bypass. |
+| Performance analysis | Enable `PRECOMMIT_VERBOSE=1` to see detailed tool execution times and identify bottlenecks. |
 
 ## Tools We Use
 
