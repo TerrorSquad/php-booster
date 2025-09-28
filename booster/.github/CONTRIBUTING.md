@@ -118,7 +118,11 @@ Git hooks (managed via Husky) enforce naming, formatting and static analysis:
 
 | Variable | Effect |
 |----------|--------|
-| `BYPASS_PHP_ANALYSIS=1` | Skips PHP static analysis in `pre-commit` (temporary/emergency). |
+| `SKIP_PRECOMMIT=1` | Skips the entire pre-commit hook (for emergency commits). |
+| `FORCE_COMMIT=1` | Continue with commit even if PHPStan or Psalm fail (temporary/emergency). |
+| `PRECOMMIT_VERBOSE=1` | Enable verbose output for pre-commit hook debugging. |
+| `SKIP_COMMITMSG=1` | Skips the entire commit-msg hook (for emergency commits). |
+| `COMMITMSG_VERBOSE=1` | Enable verbose output for commit-msg hook debugging. |
 
 ### Hook Footers
 
@@ -145,7 +149,7 @@ Footer label is configurable via `commitFooterLabel` in `validate-branch-name.co
 |-------|------------|
 | Branch rejected | Check branch name format against `validate-branch-name.config.cjs` rules. |
 | Missing footer | Ensure branch has valid ticket segment & config has prefixes. |
-| Slow pre-commit | Temporarily export `BYPASS_PHP_ANALYSIS=1` (avoid committing with unchecked code routinely). |
+| Slow pre-commit | Temporarily export `FORCE_COMMIT=1` or `SKIP_PRECOMMIT=1` (avoid committing with unchecked code routinely). |
 
 ## Tools We Use
 
