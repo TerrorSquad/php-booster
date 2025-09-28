@@ -118,11 +118,17 @@ Git hooks (managed via Husky) enforce naming, formatting and static analysis:
 
 | Variable | Effect |
 |----------|--------|
+| **Global Hook Control** |  |
 | `SKIP_PRECOMMIT=1` | Skips the entire pre-commit hook (for emergency commits). |
-| `FORCE_COMMIT=1` | Continue with commit even if PHPStan or Psalm fail (temporary/emergency). |
-| `PRECOMMIT_VERBOSE=1` | Enable verbose output for pre-commit hook debugging. |
 | `SKIP_COMMITMSG=1` | Skips the entire commit-msg hook (for emergency commits). |
+| `PRECOMMIT_VERBOSE=1` | Enable verbose output for pre-commit hook debugging. |
 | `COMMITMSG_VERBOSE=1` | Enable verbose output for commit-msg hook debugging. |
+| **Tool-specific Skip Controls** |  |
+| `SKIP_RECTOR=1` | Skip Rector refactoring. |
+| `SKIP_ECS=1` | Skip ECS code style fixes. |
+| `SKIP_PHPSTAN=1` | Skip PHPStan static analysis. |
+| `SKIP_PSALM=1` | Skip Psalm static analysis. |
+| `SKIP_DEPTRAC=1` | Skip Deptrac architecture analysis. |
 
 ### Hook Footers
 
@@ -143,13 +149,27 @@ Footer label is configurable via `commitFooterLabel` in `validate-branch-name.co
 | `skipped` | Branch names bypassing validation. |
 | `commitFooterLabel` | Footer label appended with ticket ID. |
 
+### Common Workflow Examples
+
+```bash
+# Skip just static analysis for a quick commit
+SKIP_PHPSTAN=1 SKIP_PSALM=1 git commit -m "fix: urgent hotfix"
+
+# Skip specific tools
+SKIP_RECTOR=1 git commit -m "refactor: manual cleanup"
+
+# Emergency commit bypassing all validation
+SKIP_PRECOMMIT=1 SKIP_COMMITMSG=1 git commit -m "hotfix: emergency fix"
+```
+
 ### Troubleshooting
 
 | Issue | Resolution |
 |-------|------------|
 | Branch rejected | Check branch name format against `validate-branch-name.config.cjs` rules. |
 | Missing footer | Ensure branch has valid ticket segment & config has prefixes. |
-| Slow pre-commit | Temporarily export `FORCE_COMMIT=1` or `SKIP_PRECOMMIT=1` (avoid committing with unchecked code routinely). |
+| Slow pre-commit | Use `SKIP_PRECOMMIT=1`, or tool-specific skips (e.g., `SKIP_PHPSTAN=1 SKIP_PSALM=1`). |
+| Emergency commit needed | Use `SKIP_PRECOMMIT=1` + `SKIP_COMMITMSG=1` for complete bypass. |
 
 ## Tools We Use
 

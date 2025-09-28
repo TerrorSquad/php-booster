@@ -12,8 +12,12 @@
  *
  * Environment Variables:
  * - SKIP_PRECOMMIT=1: Skip the entire pre-commit hook
- * - FORCE_COMMIT=1: Continue with commit even if PHPStan or Psalm fail
  * - PRECOMMIT_VERBOSE=1: Enable verbose output for debugging
+ * - SKIP_RECTOR=1: Skip Rector refactoring
+ * - SKIP_ECS=1: Skip ECS code style fixes
+ * - SKIP_PHPSTAN=1: Skip PHPStan static analysis
+ * - SKIP_PSALM=1: Skip Psalm static analysis
+ * - SKIP_DEPTRAC=1: Skip Deptrac architecture analysis
  */
 
 import { $, fs } from 'zx'
@@ -21,11 +25,15 @@ import {
   checkPhpSyntax,
   exitIfChecksFailed,
   getStagedPhpFiles,
+  getPsalmBinary,
   hasVendorBin,
+  isToolSkipped,
   log,
+  PHPTool,
   runTool,
   runVendorBin,
   runWithRunner,
+  shouldRunTool,
   shouldSkipDuringMerge,
   stageFiles,
 } from '../shared/utils.ts'
@@ -70,19 +78,10 @@ async function main(): Promise<void> {
   // Track overall success
   let allSuccessful = true
 
-  // Check if we should force commit even if static analysis fails
-  const forceCommit = process.env.FORCE_COMMIT === '1' || process.env.FORCE_COMMIT === 'true'
-
-  if (forceCommit) {
-    log.info('Force commit mode enabled (FORCE_COMMIT environment variable set)')
-  }
-
   // Run Rector if available
-  if (await hasVendorBin('rector')) {
-    const success = await runTool('Rector', async () => {
-      log.tool('Rector', 'Running automatic refactoring...')
+  if (await shouldRunTool(PHPTool.RECTOR)) {
+    const success = await runTool('Rector', 'Running automatic refactoring...', async () => {
       await runVendorBin('rector', ['process', '--ansi', ...phpFiles])
-      log.success('Rector completed')
     })
 
     if (success) {
@@ -91,16 +90,12 @@ async function main(): Promise<void> {
     } else {
       allSuccessful = false
     }
-  } else {
-    log.skip('Rector not found in vendor/bin. Skipping...')
   }
 
   // Run ECS if available
-  if (await hasVendorBin('ecs')) {
-    const success = await runTool('ECS', async () => {
-      log.tool('ECS', 'Running code style fixes...')
+  if (await shouldRunTool(PHPTool.ECS)) {
+    const success = await runTool('ECS', 'Running code style fixes...', async () => {
       await runVendorBin('ecs', ['check', '--fix', '--ansi', ...phpFiles])
-      log.success('ECS completed')
     })
 
     if (success) {
@@ -109,35 +104,23 @@ async function main(): Promise<void> {
     } else {
       allSuccessful = false
     }
-  } else {
-    log.skip('ECS not found in vendor/bin. Skipping...')
   }
 
   // Run PHPStan if available
-  if (await hasVendorBin('phpstan')) {
-    const success = await runTool('PHPStan', async () => {
-      log.tool('PHPStan', 'Running static analysis...')
+  if (await shouldRunTool(PHPTool.PHPSTAN)) {
+    const success = await runTool('PHPStan', 'Running static analysis...', async () => {
       await runVendorBin('phpstan', ['analyse', '-c', 'phpstan.neon.dist', ...phpFiles])
-      log.success('PHPStan analysis passed')
     })
 
     if (!success) {
-      if (forceCommit) {
-        log.warn('PHPStan failed, but continuing due to FORCE_COMMIT flag')
-      } else {
-        allSuccessful = false
-      }
+      allSuccessful = false
     }
-  } else {
-    log.skip('PHPStan not found in vendor/bin. Skipping...')
   }
 
   // Run Deptrac if available (architectural analysis)
-  if (await hasVendorBin('deptrac')) {
-    const success = await runTool('Deptrac', async () => {
-      log.tool('Deptrac', 'Running architecture analysis...')
+  if (await shouldRunTool(PHPTool.DEPTRAC)) {
+    const success = await runTool('Deptrac', 'Running architecture analysis...', async () => {
       await runVendorBin('deptrac')
-      log.success('Deptrac analysis passed')
     })
 
     if (success) {
@@ -156,28 +139,22 @@ async function main(): Promise<void> {
     } else {
       allSuccessful = false
     }
-  } else {
-    log.skip('Deptrac not found in vendor/bin. Skipping...')
   }
 
   // Run Psalm if available
-  if ((await hasVendorBin('psalm')) || (await hasVendorBin('psalm.phar'))) {
-    const psalmBin = (await hasVendorBin('psalm')) ? 'psalm' : 'psalm.phar'
-    const success = await runTool('Psalm', async () => {
-      log.tool('Psalm', 'Running static analysis...')
+  const psalmBin = await getPsalmBinary()
+  if (psalmBin && !isToolSkipped(PHPTool.PSALM)) {
+    const success = await runTool('Psalm', 'Running static analysis...', async () => {
       await runVendorBin(psalmBin, ['--show-info=false', ...phpFiles])
-      log.success('Psalm analysis passed')
     })
 
     if (!success) {
-      if (forceCommit) {
-        log.warn('Psalm failed, but continuing due to FORCE_COMMIT flag')
-      } else {
-        allSuccessful = false
-      }
+      allSuccessful = false
     }
-  } else {
+  } else if (!psalmBin) {
     log.skip('Psalm not found in vendor/bin. Skipping...')
+  } else {
+    log.skip('Psalm skipped (SKIP_PSALM environment variable set)')
   }
 
   // Final result

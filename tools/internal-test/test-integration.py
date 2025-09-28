@@ -599,9 +599,10 @@ echo "Hello, World!";
 
         self.run_command(["git", "add", "test_commit.php"], cwd=self.config.target_dir)
 
-        # Set environment to force commit even if static analysis fails
+        # Set environment to skip static analysis for faster testing
         env = os.environ.copy()
-        env["FORCE_COMMIT"] = "1"
+        env["SKIP_PHPSTAN"] = "1"
+        env["SKIP_PSALM"] = "1"
 
         try:
             self.run_command(
@@ -655,9 +656,10 @@ echo "Another test";
 
         self.run_command(["git", "add", "test_commit2.php"], cwd=self.config.target_dir)
 
-        # Set environment to force commit and test branch validation
+        # Set environment to skip static analysis and test branch validation
         env = os.environ.copy()
-        env["FORCE_COMMIT"] = "1"
+        env["SKIP_PHPSTAN"] = "1"
+        env["SKIP_PSALM"] = "1"
 
         # This should fail due to invalid branch name
         result = self.run_command(

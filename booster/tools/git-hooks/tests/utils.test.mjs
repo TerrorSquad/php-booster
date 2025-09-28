@@ -37,7 +37,7 @@ describe('Git Hooks Utils (DEPRECATED - JS Implementation)', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     // BYPASS_PHP_ANALYSIS no longer exists in TypeScript implementation
-    // Current variables: SKIP_PRECOMMIT, FORCE_COMMIT, PRECOMMIT_VERBOSE
+    // Current variables: SKIP_PRECOMMIT, PRECOMMIT_VERBOSE, tool-specific skips
   })
 
   describe('getStagedPhpFiles', () => {
@@ -104,16 +104,16 @@ describe('Git Hooks Utils (DEPRECATED - JS Implementation)', () => {
   })
 
   // NOTE: shouldSkipChecks function no longer exists in TypeScript implementation
-  // Skip functionality is now handled by SKIP_PRECOMMIT and FORCE_COMMIT environment variables
+  // Skip functionality is now handled by SKIP_PRECOMMIT and tool-specific skip environment variables
   describe('shouldSkipChecks (DEPRECATED)', () => {
     it('should return true when BYPASS_PHP_ANALYSIS is set (DEPRECATED)', async () => {
-      // This test is deprecated - BYPASS_PHP_ANALYSIS replaced by FORCE_COMMIT
+      // This test is deprecated - BYPASS_PHP_ANALYSIS replaced by tool-specific skips
       process.env.BYPASS_PHP_ANALYSIS = '1'
 
       // Function no longer exists in TypeScript implementation
       // const result = await shouldSkipChecks()
       // expect(result).toBe(true)
-      
+
       // Skipping this test as function doesn't exist
       console.log('DEPRECATED: shouldSkipChecks function removed in TypeScript implementation')
     })

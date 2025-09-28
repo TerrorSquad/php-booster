@@ -179,10 +179,8 @@ async function validateBranchName(branchName: string): Promise<boolean> {
  * Lint commit message using commitlint
  */
 async function lintCommitMessage(commitFile: string): Promise<boolean> {
-  return await runTool('Commitlint', async () => {
-    log.tool('Commitlint', 'Validating commit message format...')
+  return await runTool('Commitlint', 'Validating commit message format...', async () => {
     await runWithRunner(['./node_modules/.bin/commitlint', '--edit', commitFile])
-    log.success('Commit message validation passed')
   })
 }
 

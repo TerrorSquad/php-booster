@@ -114,12 +114,66 @@ export async function getStagedPhpFiles(): Promise<string[]> {
 }
 
 /**
- * Check if a vendor binary exists
- * @param toolName Name of the tool (e.g., 'ecs', 'rector')
+ * PHP quality tools supported by the hooks
  */
-export async function hasVendorBin(toolName: string): Promise<boolean> {
+export enum PHPTool {
+  RECTOR = 'rector',
+  ECS = 'ecs',
+  PHPSTAN = 'phpstan',
+  PSALM = 'psalm',
+  DEPTRAC = 'deptrac',
+}
+
+/**
+ * Check if a tool is explicitly skipped via environment variable
+ * @param toolName Name of the tool
+ */
+export function isToolSkipped(toolName: PHPTool): boolean {
+  const skipEnvVar = `SKIP_${toolName.toUpperCase()}`
+  return process.env[skipEnvVar] === '1' || process.env[skipEnvVar] === 'true'
+}
+
+/**
+ * Check if a vendor binary exists
+ * @param toolName Name of the tool
+ */
+export async function hasVendorBin(toolName: PHPTool | string): Promise<boolean> {
   const binPath = `./vendor/bin/${toolName}`
   return await fs.pathExists(binPath)
+}
+
+/**
+ * Get available Psalm binary (psalm or psalm.phar)
+ * @returns The binary name if found, null if neither exists
+ */
+export async function getPsalmBinary(): Promise<string | null> {
+  if (await hasVendorBin('psalm')) {
+    return 'psalm'
+  }
+  if (await hasVendorBin('psalm.phar')) {
+    return 'psalm.phar'
+  }
+  return null
+}
+
+/**
+ * Check if a tool should be executed (exists and not skipped)
+ * Logs skip reason if tool should not run
+ * @param toolName Name of the tool
+ * @returns true if tool should run, false if it should be skipped
+ */
+export async function shouldRunTool(toolName: PHPTool): Promise<boolean> {
+  if (isToolSkipped(toolName)) {
+    log.skip(`${toolName} skipped (SKIP_${toolName.toUpperCase()} environment variable set)`)
+    return false
+  }
+
+  if (!(await hasVendorBin(toolName))) {
+    log.skip(`${toolName} not found in vendor/bin. Skipping...`)
+    return false
+  }
+
+  return true
 }
 
 /**
@@ -191,11 +245,18 @@ export async function getCurrentBranch(): Promise<string> {
 /**
  * Run a tool with consistent error handling and logging
  * @param toolName Name of the tool being run
+ * @param action Action being performed (e.g., 'Running static analysis...', 'Running code style fixes...')
  * @param fn Function that executes the tool
  */
-export async function runTool(toolName: string, fn: () => Promise<void>): Promise<boolean> {
+export async function runTool(
+  toolName: string,
+  action: string,
+  fn: () => Promise<void>,
+): Promise<boolean> {
   try {
+    log.tool(toolName, action)
     await fn()
+    log.success(`${toolName} completed successfully`)
     return true
   } catch (error: unknown) {
     log.error(`${toolName} failed: ${error instanceof Error ? error.message : String(error)}`)
@@ -256,7 +317,7 @@ export async function runToolOnFiles(
     return
   }
 
-  const success = await runTool(toolName, () => fn(files))
+  const success = await runTool(toolName, `Running ${toolName.toLowerCase()}...`, () => fn(files))
 
   if (!success) {
     log.error(`${toolName} checks failed. Please fix the issues and try again.`)
@@ -273,7 +334,7 @@ export async function checkPhpSyntax(files: string[]): Promise<boolean> {
     return true
   }
 
-  return await runTool('PHP Syntax Check', async () => {
+  return await runTool('PHP Syntax Check', 'Checking PHP syntax...', async () => {
     log.tool('PHP Lint', 'Checking syntax...')
 
     for (const file of files) {

@@ -43,10 +43,8 @@ async function runTests(testTool: string, testBinary: string): Promise<boolean> 
     return true
   }
 
-  return await runTool(`${testTool} tests`, async () => {
-    log.tool('Testing', `Running ${testTool} tests...`)
+  return await runTool(`${testTool} tests`, `Running ${testTool} tests...`, async () => {
     await runVendorBin(testBinary)
-    log.success(`${testTool} tests passed`)
   })
 }
 
@@ -59,10 +57,8 @@ async function runDeptrac(): Promise<boolean> {
     return true
   }
 
-  const success = await runTool('Deptrac', async () => {
-    log.tool('Deptrac', 'Running architecture analysis...')
+  const success = await runTool('Deptrac', 'Running architecture analysis...', async () => {
     await runVendorBin('deptrac')
-    log.success('Deptrac analysis passed')
   })
 
   if (success) {
@@ -92,12 +88,14 @@ async function generateApiDocs(): Promise<boolean> {
   }
 
   // Generate OpenAPI specification
-  const specSuccess = await runTool('API spec generation', async () => {
-    log.tool('API Documentation', 'Generating OpenAPI specification...')
-    // Use swagger-php binary to scan for annotations and generate spec
-    await runVendorBin('openapi', ['src/', '--output', 'documentation/openapi.yml'])
-    log.success('OpenAPI specification generated')
-  })
+  const specSuccess = await runTool(
+    'API spec generation',
+    'Generating OpenAPI specification...',
+    async () => {
+      // Use swagger-php binary to scan for annotations and generate spec
+      await runVendorBin('openapi', ['src/', '--output', 'documentation/openapi.yml'])
+    },
+  )
 
   if (!specSuccess) {
     return false
