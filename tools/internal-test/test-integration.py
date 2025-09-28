@@ -142,11 +142,11 @@ class TestEnvironment:
         if version_stamp.exists():
             return True
 
-        # Fallback check: essential booster files (updated for ZX architecture)
+        # Fallback check: essential booster files (updated for TypeScript architecture)
         return (
-            self.config.target_dir / "tools/git-hooks/shared/utils.mjs"
+            self.config.target_dir / "tools/git-hooks/shared/utils.ts"
         ).exists() and (
-            self.config.target_dir / "tools/git-hooks/hooks/commit-msg.mjs"
+            self.config.target_dir / "tools/git-hooks/hooks/commit-msg.ts"
         ).exists()
 
     def get_integrated_version(self) -> Optional[str]:
@@ -164,19 +164,19 @@ class TestEnvironment:
 
     def has_git_hooks(self) -> bool:
         """Check if git hooks are installed"""
-        # Check for the new ZX-based hook system with custom hooksPath
-        zx_hooks_exist = (
+        # Check for the new TypeScript-based hook system with custom hooksPath
+        ts_hooks_exist = (
             (self.config.target_dir / "tools/git-hooks/hooks/commit-msg").exists()
             and (self.config.target_dir / "tools/git-hooks/hooks/pre-commit").exists()
             and (
-                self.config.target_dir / "tools/git-hooks/hooks/commit-msg.mjs"
+                self.config.target_dir / "tools/git-hooks/hooks/commit-msg.ts"
             ).exists()
             and (
-                self.config.target_dir / "tools/git-hooks/hooks/pre-commit.mjs"
+                self.config.target_dir / "tools/git-hooks/hooks/pre-commit.ts"
             ).exists()
         )
 
-        return zx_hooks_exist
+        return ts_hooks_exist
 
     # Action Methods
     def show_status(self):
@@ -450,10 +450,10 @@ class TestEnvironment:
             "tools/git-hooks/hooks/commit-msg",
             "tools/git-hooks/hooks/pre-commit",
             "tools/git-hooks/hooks/pre-push",
-            "tools/git-hooks/hooks/commit-msg.mjs",
-            "tools/git-hooks/hooks/pre-commit.mjs",
-            "tools/git-hooks/hooks/pre-push.mjs",
-            "tools/git-hooks/shared/utils.mjs",
+            "tools/git-hooks/hooks/commit-msg.ts",
+            "tools/git-hooks/hooks/pre-commit.ts",
+            "tools/git-hooks/hooks/pre-push.ts",
+            "tools/git-hooks/shared/utils.ts",
             "validate-branch-name.config.cjs",
             "package.json",
         ]
