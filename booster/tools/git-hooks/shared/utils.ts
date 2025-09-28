@@ -114,15 +114,17 @@ export async function getStagedPhpFiles(): Promise<string[]> {
 }
 
 /**
- * PHP quality tools supported by the hooks
+ * PHP quality tools - compatible with Node.js TypeScript strip-only mode
  */
-export enum PHPTool {
-  RECTOR = 'rector',
-  ECS = 'ecs',
-  PHPSTAN = 'phpstan',
-  PSALM = 'psalm',
-  DEPTRAC = 'deptrac',
-}
+export const PHPTool = {
+  RECTOR: 'rector',
+  ECS: 'ecs',
+  PHPSTAN: 'phpstan',
+  PSALM: 'psalm',
+  DEPTRAC: 'deptrac',
+} as const
+
+export type PHPTool = (typeof PHPTool)[keyof typeof PHPTool]
 
 /**
  * Check if a tool is explicitly skipped via environment variable
