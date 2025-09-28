@@ -23,11 +23,9 @@
 import { $, fs } from 'zx'
 import {
   checkPhpSyntax,
-  exitIfChecksFailed,
   formatDuration,
   getStagedPhpFiles,
   getPsalmBinary,
-  hasVendorBin,
   isToolSkipped,
   log,
   PHPTool,

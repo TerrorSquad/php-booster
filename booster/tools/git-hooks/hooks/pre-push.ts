@@ -11,7 +11,6 @@
 
 import { $, fs } from 'zx'
 import {
-  exitIfChecksFailed,
   formatDuration,
   hasComposerPackage,
   hasVendorBin,

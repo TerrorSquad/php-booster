@@ -328,30 +328,6 @@ export async function shouldSkipDuringMerge(): Promise<boolean> {
 }
 
 /**
- * Run tool on files and exit if unsuccessful
- * @param toolName Name of the tool
- * @param files Files to process
- * @param fn Function to execute the tool
- */
-export async function runToolOnFiles(
-  toolName: string,
-  files: string[],
-  fn: (files: string[]) => Promise<void>,
-): Promise<void> {
-  if (files.length === 0) {
-    log.info(`No staged PHP files found. Skipping ${toolName}.`)
-    return
-  }
-
-  const success = await runTool(toolName, `Running ${toolName.toLowerCase()}...`, () => fn(files))
-
-  if (!success) {
-    log.error(`${toolName} checks failed. Please fix the issues and try again.`)
-    process.exit(1)
-  }
-}
-
-/**
  * Check PHP syntax for given files
  * @param files Array of PHP file paths to check
  */
@@ -361,8 +337,6 @@ export async function checkPhpSyntax(files: string[]): Promise<boolean> {
   }
 
   return await runTool('PHP Syntax Check', 'Checking PHP syntax...', async () => {
-    log.tool('PHP Lint', 'Checking syntax...')
-
     for (const file of files) {
       try {
         await runWithRunner(['php', '-l', file], { quiet: true })
@@ -372,20 +346,5 @@ export async function checkPhpSyntax(files: string[]): Promise<boolean> {
         throw error
       }
     }
-
-    log.success('PHP syntax check passed')
   })
-}
-
-/**
- * Exit with error if checks failed
- * @param allSuccessful Whether all checks passed
- */
-export function exitIfChecksFailed(allSuccessful: boolean): void {
-  if (!allSuccessful) {
-    log.error('Some pre-commit checks failed. Please fix the issues and try again.')
-    process.exit(1)
-  }
-
-  log.celebrate('All pre-commit checks passed!')
 }
