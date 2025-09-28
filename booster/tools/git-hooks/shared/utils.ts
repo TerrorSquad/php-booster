@@ -20,7 +20,7 @@ interface RunOptions {
 /**
  * Check if we're already inside a DDEV container
  */
-export async function isInsideDdevContainer(): Promise<boolean> {
+async function isInsideDdevContainer(): Promise<boolean> {
   try {
     const result = await $`hostname`.quiet()
     return result.toString().includes('ddev')
