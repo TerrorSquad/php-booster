@@ -282,11 +282,7 @@ export async function runTool(
   } catch (error: unknown) {
     const duration = Date.now() - startTime
     const formattedDuration = formatDuration(duration)
-    log.error(
-      `${toolName} failed after ${formattedDuration}: ${
-        error instanceof Error ? error.message : String(error)
-      }`,
-    )
+    log.error(`${toolName} failed after ${formattedDuration}`)
 
     return false
   }
@@ -340,13 +336,7 @@ export async function checkPhpSyntax(files: string[]): Promise<boolean> {
 
   return await runTool('PHP Syntax Check', 'Checking PHP syntax...', async () => {
     for (const file of files) {
-      try {
-        await runWithRunner(['php', '-l', file], { quiet: true })
-      } catch (error: unknown) {
-        const errorMessage = error instanceof Error ? error.message : String(error)
-        log.error(`Syntax error in ${file}: ${errorMessage}`)
-        throw error
-      }
+      await runWithRunner(['php', '-l', file], { quiet: true })
     }
   })
 }
