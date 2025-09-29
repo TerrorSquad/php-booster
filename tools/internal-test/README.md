@@ -1,13 +1,135 @@
-# PHP Booster Integration Testing
+# PHP Booster Integration Tests
 
-This directory contains tools to test the PHP Booster integration on clean projects.
+A comprehensive test suite for validating the PHP Booster integration across different PHP project types.
 
-## Test Script
+## Overview
 
-Run the comprehensive Python test script for full end-to-end testing:
+This test suite provides automated testing of the PHP Booster integration process, ensuring that all tools, configurations, and git hooks work correctly in both Laravel and Symfony projects.
+
+## Usage
+
+### Quick Start
 
 ```bash
-# Full test with defaults (Laravel project)
+# Check environment and requirements
+./test-integration.py env-check
+
+# Set up a Laravel test project
+./test-integration.py setup laravel my-test-app
+
+# Run complete integration test
+./test-integration.py full laravel my-test-app
+
+# Clean up when done
+./test-integration.py clean laravel my-test-app
+```
+
+### Available Actions
+
+| Action | Description |
+|--------|-------------|
+| `env-check` | Check environment and system requirements |
+| `setup` | Create and configure a new test project |
+| `setup-resume` | Resume an existing project (start DDEV) |
+| `integrate` | Integrate PHP Booster into the project |
+| `verify` | Verify the integration was successful |
+| `test-hooks` | Test git hooks and branch validation |
+| `clean` | Clean up the test environment |
+| `status` | Show current project status |
+| `full` | Run the complete test suite |
+
+### Project Types
+
+- **`laravel`** - Laravel framework projects
+- **`symfony`** - Symfony framework projects
+
+### Examples
+
+```bash
+# Test with custom project directory
+./test-integration.py setup laravel my-app --target-dir /tmp/my-test
+
+# Test Symfony project
+./test-integration.py full symfony symfony-test
+
+# Check status of existing project
+./test-integration.py status laravel my-test-app
+```
+
+## Dependencies
+
+### Required Commands
+- `ddev` - Local development environment
+- `git` - Version control
+- `composer` - PHP dependency management
+- `docker` - Container runtime (required by DDEV)
+
+### Python Requirements
+- Python 3.7+
+- Standard library only (no external dependencies)
+
+## CI/CD Integration
+
+The test suite is designed for use in GitHub Actions and other CI environments. It automatically detects CI mode and adjusts behavior accordingly.
+
+## Development
+
+For developers working on the PHP Booster itself, the integration tests provide confidence that changes don't break the end-to-end user experience.
+
+## Testing Features
+
+### Environment Validation
+- System requirements checking
+- Command availability verification
+- Docker and DDEV status validation
+
+### Project Setup
+- Automatic project scaffolding (Laravel/Symfony)
+- DDEV configuration and startup
+- Basic dependency installation
+
+### Booster Integration
+- Local development mode testing
+- Configuration file verification
+- Tool availability validation
+
+### Verification
+- Expected file presence checking
+- Composer package validation
+- PHP tool functionality testing
+
+### Git Hooks Testing
+- Valid branch name acceptance
+- Invalid branch name rejection
+- Commit message validation
+- Ticket footer appending
+
+## Requirements
+
+## Troubleshooting
+
+### Import Errors
+If you encounter import errors, ensure you're running the script from the repository root:
+```bash
+cd /path/to/php-blueprint
+python3 tools/internal-test/test-integration.py env-check
+```
+
+### Missing Dependencies
+Run `env-check` to verify all required commands are available:
+```bash
+./test-integration.py env-check
+```
+
+### DDEV Issues
+Check DDEV status and restart if needed:
+```bash
+# Check DDEV status
+./test-integration.py status laravel my-project
+
+# Resume a stopped project
+./test-integration.py setup-resume laravel my-project
+```
 ./test-integration.py
 
 # Full test with specific framework
