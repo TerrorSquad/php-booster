@@ -33,7 +33,9 @@ class ProjectSetup:
             sys.exit(1)
 
         self.log.info(f"Setting up {self.config.project_type} project...")
-        self.config.target_dir.parent.mkdir(parents=True, exist_ok=True)
+        
+        # Create target directory
+        self.config.target_dir.mkdir(parents=True, exist_ok=True)
 
         if self.config.project_type == "symfony":
             self._setup_symfony()
@@ -43,34 +45,19 @@ class ProjectSetup:
             self.log.error(f"Unknown project type: {self.config.project_type}")
             sys.exit(1)
 
-        # Start DDEV
-        self.log.info("Starting DDEV...")
-        self.cmd.run_command(["ddev", "start"], cwd=self.config.target_dir)
-
         self.log.success(f"Project setup complete at {self.config.target_dir}")
 
     def _setup_symfony(self):
         """Set up Symfony project with DDEV"""
-        self.log.info("Creating Symfony project...")
+        self.log.info("Creating Symfony project using DDEV...")
 
-        # Create project with Composer
-        self.cmd.run_command(
-            [
-                "composer",
-                "create-project",
-                "symfony/skeleton",
-                str(self.config.target_dir),
-                "--no-interaction",
-                "--prefer-dist",
-            ]
-        )
-
-        # Configure DDEV
+        # Configure DDEV first
         self.log.info("Configuring DDEV for Symfony...")
         self.cmd.run_command(
             [
                 "ddev",
                 "config",
+                f"--project-name={self.config.project_name}",
                 "--project-type=php",
                 "--docroot=public",
                 "--create-docroot",
@@ -78,35 +65,60 @@ class ProjectSetup:
             cwd=self.config.target_dir,
         )
 
+        # Start DDEV
+        self.cmd.run_command(["ddev", "start"], cwd=self.config.target_dir)
+
+        # Create project using DDEV composer
+        self.cmd.run_command(
+            [
+                "ddev",
+                "composer",
+                "create-project",
+                "symfony/skeleton:^7.0",
+                ".",
+                "--no-interaction",
+                "--prefer-dist",
+            ],
+            cwd=self.config.target_dir,
+        )
+
         # Add basic Symfony dependencies
         self.cmd.run_command(
-            ["ddev", "start"], cwd=self.config.target_dir
-        )  # Start before composer install
-        self.cmd.run_command(
-            ["ddev", "composer", "require", "twig", "symfony/form", "--no-interaction"],
+            ["ddev", "composer", "require", "webapp", "--no-interaction"],
             cwd=self.config.target_dir,
         )
 
     def _setup_laravel(self):
         """Set up Laravel project with DDEV"""
-        self.log.info("Creating Laravel project...")
+        self.log.info("Creating Laravel project using DDEV...")
 
-        # Create project with Composer
-        self.cmd.run_command(
-            [
-                "composer",
-                "create-project",
-                "laravel/laravel",
-                str(self.config.target_dir),
-                "--no-interaction",
-                "--prefer-dist",
-            ]
-        )
-
-        # Configure DDEV
+        # Configure DDEV first
         self.log.info("Configuring DDEV for Laravel...")
         self.cmd.run_command(
-            ["ddev", "config", "--project-type=laravel", "--docroot=public"],
+            [
+                "ddev",
+                "config",
+                f"--project-name={self.config.project_name}",
+                "--project-type=laravel",
+                "--docroot=public",
+            ],
+            cwd=self.config.target_dir,
+        )
+
+        # Start DDEV
+        self.cmd.run_command(["ddev", "start"], cwd=self.config.target_dir)
+
+        # Create project using DDEV composer
+        self.cmd.run_command(
+            [
+                "ddev",
+                "composer",
+                "create-project",
+                "laravel/laravel:^11",
+                ".",
+                "--no-interaction",
+                "--prefer-dist",
+            ],
             cwd=self.config.target_dir,
         )
 
