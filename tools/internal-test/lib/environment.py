@@ -81,8 +81,16 @@ class EnvironmentChecker:
         # Check DDEV version
         try:
             result = self.cmd.run_command(["ddev", "version"], capture_output=True)
-            version_line = result.stdout.strip().split("\n")[0]
-            self.log.info(f"✓ {version_line}")
+            # Extract just the version number, not the full output
+            version_output = result.stdout.strip()
+            if "ddev version" in version_output.lower():
+                # Parse the version from lines like "ddev version v1.21.4"
+                for line in version_output.split('\n'):
+                    if 'ddev version' in line.lower():
+                        self.log.info(f"✓ {line.strip()}")
+                        break
+            else:
+                self.log.info("✓ DDEV is available")
         except Exception:
             self.log.error("✗ Cannot determine DDEV version")
             sys.exit(1)
