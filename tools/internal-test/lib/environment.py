@@ -42,8 +42,8 @@ class EnvironmentChecker:
         """Check system requirements"""
         self.log.info("Checking requirements...")
 
-        # Check for required commands
-        required_commands = ["ddev", "git", "composer"]
+        # Check for required commands (composer is available via DDEV)
+        required_commands = ["ddev", "git"]
         missing_commands: List[str] = []
 
         for cmd in required_commands:
@@ -52,6 +52,12 @@ class EnvironmentChecker:
             else:
                 missing_commands.append(cmd)
                 self.log.error(f"✗ {cmd} is missing")
+
+        # Check for composer (optional on host, available via DDEV)
+        if self.cmd.check_command_exists("composer"):
+            self.log.info("✓ composer is available (host)")
+        else:
+            self.log.info("ℹ composer not found on host (will use DDEV composer)")
 
         if missing_commands:
             self.log.error(f"Missing required commands: {', '.join(missing_commands)}")
