@@ -36,7 +36,8 @@ class EnvironmentChecker:
         print(f"  - Shell: {os.environ.get('SHELL', 'Unknown')}")
         print(f"  - User: {os.environ.get('USER', 'Unknown')}")
         print(f"  - Working directory: {os.getcwd()}")
-        print(f"  - PATH: {os.environ.get('PATH', 'Unknown')}")
+        # PATH is usually too long and not very useful for debugging
+        # print(f"  - PATH: {os.environ.get('PATH', 'Unknown')}")
 
     def check_requirements(self):
         """Check system requirements"""
