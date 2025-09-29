@@ -280,9 +280,6 @@ async function main(): Promise<void> {
   // 3. Append ticket footer if needed
   await appendTicketFooter(commitFile)
 
-  // 3. Append ticket footer if needed
-  await appendTicketFooter(commitFile)
-
   const totalDuration = Date.now() - startTime
   const formattedTotalDuration = formatDuration(totalDuration)
   log.celebrate(`All commit-msg checks passed! (Total time: ${formattedTotalDuration})`)
