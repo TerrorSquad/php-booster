@@ -1,0 +1,157 @@
+name: 'PHP Auto-Fix with Rector and ECS'
+description: 'Automatically fix PHP code style and apply modernizations using Rector and ECS'
+author: 'PHP Booster'
+
+inputs:
+  php-version:
+    description: 'PHP version to use'
+    required: false
+    default: '8.3'
+  
+  skip-rector:
+    description: 'Skip Rector processing'
+    required: false
+    default: 'false'
+  
+  skip-ecs:
+    description: 'Skip ECS processing'
+    required: false
+    default: 'false'
+  
+  commit-message:
+    description: 'Custom commit message for auto-fixes'
+    required: false
+    default: 'style: auto-fix code with Rector and ECS'
+  
+  file-pattern:
+    description: 'File pattern to match (default: *.php)'
+    required: false
+    default: '*.php'
+
+outputs:
+  changes-made:
+    description: 'Whether any changes were made'
+    value: ${{ steps.check-changes.outputs.changes }}
+  
+  files-processed:
+    description: 'List of files that were processed'
+    value: ${{ steps.get-files.outputs.files }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: ${{ inputs.php-version }}
+        extensions: mbstring, xml, zip, pcntl, pdo, sqlite, pdo_sqlite
+        coverage: none
+
+    - name: Get Composer Cache Directory
+      id: composer-cache
+      shell: bash
+      run: |
+        echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+
+    - name: Cache Composer dependencies
+      uses: actions/cache@v3
+      with:
+        path: ${{ steps.composer-cache.outputs.dir }}
+        key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-composer-
+
+    - name: Install Composer dependencies
+      shell: bash
+      run: composer install --prefer-dist --no-progress --no-interaction
+
+    - name: Get changed files
+      id: get-files
+      shell: bash
+      run: |
+        # Get list of changed files based on event type
+        if [ "${{ github.event_name }}" = "pull_request" ]; then
+          # For PRs, get diff against base branch
+          git fetch origin ${{ github.base_ref }}:${{ github.base_ref }} 2>/dev/null || true
+          CHANGED_FILES=$(git diff --name-only ${{ github.base_ref }} HEAD -- '${{ inputs.file-pattern }}' 2>/dev/null | tr '\n' ' ' || echo "")
+        else
+          # For pushes, get diff from previous commit
+          CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD -- '${{ inputs.file-pattern }}' 2>/dev/null | tr '\n' ' ' || echo "")
+        fi
+        
+        # Filter to only existing files
+        EXISTING_FILES=""
+        for file in $CHANGED_FILES; do
+          if [ -f "$file" ]; then
+            EXISTING_FILES="$EXISTING_FILES $file"
+          fi
+        done
+        
+        echo "files=$EXISTING_FILES" >> $GITHUB_OUTPUT
+        echo "Changed files: $EXISTING_FILES"
+
+    - name: Run Rector
+      if: steps.get-files.outputs.files != '' && inputs.skip-rector != 'true'
+      shell: bash
+      run: |
+        CHANGED_FILES="${{ steps.get-files.outputs.files }}"
+        if [ -n "$CHANGED_FILES" ] && [ -f "vendor/bin/rector" ]; then
+          echo "🔧 Running Rector on: $CHANGED_FILES"
+          ./vendor/bin/rector process $CHANGED_FILES --no-progress-bar --ansi || true
+        else
+          echo "ℹ️ Rector not available or no files to process"
+        fi
+
+    - name: Run ECS
+      if: steps.get-files.outputs.files != '' && inputs.skip-ecs != 'true'
+      shell: bash
+      run: |
+        CHANGED_FILES="${{ steps.get-files.outputs.files }}"
+        if [ -n "$CHANGED_FILES" ] && [ -f "vendor/bin/ecs" ]; then
+          echo "🔧 Running ECS on: $CHANGED_FILES"
+          ./vendor/bin/ecs check --fix $CHANGED_FILES --ansi || true
+        else
+          echo "ℹ️ ECS not available or no files to process"
+        fi
+
+    - name: Check for changes
+      id: check-changes
+      shell: bash
+      run: |
+        if [ -n "$(git status --porcelain)" ]; then
+          echo "changes=true" >> $GITHUB_OUTPUT
+          echo "✅ Changes detected after Rector/ECS"
+          git status --porcelain
+        else
+          echo "changes=false" >> $GITHUB_OUTPUT
+          echo "ℹ️ No changes made by Rector/ECS"
+        fi
+
+    - name: Commit changes
+      if: steps.check-changes.outputs.changes == 'true'
+      shell: bash
+      run: |
+        # Configure git
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action Auto-Fix"
+        
+        # Add all changes
+        git add .
+        
+        # Create commit
+        CHANGED_FILES="${{ steps.get-files.outputs.files }}"
+        COMMIT_MSG="${{ inputs.commit-message }}
+
+        Files processed: $CHANGED_FILES
+        
+        This commit was automatically created by GitHub Actions
+        to apply code style fixes and modernizations.
+        
+        [skip ci]"
+        
+        git commit -m "$COMMIT_MSG"
+        echo "✅ Auto-fix commit created"
+
+branding:
+  icon: 'code'
+  color: 'blue'

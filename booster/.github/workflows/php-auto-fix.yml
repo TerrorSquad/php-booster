@@ -1,0 +1,166 @@
+name: PHP Auto-Fix (Rector & ECS)
+
+on:
+  push:
+    branches: [ main, master, develop, 'feature/**', 'fix/**' ]
+    paths:
+      - '**.php'
+      - 'composer.json'
+      - 'composer.lock'
+      - 'rector.php'
+      - 'ecs.php'
+  pull_request:
+    branches: [ main, master, develop ]
+    paths:
+      - '**.php'
+      - 'composer.json'
+      - 'composer.lock'
+      - 'rector.php'
+      - 'ecs.php'
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  php-auto-fix:
+    runs-on: ubuntu-latest
+    
+    # Skip if commit message contains [skip auto-fix] or if it's already an auto-fix commit
+    if: |
+      !contains(github.event.head_commit.message, '[skip auto-fix]') &&
+      !contains(github.event.head_commit.message, 'style: auto-fix code with Rector and ECS')
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          # Fetch full history for better git operations
+          fetch-depth: 0
+          # Use a token that can push to protected branches if needed
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, xml, zip, pcntl, pdo, sqlite, pdo_sqlite
+          coverage: none
+
+      - name: Get Composer Cache Directory
+        id: composer-cache
+        run: |
+          echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+
+      - name: Cache Composer dependencies
+        uses: actions/cache@v3
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-composer-
+
+      - name: Install Composer dependencies
+        run: composer install --prefer-dist --no-progress --no-suggest --no-interaction
+
+      - name: Get changed PHP files
+        id: changed-files
+        run: |
+          # Get list of changed PHP files from the commit
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            # For PRs, get diff against base branch
+            git fetch origin ${{ github.base_ref }}:${{ github.base_ref }}
+            CHANGED_FILES=$(git diff --name-only ${{ github.base_ref }} HEAD -- '*.php' | tr '\n' ' ')
+          else
+            # For pushes, get diff from previous commit
+            CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD -- '*.php' | tr '\n' ' ')
+          fi
+          
+          echo "files=$CHANGED_FILES" >> $GITHUB_OUTPUT
+          echo "Changed PHP files: $CHANGED_FILES"
+
+      - name: Run Rector (automatic refactoring)
+        if: steps.changed-files.outputs.files != ''
+        run: |
+          CHANGED_FILES="${{ steps.changed-files.outputs.files }}"
+          if [ -n "$CHANGED_FILES" ] && [ -f "vendor/bin/rector" ]; then
+            echo "Running Rector on: $CHANGED_FILES"
+            ./vendor/bin/rector process $CHANGED_FILES --no-progress-bar --ansi || true
+          else
+            echo "No changed PHP files or Rector not available"
+          fi
+
+      - name: Run ECS (code style fixes)
+        if: steps.changed-files.outputs.files != ''
+        run: |
+          CHANGED_FILES="${{ steps.changed-files.outputs.files }}"
+          if [ -n "$CHANGED_FILES" ] && [ -f "vendor/bin/ecs" ]; then
+            echo "Running ECS on: $CHANGED_FILES"
+            ./vendor/bin/ecs check --fix $CHANGED_FILES --ansi || true
+          else
+            echo "No changed PHP files or ECS not available"
+          fi
+
+      - name: Check for changes
+        id: verify-changed-files
+        run: |
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "changes=true" >> $GITHUB_OUTPUT
+            echo "Changes detected after Rector/ECS"
+            git status --porcelain
+          else
+            echo "changes=false" >> $GITHUB_OUTPUT
+            echo "No changes made by Rector/ECS"
+          fi
+
+      - name: Commit and push changes
+        if: steps.verify-changed-files.outputs.changes == 'true'
+        run: |
+          # Configure git
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action Auto-Fix"
+          
+          # Add all changes
+          git add .
+          
+          # Create commit with descriptive message
+          CHANGED_FILES="${{ steps.changed-files.outputs.files }}"
+          COMMIT_MSG="style: auto-fix code with Rector and ECS
+
+          Files processed: $CHANGED_FILES
+          
+          This commit was automatically created by GitHub Actions
+          to apply code style fixes and modernizations.
+          
+          [skip ci]"
+          
+          git commit -m "$COMMIT_MSG"
+          
+          # Push changes
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            # For PRs, push to the PR branch
+            git push origin HEAD:${{ github.head_ref }}
+          else
+            # For direct pushes, push to current branch
+            git push origin HEAD:${{ github.ref_name }}
+          fi
+
+      - name: Comment on PR (if applicable)
+        if: github.event_name == 'pull_request' && steps.verify-changed-files.outputs.changes == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '🤖 **Auto-fix Applied**\n\nRector and ECS have automatically fixed code style and modernization issues in this PR.\n\nThe changes have been committed automatically. Please review the auto-fix commit before merging.'
+            });
+
+      - name: Summary
+        run: |
+          if [ "${{ steps.verify-changed-files.outputs.changes }}" = "true" ]; then
+            echo "✅ Auto-fix completed and changes committed"
+          else
+            echo "✅ No auto-fixes needed - code is already compliant"
+          fi

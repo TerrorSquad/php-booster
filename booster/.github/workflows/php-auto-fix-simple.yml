@@ -1,0 +1,56 @@
+name: PHP Auto-Fix (Simple)
+
+on:
+  push:
+    branches: [ main, master, develop, 'feature/**', 'fix/**' ]
+    paths: [ '**.php' ]
+  pull_request:
+    branches: [ main, master, develop ]
+    paths: [ '**.php' ]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  auto-fix:
+    runs-on: ubuntu-latest
+    
+    # Skip if commit message contains [skip auto-fix] or if it's already an auto-fix commit
+    if: |
+      !contains(github.event.head_commit.message, '[skip auto-fix]') &&
+      !contains(github.event.head_commit.message, 'style: auto-fix code with Rector and ECS')
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run PHP Auto-Fix
+        id: auto-fix
+        uses: ./.github/actions/php-auto-fix
+        with:
+          php-version: '8.3'
+
+      - name: Push changes
+        if: steps.auto-fix.outputs.changes-made == 'true'
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            git push origin HEAD:${{ github.head_ref }}
+          else
+            git push origin HEAD:${{ github.ref_name }}
+          fi
+
+      - name: Comment on PR
+        if: github.event_name == 'pull_request' && steps.auto-fix.outputs.changes-made == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '🤖 **Auto-fix Applied**\n\nRector and ECS have automatically fixed code style and modernization issues.\n\nFiles processed: `${{ steps.auto-fix.outputs.files-processed }}`\n\nPlease review the changes before merging.'
+            });
