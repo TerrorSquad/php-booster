@@ -2,15 +2,6 @@
 
 # Generic runner script - handles DDEV container detection and command execution
 
-# Force color output to preserve colors through shell layers and WSL
-export FORCE_COLOR=1
-export CLICOLOR_FORCE=1
-export NO_COLOR=
-export TERM=${TERM:-xterm-256color}
-# Ensure Node.js tools output colors
-export NPM_CONFIG_COLOR=always
-export PNPM_CONFIG_COLOR=always
-
 # Check if we're inside a DDEV container
 is_inside_container() {
     [[ -n "$DDEV_HOSTNAME" || -n "$DDEV_PROJECT" || -n "$DDEV_SITENAME" ]]
@@ -30,15 +21,12 @@ elif command -v ddev >/dev/null 2>&1; then
     if [ -f ".ddev/config.yaml" ]; then
         project_name=$(grep "^name:" .ddev/config.yaml | sed 's/name: *//' | tr -d '"')
         container_name="ddev-${project_name}-web"
-        
+
         if [ -n "$project_name" ] && command -v docker >/dev/null 2>&1; then
             # Use docker exec -t for TTY support and colors
             exec docker exec -t "$container_name" "$@"
         fi
     fi
-    
-    # Fallback to ddev exec (no colors but still works)
-    exec ddev exec "$@"
 else
     exec "$@"
 fi

@@ -5,7 +5,7 @@
  * Provides consistent logging, file operations, and tool detection
  */
 
-import { $, chalk, fs, path } from 'zx'
+import { $, chalk, fs, path, ProcessOutput } from 'zx'
 
 // Configure zx behavior
 $.verbose = false
@@ -26,7 +26,10 @@ interface RunOptions {
  * @param command Array of command parts
  * @param options Execution options
  */
-export async function runWithRunner(command: string[], options: RunOptions = {}): Promise<any> {
+export async function runWithRunner(
+  command: string[],
+  options: RunOptions = {},
+): Promise<ProcessOutput> {
   const { quiet = false } = options
 
   // Log command execution if not quiet
@@ -73,7 +76,7 @@ export async function getStagedPhpFiles(): Promise<string[]> {
     // Filter for PHP files that actually exist
     const phpFiles: string[] = []
     for (const file of allFiles) {
-      if (file.endsWith('.php') && !file.includes('/vendor/') && (await fs.pathExists(file))) {
+      if (file.endsWith('.php') && !file.startsWith('vendor/') && (await fs.pathExists(file))) {
         phpFiles.push(file)
       }
     }
@@ -180,7 +183,7 @@ export async function hasComposerPackage(packageName: string): Promise<boolean> 
  * @param toolName Name of the tool
  * @param args Arguments to pass to the tool
  */
-export async function runVendorBin(toolName: string, args: string[] = []): Promise<any> {
+export async function runVendorBin(toolName: string, args: string[] = []): Promise<ProcessOutput> {
   const command = [`./vendor/bin/${toolName}`, ...args]
   return await runWithRunner(command)
 }
