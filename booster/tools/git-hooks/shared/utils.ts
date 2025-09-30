@@ -10,6 +10,10 @@ import { $, chalk, fs, path } from 'zx'
 // Configure zx behavior
 $.verbose = false
 
+// Force chalk to output colors even in non-TTY environments (like CI or WSL)
+chalk.level = 3 // Force truecolor support
+process.env.FORCE_COLOR = '3'
+
 /**
  * Options for running commands
  */
