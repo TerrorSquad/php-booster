@@ -26,16 +26,19 @@ if is_inside_container; then
     exec "$@"
 elif command -v ddev >/dev/null 2>&1; then
     # Try to use docker exec -t for better color support
-    # Get the web container name from ddev
-    container_name=$(ddev describe -j 2>/dev/null | jq -r '.raw.services.web.container_name' 2>/dev/null)
-    
-    if [ -n "$container_name" ] && [ "$container_name" != "null" ] && command -v docker >/dev/null 2>&1; then
-        # Use docker exec -t for TTY support and colors
-        exec docker exec -t "$container_name" "$@"
-    else
-        # Fallback to ddev exec (no colors but still works)
-        exec ddev exec "$@"
+    # Get project name from .ddev/config.yaml to construct container name
+    if [ -f ".ddev/config.yaml" ]; then
+        project_name=$(grep "^name:" .ddev/config.yaml | sed 's/name: *//' | tr -d '"')
+        container_name="ddev-${project_name}-web"
+        
+        if [ -n "$project_name" ] && command -v docker >/dev/null 2>&1; then
+            # Use docker exec -t for TTY support and colors
+            exec docker exec -t "$container_name" "$@"
+        fi
     fi
+    
+    # Fallback to ddev exec (no colors but still works)
+    exec ddev exec "$@"
 else
     exec "$@"
 fi
