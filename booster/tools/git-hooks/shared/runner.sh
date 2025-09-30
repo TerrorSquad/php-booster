@@ -25,8 +25,13 @@ fi
 if is_inside_container; then
     exec "$@"
 elif command -v ddev >/dev/null 2>&1; then
-    # Set color environment variables and execute command in DDEV container
-    exec ddev exec "FORCE_COLOR=1 CLICOLOR_FORCE=1 NO_COLOR= TERM=${TERM:-xterm-256color} NPM_CONFIG_COLOR=always PNPM_CONFIG_COLOR=always $*"
+    # Use bash -c to set environment variables and run command
+    # Quote the entire command properly
+    quoted_args=""
+    for arg in "$@"; do
+        quoted_args="$quoted_args $(printf '%q' "$arg")"
+    done
+    exec ddev exec bash -c "export FORCE_COLOR=1 CLICOLOR_FORCE=1 NO_COLOR= TERM=xterm-256color NPM_CONFIG_COLOR=always PNPM_CONFIG_COLOR=always; $quoted_args"
 else
     exec "$@"
 fi
