@@ -1,5 +1,28 @@
 # Changelog
 
+## [1.3.0](https://github.com/TerrorSquad/php-booster/compare/v1.2.0...v1.3.0) (2025-09-30)
+
+
+### Features
+
+* add comprehensive GitHub Actions auto-fix testing and documentation ([44fdc23](https://github.com/TerrorSquad/php-booster/commit/44fdc231afacab8d51bd747b3f207a42295b3b3f))
+* add GitHub Actions for automatic PHP code fixing ([2d05ae1](https://github.com/TerrorSquad/php-booster/commit/2d05ae1e78fc04d310150cb447c5afd2ce4ac246))
+* improve color support for WSL and CI environments ([d3d0664](https://github.com/TerrorSquad/php-booster/commit/d3d06649c04700b29aacc6a3ece4320663622dd2))
+* parse .ddev/config.yaml directly for container name ([cfea3b7](https://github.com/TerrorSquad/php-booster/commit/cfea3b7529d3b74d0e9c67ea2f3beee620ab0c55))
+* use docker exec -t for color support when possible ([cca3012](https://github.com/TerrorSquad/php-booster/commit/cca30120032e104dbc46352198a3a97a3a3c30b2))
+
+
+### Bug Fixes
+
+* correct ddev exec environment variable syntax ([ffb3bff](https://github.com/TerrorSquad/php-booster/commit/ffb3bff7db73bdcff21b7272bedc165a4559d352))
+* preserve colors through ddev exec by passing environment variables ([f9e2fd0](https://github.com/TerrorSquad/php-booster/commit/f9e2fd09c1c93f99698efe3727fed58908fb9f6a))
+* use bash -c for proper environment variable handling in ddev exec ([7789a96](https://github.com/TerrorSquad/php-booster/commit/7789a964a52b3925d5ed7cfbcec78e66c60a3cb1))
+
+
+### Reverts
+
+* simplify runner.sh and document color limitation ([29f8c5f](https://github.com/TerrorSquad/php-booster/commit/29f8c5f11f258df50348e11e55f89c071e21a8cb))
+
 ## [1.2.0](https://github.com/TerrorSquad/php-booster/compare/v1.1.0...v1.2.0) (2025-09-30)
 
 
