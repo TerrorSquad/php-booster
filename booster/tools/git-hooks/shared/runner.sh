@@ -25,13 +25,10 @@ fi
 if is_inside_container; then
     exec "$@"
 elif command -v ddev >/dev/null 2>&1; then
-    # Use bash -c to set environment variables and run command
-    # Quote the entire command properly
-    quoted_args=""
-    for arg in "$@"; do
-        quoted_args="$quoted_args $(printf '%q' "$arg")"
-    done
-    exec ddev exec bash -c "export FORCE_COLOR=1 CLICOLOR_FORCE=1 NO_COLOR= TERM=xterm-256color NPM_CONFIG_COLOR=always PNPM_CONFIG_COLOR=always; $quoted_args"
+    # Note: Colors may not display when running ddev exec from outside container
+    # This is a limitation of how ddev exec handles TTY/color output
+    # Colors will work properly when running inside the container or in CI
+    exec ddev exec "$@"
 else
     exec "$@"
 fi
