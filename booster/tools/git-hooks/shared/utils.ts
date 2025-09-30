@@ -42,12 +42,7 @@ export async function runWithRunner(command: string[], options: RunOptions = {})
     LANG: 'C',
   }
 
-  try {
-    // Execute with appropriate stdio handling and clean environment
-    return await $({ stdio: quiet ? 'pipe' : 'inherit', env: cleanEnv })`${command}`
-  } catch (error: unknown) {
-    throw error
-  }
+  return await $({ stdio: quiet ? 'pipe' : 'inherit', env: cleanEnv })`${command}`
 }
 /**
  * Logging utilities with consistent formatting
