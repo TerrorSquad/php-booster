@@ -18,64 +18,17 @@ interface RunOptions {
 }
 
 /**
- * Check if we're already inside a DDEV container
- */
-async function isInsideDdevContainer(): Promise<boolean> {
-  try {
-    // Check for CI environment first - in CI we should use DDEV commands explicitly
-    if (process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true') {
-      return false // In CI, always use ddev exec commands
-    }
-
-    // Check for DDEV_HOSTNAME environment variable (most reliable)
-    if (process.env.DDEV_HOSTNAME) {
-      return true
-    }
-
-    // Check for specific DDEV environment variables
-    if (process.env.DDEV_PROJECT || process.env.DDEV_SITENAME) {
-      return true
-    }
-
-    // Check if we're inside a container by examining hostname or other indicators
-    const result = await $`hostname`.quiet()
-    const hostname = result.toString().trim()
-
-    // Check for DDEV container indicators
-    return hostname.includes('ddev') || hostname.includes('web')
-  } catch (error) {
-    return false
-  }
-}
-
-/**
- * Execute command with appropriate runner (DDEV or direct)
+ * Execute command directly with ZX
  * @param command Array of command parts
  * @param options Execution options
  */
 export async function runWithRunner(command: string[], options: RunOptions = {}): Promise<any> {
   const { quiet = false } = options
 
-  // Build command array
-  let fullCommand: string[]
-  let contextLabel: string
-
-  const isInsideContainer = await isInsideDdevContainer()
-
-  if (!isInsideContainer) {
-    // We're not inside a container - run via DDEV
-    fullCommand = ['ddev', 'exec', ...command]
-    contextLabel = 'via DDEV'
-  } else {
-    // Run directly (already inside container)
-    fullCommand = command
-    contextLabel = isInsideContainer ? 'inside DDEV container' : 'direct'
-  }
-
   // Log command execution if not quiet
   if (!quiet) {
     const commandStr = command.join(' ')
-    log.info(`Executing (${contextLabel}): ${commandStr}`)
+    log.info(`Executing: ${commandStr}`)
   }
 
   // Set clean environment to avoid locale warnings
@@ -87,26 +40,11 @@ export async function runWithRunner(command: string[], options: RunOptions = {})
 
   try {
     // Execute with appropriate stdio handling and clean environment
-    return await $({ stdio: quiet ? 'pipe' : 'inherit', env: cleanEnv })`${fullCommand}`
+    return await $({ stdio: quiet ? 'pipe' : 'inherit', env: cleanEnv })`${command}`
   } catch (error: unknown) {
-    // Add better error context for debugging CI issues
-    const errorMessage = error instanceof Error ? error.message : String(error)
-    const commandStr = fullCommand.join(' ')
-    log.error(`Command failed: ${commandStr}`)
-    log.error(`Error: ${errorMessage}`)
-    log.error(`Context: ${contextLabel}`)
-    log.error(`Working directory: ${process.cwd()}`)
-
-    // In CI environments, also log environment details for debugging
-    if (process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true') {
-      log.error(`CI Environment detected`)
-      log.error(`Container detection result: inside=${isInsideContainer}`)
-    }
-
     throw error
   }
 }
-
 /**
  * Logging utilities with consistent formatting
  */

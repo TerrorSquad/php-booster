@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 
 # Git hook wrapper for ZX implementation
-# This script calls the modern ZX-based pre-push hook
 
-# Call the ZX-based TypeScript hook
-pnpm zx "tools/git-hooks/hooks/pre-push.ts" "$@"
+# Get the directory of this script
+HOOK_DIR="$(dirname "$0")"
+
+# Use the generic runner script to execute the TypeScript hook
+exec "$HOOK_DIR/../shared/runner.sh" pnpm zx "tools/git-hooks/hooks/pre-push.ts" "$@"
