@@ -1,5 +1,27 @@
 # Changelog
 
+## [1.2.0](https://github.com/TerrorSquad/php-booster/compare/v1.1.0...v1.2.0) (2025-09-30)
+
+
+### Features
+
+* add performance monitoring to git hooks with execution timing and insights ([1393ec9](https://github.com/TerrorSquad/php-booster/commit/1393ec93ef7ab2a592e3ecd5811d6f31e84da3e8))
+* enhance git hooks with tool-specific skip controls and improved logging ([1dd6d94](https://github.com/TerrorSquad/php-booster/commit/1dd6d94c012f6294323c17bfcf0b108d2bde5945))
+* implement runner.sh for git hooks CI compatibility ([d4b21d0](https://github.com/TerrorSquad/php-booster/commit/d4b21d0844309144014b693a8cc98fce0a89487b))
+
+
+### Bug Fixes
+
+* clean up DDEV version output formatting ([762dd00](https://github.com/TerrorSquad/php-booster/commit/762dd00a18de0cf69db3349de6e96fcd7b5ff12f))
+* enhance DDEV container detection and improve error logging in CI environments ([3c80349](https://github.com/TerrorSquad/php-booster/commit/3c803499b5ca5d315f2c86310b91f36df95676e8))
+* **integration:** install composer dependencies individually to prevent silent failures ([88df24a](https://github.com/TerrorSquad/php-booster/commit/88df24a1da3fda8b3b44ca88ed0c9768018b270c))
+* remove composer requirement from host environment check ([82e5cff](https://github.com/TerrorSquad/php-booster/commit/82e5cfff84a87e81738425da3152ca13a6abb57b))
+* remove duplicate ticket footer appending in commit-msg hook ([e139731](https://github.com/TerrorSquad/php-booster/commit/e13973107d7258d63bcfafa86112a1d8395e0e25))
+* remove verbose PATH output from environment check ([b4cb532](https://github.com/TerrorSquad/php-booster/commit/b4cb532c0890c47be3f169c5ca55c68315f64e41))
+* update environment variables in tests and documentation for new TypeScript implementation ([0e4b804](https://github.com/TerrorSquad/php-booster/commit/0e4b8043f97223538fbbe913e55f408a87ff24df))
+* update PHPTool definition for compatibility with Node.js TypeScript strip-only mode ([41f3d95](https://github.com/TerrorSquad/php-booster/commit/41f3d958fbc96b23e091ddfc997b81b1c1cc8452))
+* use DDEV for project creation instead of host composer ([9af7df3](https://github.com/TerrorSquad/php-booster/commit/9af7df3f697462691a73df46052d9edb0323bd8b))
+
 ## [1.1.0](https://github.com/TerrorSquad/php-booster/compare/v1.0.0...v1.1.0) (2025-09-24)
 
 
