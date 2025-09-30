@@ -25,10 +25,17 @@ fi
 if is_inside_container; then
     exec "$@"
 elif command -v ddev >/dev/null 2>&1; then
-    # Note: Colors may not display when running ddev exec from outside container
-    # This is a limitation of how ddev exec handles TTY/color output
-    # Colors will work properly when running inside the container or in CI
-    exec ddev exec "$@"
+    # Try to use docker exec -t for better color support
+    # Get the web container name from ddev
+    container_name=$(ddev describe -j 2>/dev/null | jq -r '.raw.services.web.container_name' 2>/dev/null)
+    
+    if [ -n "$container_name" ] && [ "$container_name" != "null" ] && command -v docker >/dev/null 2>&1; then
+        # Use docker exec -t for TTY support and colors
+        exec docker exec -t "$container_name" "$@"
+    else
+        # Fallback to ddev exec (no colors but still works)
+        exec ddev exec "$@"
+    fi
 else
     exec "$@"
 fi
