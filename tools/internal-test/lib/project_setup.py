@@ -88,6 +88,26 @@ class ProjectSetup:
             cwd=self.config.target_dir,
         )
 
+        # Initialize git repository
+        self.log.info("Initializing git repository...")
+        self.cmd.run_command(["git", "init"], cwd=self.config.target_dir)
+
+        # Set git user for the repository (required for commits)
+        self.cmd.run_command(
+            ["git", "config", "user.name", "Test User"], cwd=self.config.target_dir
+        )
+        self.cmd.run_command(
+            ["git", "config", "user.email", "test@example.com"],
+            cwd=self.config.target_dir,
+        )
+
+        # Add all files and create initial commit
+        self.cmd.run_command(["git", "add", "."], cwd=self.config.target_dir)
+        self.cmd.run_command(
+            ["git", "commit", "-m", "feat: initial commit with symfony framework"],
+            cwd=self.config.target_dir,
+        )
+
     def _setup_laravel(self):
         """Set up Laravel project with DDEV"""
         self.log.info("Creating Laravel project using DDEV...")
@@ -119,6 +139,26 @@ class ProjectSetup:
                 "--no-interaction",
                 "--prefer-dist",
             ],
+            cwd=self.config.target_dir,
+        )
+
+        # Initialize git repository
+        self.log.info("Initializing git repository...")
+        self.cmd.run_command(["git", "init"], cwd=self.config.target_dir)
+
+        # Set git user for the repository (required for commits)
+        self.cmd.run_command(
+            ["git", "config", "user.name", "Test User"], cwd=self.config.target_dir
+        )
+        self.cmd.run_command(
+            ["git", "config", "user.email", "test@example.com"],
+            cwd=self.config.target_dir,
+        )
+
+        # Add all files and create initial commit
+        self.cmd.run_command(["git", "add", "."], cwd=self.config.target_dir)
+        self.cmd.run_command(
+            ["git", "commit", "-m", "feat: initial commit with laravel framework"],
             cwd=self.config.target_dir,
         )
 
