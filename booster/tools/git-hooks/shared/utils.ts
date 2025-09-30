@@ -22,8 +22,27 @@ interface RunOptions {
  */
 async function isInsideDdevContainer(): Promise<boolean> {
   try {
+    // Check for CI environment first - in CI we should use DDEV commands explicitly
+    if (process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true') {
+      return false // In CI, always use ddev exec commands
+    }
+
+    // Check for DDEV_HOSTNAME environment variable (most reliable)
+    if (process.env.DDEV_HOSTNAME) {
+      return true
+    }
+
+    // Check for specific DDEV environment variables
+    if (process.env.DDEV_PROJECT || process.env.DDEV_SITENAME) {
+      return true
+    }
+
+    // Check if we're inside a container by examining hostname or other indicators
     const result = await $`hostname`.quiet()
-    return result.toString().includes('ddev')
+    const hostname = result.toString().trim()
+
+    // Check for DDEV container indicators
+    return hostname.includes('ddev') || hostname.includes('web')
   } catch (error) {
     return false
   }
@@ -66,8 +85,26 @@ export async function runWithRunner(command: string[], options: RunOptions = {})
     LANG: 'C',
   }
 
-  // Execute with appropriate stdio handling and clean environment
-  return await $({ stdio: quiet ? 'pipe' : 'inherit', env: cleanEnv })`${fullCommand}`
+  try {
+    // Execute with appropriate stdio handling and clean environment
+    return await $({ stdio: quiet ? 'pipe' : 'inherit', env: cleanEnv })`${fullCommand}`
+  } catch (error: unknown) {
+    // Add better error context for debugging CI issues
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    const commandStr = fullCommand.join(' ')
+    log.error(`Command failed: ${commandStr}`)
+    log.error(`Error: ${errorMessage}`)
+    log.error(`Context: ${contextLabel}`)
+    log.error(`Working directory: ${process.cwd()}`)
+
+    // In CI environments, also log environment details for debugging
+    if (process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true') {
+      log.error(`CI Environment detected`)
+      log.error(`Container detection result: inside=${isInsideContainer}`)
+    }
+
+    throw error
+  }
 }
 
 /**
