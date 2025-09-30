@@ -25,6 +25,8 @@ Examples:
   %(prog)s setup laravel my-test-app    # Set up a Laravel test project
   %(prog)s integrate laravel my-test-app # Integrate booster into existing project
   %(prog)s full laravel my-test-app     # Run complete test suite
+  %(prog)s test-hooks laravel my-test-app # Test git hooks functionality
+  %(prog)s test-github-actions laravel my-test-app # Test GitHub Actions integration
   %(prog)s clean laravel my-test-app    # Clean up test environment
   %(prog)s status laravel my-test-app   # Show current status
 
@@ -45,6 +47,7 @@ relative to the repository root unless --target-dir is specified.
             "integrate",
             "verify",
             "test-hooks",
+            "test-github-actions",
             "clean",
             "status",
             "help",

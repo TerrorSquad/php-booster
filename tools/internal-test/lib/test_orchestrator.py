@@ -48,6 +48,7 @@ class TestOrchestrator:
         self.booster_integration.integrate_booster()
         self.verifier.verify_integration()
         self.hook_tester.test_branch_validation()
+        self.hook_tester.test_github_actions()
 
         self.log.success(
             f"Test completed successfully! Project is available at: {self.config.target_dir}"
@@ -87,6 +88,11 @@ class TestOrchestrator:
                 self.env_checker.check_environment(),
                 self.env_checker.check_requirements(),
                 self.hook_tester.test_branch_validation(),
+            ),
+            "test-github-actions": lambda: (
+                self.env_checker.check_environment(),
+                self.env_checker.check_requirements(),
+                self.hook_tester.test_github_actions(),
             ),
             "clean": self.cleaner.clean_environment,
             "status": self.status_reporter.show_status,

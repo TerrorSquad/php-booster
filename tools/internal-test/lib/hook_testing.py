@@ -203,3 +203,120 @@ echo "Another test";
             sys.exit(1)
         else:
             self.log.success("Invalid branch correctly rejected")
+
+    def test_github_actions(self):
+        """Test GitHub Actions auto-fix workflows"""
+        if (
+            not self.state.is_project_created()
+            or not self.state.is_booster_integrated()
+        ):
+            self.log.error(
+                "Project not set up or booster not integrated. Run previous steps first."
+            )
+            sys.exit(1)
+
+        self.log.info("Testing GitHub Actions auto-fix integration...")
+
+        # Check if GitHub Actions workflows were copied
+        workflows_dir = self.config.target_dir / ".github" / "workflows"
+        actions_dir = self.config.target_dir / ".github" / "actions" / "php-auto-fix"
+
+        if not workflows_dir.exists():
+            self.log.error("GitHub Actions workflows directory not found")
+            sys.exit(1)
+
+        if not actions_dir.exists():
+            self.log.error("GitHub Actions php-auto-fix action directory not found")
+            sys.exit(1)
+
+        # Check for required workflow files
+        required_workflows = [
+            "php-auto-fix.yml",
+            "php-auto-fix-simple.yml"
+        ]
+
+        for workflow in required_workflows:
+            workflow_file = workflows_dir / workflow
+            if not workflow_file.exists():
+                self.log.error(f"Required workflow file missing: {workflow}")
+                sys.exit(1)
+            else:
+                self.log.success(f"Found workflow: {workflow}")
+
+        # Check for action.yml in the reusable action
+        action_file = actions_dir / "action.yml"
+        if not action_file.exists():
+            self.log.error("Reusable action.yml file missing")
+            sys.exit(1)
+        else:
+            self.log.success("Found reusable action.yml")
+
+        # Validate workflow syntax (basic YAML validation)
+        try:
+            import yaml
+        except ImportError:
+            self.log.warn("PyYAML not installed, skipping YAML syntax validation")
+            return
+        
+        for workflow in required_workflows:
+            workflow_file = workflows_dir / workflow
+            try:
+                with open(workflow_file, 'r') as f:
+                    yaml.safe_load(f)
+                self.log.success(f"Workflow {workflow} has valid YAML syntax")
+            except yaml.YAMLError as e:
+                self.log.error(f"Workflow {workflow} has invalid YAML: {e}")
+                sys.exit(1)
+
+        # Validate action.yml syntax
+        try:
+            with open(action_file, 'r') as f:
+                yaml.safe_load(f)
+            self.log.success("Reusable action has valid YAML syntax")
+        except yaml.YAMLError as e:
+            self.log.error(f"Reusable action has invalid YAML: {e}")
+            sys.exit(1)
+
+        # Check if workflows contain expected triggers and jobs
+        self._validate_workflow_content()
+
+        self.log.success("All GitHub Actions auto-fix tests passed!")
+
+    def _validate_workflow_content(self):
+        """Validate that workflows contain expected content"""
+        workflows_dir = self.config.target_dir / ".github" / "workflows"
+        
+        # Check main workflow
+        main_workflow = workflows_dir / "php-auto-fix.yml"
+        with open(main_workflow, 'r') as f:
+            content = f.read()
+            
+        # Validate key components exist
+        required_content = [
+            "on:",
+            "push:",
+            "pull_request:",
+            "php-auto-fix:",
+            "runs-on: ubuntu-latest",
+            "Rector",
+            "ECS",
+            "composer install"
+        ]
+        
+        for requirement in required_content:
+            if requirement not in content:
+                self.log.error(f"Main workflow missing required content: {requirement}")
+                sys.exit(1)
+                
+        self.log.success("Main workflow contains all required components")
+        
+        # Check simple workflow
+        simple_workflow = workflows_dir / "php-auto-fix-simple.yml"
+        with open(simple_workflow, 'r') as f:
+            simple_content = f.read()
+            
+        if "./.github/actions/php-auto-fix" not in simple_content:
+            self.log.error("Simple workflow doesn't use the reusable action")
+            sys.exit(1)
+            
+        self.log.success("Simple workflow correctly uses reusable action")
