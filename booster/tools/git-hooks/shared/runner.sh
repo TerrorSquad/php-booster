@@ -25,7 +25,8 @@ fi
 if is_inside_container; then
     exec "$@"
 elif command -v ddev >/dev/null 2>&1; then
-    exec ddev exec "$@"
+    # Pass color environment variables through ddev exec
+    exec ddev exec -e FORCE_COLOR=1 -e CLICOLOR_FORCE=1 -e NO_COLOR= -e TERM="${TERM:-xterm-256color}" -e NPM_CONFIG_COLOR=always -e PNPM_CONFIG_COLOR=always "$@"
 else
     exec "$@"
 fi
