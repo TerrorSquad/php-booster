@@ -722,7 +722,24 @@ function add_code_quality_tools() {
 
             if [ ${#missing_prod_deps[@]} -gt 0 ]; then
                 log "Adding missing composer 'require' dependencies from booster..."
-                "${composer_cmd[@]}" require --no-scripts "${missing_prod_deps[@]}" || warn "Failed to add some production dependencies (require step)."
+
+                # Install packages individually for better error handling
+                local failed_prod_packages=()
+
+                for dep in "${missing_prod_deps[@]}"; do
+                    log "Installing production dependency: $dep"
+                    if "${composer_cmd[@]}" require --no-scripts "$dep"; then
+                        success "Successfully installed: $dep"
+                    else
+                        error "Failed to install critical production dependency: $dep"
+                        failed_prod_packages+=("$dep")
+                    fi
+                done
+
+                if [ ${#failed_prod_packages[@]} -gt 0 ]; then
+                    error "Critical production dependencies failed to install: ${failed_prod_packages[*]}"
+                    return 1
+                fi
             else
                 log "All production dependencies are already present."
             fi
@@ -756,7 +773,33 @@ function add_code_quality_tools() {
 
             if [ ${#missing_dev_deps[@]} -gt 0 ]; then
                 log "Adding missing composer 'require-dev' dependencies from booster..."
-                "${composer_cmd[@]}" require --dev "${missing_dev_deps[@]}" || warn "Failed to install/update some dev dependencies. Check composer output."
+
+                # Install packages individually for better error handling
+                local failed_packages=()
+                local critical_packages=("rector/rector" "phpstan/phpstan" "symplify/easy-coding-standard")
+
+                for dep in "${missing_dev_deps[@]}"; do
+                    log "Installing dev dependency: $dep"
+                    if "${composer_cmd[@]}" require --dev "$dep"; then
+                        success "Successfully installed: $dep"
+                    else
+                        warn "Failed to install: $dep"
+                        failed_packages+=("$dep")
+
+                        # Check if this is a critical package
+                        if [[ " ${critical_packages[*]} " =~ " ${dep} " ]]; then
+                            error "Critical package '$dep' failed to install. Integration cannot continue."
+                            return 1
+                        fi
+                    fi
+                done
+
+                if [ ${#failed_packages[@]} -gt 0 ]; then
+                    warn "Some non-critical packages failed to install: ${failed_packages[*]}"
+                    warn "Integration will continue, but some tools may not be available."
+                else
+                    success "All development dependencies installed successfully."
+                fi
             else
                 log "All development dependencies are already present."
             fi

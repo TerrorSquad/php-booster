@@ -33,7 +33,7 @@ class ProjectSetup:
             sys.exit(1)
 
         self.log.info(f"Setting up {self.config.project_type} project...")
-        
+
         # Create target directory
         self.config.target_dir.mkdir(parents=True, exist_ok=True)
 

@@ -86,8 +86,8 @@ class EnvironmentChecker:
             version_output = result.stdout.strip()
             if "ddev version" in version_output.lower():
                 # Parse the version from lines like "ddev version v1.21.4"
-                for line in version_output.split('\n'):
-                    if 'ddev version' in line.lower():
+                for line in version_output.split("\n"):
+                    if "ddev version" in line.lower():
                         self.log.info(f"✓ {line.strip()}")
                         break
             else:
