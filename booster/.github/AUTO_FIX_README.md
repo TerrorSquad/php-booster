@@ -11,18 +11,10 @@ This booster includes GitHub Actions that automatically apply code style fixes a
 - 💬 **PR comments** notifying about applied fixes
 - ⚡ **Optimized performance** with caching and smart file detection
 
-## Available Workflows
+## Available Workflow
 
-### 1. Complete Workflow (`php-auto-fix.yml`)
-Full-featured workflow with all bells and whistles:
-- Comprehensive error handling
-- Detailed logging and comments
-- Smart file detection based on git changes
-- Automatic PR comments
-- Skip patterns to prevent infinite loops
-
-### 2. Simple Workflow (`php-auto-fix-simple.yml`)
-Streamlined version using the reusable action:
+### PHP Auto-Fix Workflow (`php-auto-fix-simple.yml`)
+Streamlined workflow using the reusable action:
 - Clean and minimal configuration
 - Uses the reusable action component
 - Easier to customize and maintain

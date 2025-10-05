@@ -230,10 +230,7 @@ echo "Another test";
             sys.exit(1)
 
         # Check for required workflow files
-        required_workflows = [
-            "php-auto-fix.yml",
-            "php-auto-fix-simple.yml"
-        ]
+        required_workflows = ["php-auto-fix-simple.yml"]
 
         for workflow in required_workflows:
             workflow_file = workflows_dir / workflow
@@ -257,11 +254,11 @@ echo "Another test";
         except ImportError:
             self.log.warn("PyYAML not installed, skipping YAML syntax validation")
             return
-        
+
         for workflow in required_workflows:
             workflow_file = workflows_dir / workflow
             try:
-                with open(workflow_file, 'r') as f:
+                with open(workflow_file, "r") as f:
                     yaml.safe_load(f)
                 self.log.success(f"Workflow {workflow} has valid YAML syntax")
             except yaml.YAMLError as e:
@@ -270,7 +267,7 @@ echo "Another test";
 
         # Validate action.yml syntax
         try:
-            with open(action_file, 'r') as f:
+            with open(action_file, "r") as f:
                 yaml.safe_load(f)
             self.log.success("Reusable action has valid YAML syntax")
         except yaml.YAMLError as e:
@@ -285,12 +282,12 @@ echo "Another test";
     def _validate_workflow_content(self):
         """Validate that workflows contain expected content"""
         workflows_dir = self.config.target_dir / ".github" / "workflows"
-        
+
         # Check main workflow
-        main_workflow = workflows_dir / "php-auto-fix.yml"
-        with open(main_workflow, 'r') as f:
+        main_workflow = workflows_dir / "php-auto-fix-simple.yml"
+        with open(main_workflow, "r") as f:
             content = f.read()
-            
+
         # Validate key components exist
         required_content = [
             "on:",
@@ -300,23 +297,23 @@ echo "Another test";
             "runs-on: ubuntu-latest",
             "Rector",
             "ECS",
-            "composer install"
+            "composer install",
         ]
-        
+
         for requirement in required_content:
             if requirement not in content:
                 self.log.error(f"Main workflow missing required content: {requirement}")
                 sys.exit(1)
-                
+
         self.log.success("Main workflow contains all required components")
-        
+
         # Check simple workflow
         simple_workflow = workflows_dir / "php-auto-fix-simple.yml"
-        with open(simple_workflow, 'r') as f:
+        with open(simple_workflow, "r") as f:
             simple_content = f.read()
-            
+
         if "./.github/actions/php-auto-fix" not in simple_content:
             self.log.error("Simple workflow doesn't use the reusable action")
             sys.exit(1)
-            
+
         self.log.success("Simple workflow correctly uses reusable action")
