@@ -87,13 +87,13 @@ async function generateApiDocs(): Promise<boolean> {
     return true
   }
 
-  // Generate OpenAPI specification
+  // Generate OpenAPI specification using documentation/api.php
   const specSuccess = await runTool(
     'API spec generation',
     'Generating OpenAPI specification...',
     async () => {
-      // Use swagger-php binary to scan for annotations and generate spec
-      await runVendorBin('openapi', ['src/', '--output', 'documentation/openapi.yml'])
+      // Use the documentation/api.php script to generate the spec
+      await runWithRunner(['php', 'documentation/api.php'])
     },
   )
 
