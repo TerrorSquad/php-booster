@@ -843,6 +843,17 @@ function update_gitignore() {
 
     touch "$project_gitignore"
 
+    # Remove .vscode entries from project gitignore since booster provides IDE settings
+    log "Removing .vscode entries from project .gitignore..."
+    local temp_gitignore="${project_gitignore}.tmp"
+
+    # Remove lines that ignore .vscode (with or without leading slash, with or without trailing slash)
+    grep -v -E '^[[:space:]]*/?\.vscode/?[[:space:]]*$' "$project_gitignore" > "$temp_gitignore" || true
+    # Also remove commented .vscode entries
+    grep -v -E '^[[:space:]]*#[[:space:]]*/?\.vscode/?[[:space:]]*$' "$temp_gitignore" > "${temp_gitignore}.2" || true
+    mv "${temp_gitignore}.2" "$project_gitignore"
+    rm -f "$temp_gitignore"
+
     local added_count=0
 
     while IFS= read -r line || [[ -n "$line" ]]; do
@@ -883,6 +894,8 @@ function update_gitignore() {
     else
         log "No new entries needed for .gitignore."
     fi
+
+    success ".vscode entries removed from project .gitignore (booster provides IDE settings)."
 }
 
 function cleanup_silent() {
