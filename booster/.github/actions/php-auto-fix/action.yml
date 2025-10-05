@@ -1,44 +1,44 @@
-name: 'PHP Auto-Fix with Rector and ECS'
-description: 'Automatically fix PHP code style and apply modernizations using Rector and ECS'
-author: 'PHP Booster'
+name: "PHP Auto-Fix with Rector and ECS"
+description: "Automatically fix PHP code style and apply modernizations using Rector and ECS"
+author: "PHP Booster"
 
 inputs:
   php-version:
-    description: 'PHP version to use'
+    description: "PHP version to use"
     required: false
-    default: '8.3'
-  
+    default: "8.3"
+
   skip-rector:
-    description: 'Skip Rector processing'
+    description: "Skip Rector processing"
     required: false
-    default: 'false'
-  
+    default: "false"
+
   skip-ecs:
-    description: 'Skip ECS processing'
+    description: "Skip ECS processing"
     required: false
-    default: 'false'
-  
+    default: "false"
+
   commit-message:
-    description: 'Custom commit message for auto-fixes'
+    description: "Custom commit message for auto-fixes"
     required: false
-    default: 'style: auto-fix code with Rector and ECS'
-  
+    default: "style: auto-fix code with Rector and ECS"
+
   file-pattern:
-    description: 'File pattern to match (default: *.php)'
+    description: "File pattern to match (default: *.php)"
     required: false
-    default: '*.php'
+    default: "*.php"
 
 outputs:
   changes-made:
-    description: 'Whether any changes were made'
+    description: "Whether any changes were made"
     value: ${{ steps.check-changes.outputs.changes }}
-  
+
   files-processed:
-    description: 'List of files that were processed'
+    description: "List of files that were processed"
     value: ${{ steps.get-files.outputs.files }}
 
 runs:
-  using: 'composite'
+  using: "composite"
   steps:
     - name: Setup PHP
       uses: shivammathur/setup-php@v2
@@ -46,6 +46,25 @@ runs:
         php-version: ${{ inputs.php-version }}
         extensions: mbstring, xml, zip, pcntl, pdo, sqlite, pdo_sqlite
         coverage: none
+
+    - name: Get pnpm version from package.json
+      id: pnpm-version
+      shell: bash
+      run: |
+        if [ -f "package.json" ]; then
+          PNPM_VERSION=$(jq -r '.packageManager // "pnpm@latest"' package.json | sed 's/pnpm@//')
+          echo "version=$PNPM_VERSION" >> $GITHUB_OUTPUT
+          echo "Found pnpm version: $PNPM_VERSION"
+        else
+          echo "version=latest" >> $GITHUB_OUTPUT
+          echo "package.json not found, using latest pnpm version"
+        fi
+
+    - name: Install pnpm
+      uses: pnpm/action-setup@v4
+      with:
+        version: ${{ steps.pnpm-version.outputs.version }}
+        run_install: false
 
     - name: Get Composer Cache Directory
       id: composer-cache
@@ -78,7 +97,7 @@ runs:
           # For pushes, get diff from previous commit
           CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD -- '${{ inputs.file-pattern }}' 2>/dev/null | tr '\n' ' ' || echo "")
         fi
-        
+
         # Filter to only existing files
         EXISTING_FILES=""
         for file in $CHANGED_FILES; do
@@ -86,7 +105,7 @@ runs:
             EXISTING_FILES="$EXISTING_FILES $file"
           fi
         done
-        
+
         echo "files=$EXISTING_FILES" >> $GITHUB_OUTPUT
         echo "Changed files: $EXISTING_FILES"
 
@@ -134,24 +153,24 @@ runs:
         # Configure git
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action Auto-Fix"
-        
+
         # Add all changes
         git add .
-        
+
         # Create commit
         CHANGED_FILES="${{ steps.get-files.outputs.files }}"
         COMMIT_MSG="${{ inputs.commit-message }}
 
         Files processed: $CHANGED_FILES
-        
+
         This commit was automatically created by GitHub Actions
         to apply code style fixes and modernizations.
-        
+
         [skip ci]"
-        
+
         git commit -m "$COMMIT_MSG"
         echo "✅ Auto-fix commit created"
 
 branding:
-  icon: 'code'
-  color: 'blue'
+  icon: "code"
+  color: "blue"
