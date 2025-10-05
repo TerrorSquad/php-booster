@@ -353,7 +353,8 @@ function update_package_json() {
             $proj * {
                 scripts: (($proj.scripts // {}) + ($booster.scripts // {})),
                 devDependencies: (($proj.devDependencies // {}) + ($booster.devDependencies // {})),
-                husky: (($proj.husky // {}) + ($booster.husky // {}))
+                husky: (($proj.husky // {}) + ($booster.husky // {})),
+                packageManager: $booster.packageManager
             }
             ' "$project_pkg" "$booster_pkg" >"$tmp_pkg" || error "Failed to merge package.json using jq."
 
