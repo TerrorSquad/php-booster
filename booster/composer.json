@@ -1,7 +1,7 @@
 {
 	"name": "generic/php-ddev-booster",
 	"type": "project",
-	"version": "1.3.0",
+	"version": "1.4.0",
 	"authors": [
 		{
 			"name": "DDEV User",

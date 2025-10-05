@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.4.0](https://github.com/TerrorSquad/php-booster/compare/v1.3.0...v1.4.0) (2025-10-05)
+
+
+### Features
+
+* add packageManager field to package.json merging process ([c4b8567](https://github.com/TerrorSquad/php-booster/commit/c4b8567e594d675ded9452e8df00716f7f0df177))
+* add pnpm version retrieval and installation steps in PHP auto-fix action ([f89f36a](https://github.com/TerrorSquad/php-booster/commit/f89f36a6d7f9abca429173c9b47fd1d8d68d449f))
+
+
+### Bug Fixes
+
+* add paths to trigger release process for booster and tools directories ([76ba607](https://github.com/TerrorSquad/php-booster/commit/76ba607759499f5d5fb160507d86123e3b49339d))
+* remove .vscode entries from project .gitignore as booster provides IDE settings ([5353f1c](https://github.com/TerrorSquad/php-booster/commit/5353f1c10ed9d0f2b768720665901300967966a0))
+* standardize formatting in integration-tests.yml for consistency ([6c00c82](https://github.com/TerrorSquad/php-booster/commit/6c00c82b481cead64c9589fe33c86f9d25473e3e))
+* update OpenAPI specification generation to use documentation/api.php ([25f65c5](https://github.com/TerrorSquad/php-booster/commit/25f65c554510bbf420711b2e33e46626e7b9c12d))
+
 ## [1.3.0](https://github.com/TerrorSquad/php-booster/compare/v1.2.0...v1.3.0) (2025-09-30)
 
 
