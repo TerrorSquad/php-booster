@@ -24,7 +24,37 @@ elif command -v ddev >/dev/null 2>&1; then
 
         if [ -n "$project_name" ] && command -v docker >/dev/null 2>&1; then
             # Use docker exec -t for TTY support and colors
-            exec docker exec -t "$container_name" "$@"
+            # Forward a conservative whitelist of environment variables from the host
+            # into the container so ZX hooks and wrappers can honour skip flags and
+            # verbosity settings without exposing unrelated host environment values.
+            # Whitelist derived from hook/utility usage: SKIP_PRECOMMIT, SKIP_COMMITMSG,
+            # SKIP_RECTOR, SKIP_ECS, SKIP_PHPSTAN, SKIP_PSALM, SKIP_DEPTRAC,
+            # PRECOMMIT_VERBOSE, COMMITMSG_VERBOSE, FORCE_COLOR, LC_ALL, LANG,
+            whitelist=(
+                "SKIP_PRECOMMIT"
+                "SKIP_COMMITMSG"
+                "SKIP_RECTOR"
+                "SKIP_ECS"
+                "SKIP_PHPSTAN"
+                "SKIP_PSALM"
+                "SKIP_DEPTRAC"
+                "PRECOMMIT_VERBOSE"
+                "COMMITMSG_VERBOSE"
+            )
+
+            env_flags=()
+            for var in "${whitelist[@]}"; do
+                # Only forward if variable is set in the host environment
+                if [ -n "${!var+x}" ]; then
+                    env_flags+=("-e" "${var}=${!var}")
+                fi
+            done
+
+            if [ ${#env_flags[@]} -gt 0 ]; then
+                exec docker exec -t "${env_flags[@]}" "$container_name" "$@"
+            else
+                exec docker exec -t "$container_name" "$@"
+            fi
         fi
     fi
 else
