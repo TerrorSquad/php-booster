@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.5.0](https://github.com/TerrorSquad/php-booster/compare/v1.4.0...v1.5.0) (2025-10-05)
+
+
+### Features
+
+* enhance environment variable forwarding in DDEV container execution ([938ea2f](https://github.com/TerrorSquad/php-booster/commit/938ea2f1a6d6a03921aac0996a0092fcbac9cf57))
+* update PHP version to 8.4.0 and upgrade pnpm to 10.18.0 in configuration files ([bb08756](https://github.com/TerrorSquad/php-booster/commit/bb0875696dbfc7149b8539144939e7e307b1f1ac))
+* upgrade PHP version from 8.2 to 8.4 in DDEV configuration ([f24975f](https://github.com/TerrorSquad/php-booster/commit/f24975f992072ad1fc366fbda6e394748869e774))
+
 ## [1.4.0](https://github.com/TerrorSquad/php-booster/compare/v1.3.0...v1.4.0) (2025-10-05)
 
 
