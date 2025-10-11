@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.0](https://github.com/TerrorSquad/php-booster/compare/v1.5.0...v1.6.0) (2025-10-11)
+
+
+### Features
+
+* upgrade node to v24 ([ee6c2d5](https://github.com/TerrorSquad/php-booster/commit/ee6c2d5d90533f2652294c9126ff6d6252a71ef4))
+
 ## [1.5.0](https://github.com/TerrorSquad/php-booster/compare/v1.4.0...v1.5.0) (2025-10-05)
 
 
