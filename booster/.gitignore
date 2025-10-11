@@ -9,3 +9,4 @@ psalm_sonar.json
 .ddev/php/xdebug-local.ini
 .qodo
 .vscode/tasks.json
+.vscode/launch.json
