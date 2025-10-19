@@ -28,11 +28,11 @@ class BoosterIntegration:
 
     def integrate_booster(self, interactive_mode: bool = False) -> bool:
         """Integrate the PHP Booster
-        
+
         Args:
             interactive_mode: If True, run in interactive mode (requires manual input)
                              If False, run in automated mode (default)
-        
+
         Returns:
             bool: True if integration was successful, False otherwise
         """
@@ -71,7 +71,9 @@ class BoosterIntegration:
         cmd = ["bash", str(local_script)]
         if interactive_mode:
             cmd.append("-I")
-            self.log.info("Interactive mode enabled - you will be prompted for configuration")
+            self.log.info(
+                "Interactive mode enabled - you will be prompted for configuration"
+            )
         else:
             # Use non-interactive mode for automated testing
             cmd.append("-N")

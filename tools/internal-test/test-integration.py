@@ -82,7 +82,7 @@ relative to the repository root unless --target-dir is specified.
         type=Path,
         help="Target directory for the test project (default: tests/<project_type>/<project_name>)",
     )
-    
+
     parser.add_argument(
         "--automated",
         action="store_true",

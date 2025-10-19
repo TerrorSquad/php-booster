@@ -149,16 +149,16 @@ function confirm_action() {
     local message="$1"
     local default="${2:-n}"
     local response
-    
+
     if [ "$default" = "y" ]; then
         prompt "$message [Y/n]: "
     else
         prompt "$message [y/N]: "
     fi
-    
+
     read -r response
     response=${response:-$default}
-    
+
     if [[ "$response" =~ ^[Yy]$ ]]; then
         return 0
     else
@@ -179,10 +179,10 @@ function select_tools_to_install() {
     echo "  3. PHPStan                  - Static analysis (bug detection)"
     echo "  4. Psalm                    - Additional static analysis"
     echo ""
-    
+
     local tools=("ecs" "rector" "phpstan" "psalm")
     local tool_names=("ECS (EasyCodingStandard)" "Rector" "PHPStan" "Psalm")
-    
+
     if confirm_action "Install all tools? (Recommended for new integrations)" "y"; then
         INTERACTIVE_TOOLS_SELECTED=("${tools[@]}")
         success "All tools selected for installation"
@@ -190,13 +190,13 @@ function select_tools_to_install() {
         echo ""
         info "Select individual tools (you can add more later):"
         echo ""
-        
+
         for i in "${!tools[@]}"; do
             if confirm_action "  Install ${tool_names[$i]}?" "y"; then
                 INTERACTIVE_TOOLS_SELECTED+=("${tools[$i]}")
             fi
         done
-        
+
         if [ ${#INTERACTIVE_TOOLS_SELECTED[@]} -eq 0 ]; then
             warn "No tools selected. Installing all tools as fallback."
             INTERACTIVE_TOOLS_SELECTED=("${tools[@]}")
@@ -217,28 +217,28 @@ function configure_git_workflow() {
     echo "  • Conventional commit messages (e.g., feat:, fix:, chore:)"
     echo "  • Automatic ticket footer appending to commits"
     echo ""
-    
+
     if confirm_action "Do you use ticket IDs in your branches? (e.g., JIRA, GitHub Issues)" "n"; then
         INTERACTIVE_REQUIRE_TICKETS=true
         echo ""
         prompt "Enter your ticket prefix (e.g., PRJ, JIRA, ISSUE): "
         read -r INTERACTIVE_TICKET_PREFIX
-        
+
         if [ -z "$INTERACTIVE_TICKET_PREFIX" ]; then
             warn "No prefix provided. Using default: 'TICKET'"
             INTERACTIVE_TICKET_PREFIX="TICKET"
         fi
-        
+
         success "Ticket prefix set to: $INTERACTIVE_TICKET_PREFIX"
-        
+
         echo ""
         prompt "Enter the commit footer label (default: Closes): "
         read -r footer_label
-        
+
         if [ -n "$footer_label" ]; then
             INTERACTIVE_COMMIT_FOOTER_LABEL="$footer_label"
         fi
-        
+
         success "Commit footer will be: $INTERACTIVE_COMMIT_FOOTER_LABEL: $INTERACTIVE_TICKET_PREFIX-XXX"
     else
         INTERACTIVE_REQUIRE_TICKETS=false
@@ -257,7 +257,7 @@ function configure_ide_settings() {
     echo "  • PhpStorm (.phpstorm/)"
     echo "  • EditorConfig (.editorconfig)"
     echo ""
-    
+
     if confirm_action "Install IDE configuration files?" "y"; then
         success "IDE settings will be installed"
         return 0
@@ -273,13 +273,13 @@ function show_configuration_summary() {
     info "Configuration Summary"
     echo "═══════════════════════════════════════════════════════════════"
     echo ""
-    
+
     echo "📦 Tools to install:"
     for tool in "${INTERACTIVE_TOOLS_SELECTED[@]}"; do
         echo "   ✓ $tool"
     done
     echo ""
-    
+
     echo "🔧 Git Workflow:"
     if [ "$INTERACTIVE_REQUIRE_TICKETS" = true ]; then
         echo "   ✓ Ticket IDs: Required"
@@ -289,14 +289,14 @@ function show_configuration_summary() {
         echo "   ✓ Ticket IDs: Optional"
     fi
     echo ""
-    
+
     echo "🎨 IDE Settings: Will be installed"
     echo ""
-    
+
     if ! confirm_action "Proceed with this configuration?" "y"; then
         error "Installation cancelled by user"
     fi
-    
+
     echo ""
     success "Configuration confirmed. Starting integration..."
     sleep 1
@@ -306,21 +306,21 @@ function apply_interactive_configuration() {
     # Update branch validation config with user's choices
     if [ "$INTERACTIVE_REQUIRE_TICKETS" = true ] && [ -n "$INTERACTIVE_TICKET_PREFIX" ]; then
         local config_file="validate-branch-name.config.cjs"
-        
+
         if [ -f "$config_file" ]; then
             log "Updating branch validation config with ticket prefix: $INTERACTIVE_TICKET_PREFIX"
-            
+
             # Update ticket prefix
             sed -i.bak "s/ticketIdPrefix: '[^']*'/ticketIdPrefix: '$INTERACTIVE_TICKET_PREFIX'/g" "$config_file"
-            
+
             # Update requireTickets flag
             sed -i.bak "s/requireTickets: false/requireTickets: true/g" "$config_file"
-            
+
             # Update commit footer label
             sed -i.bak "s/commitFooterLabel: '[^']*'/commitFooterLabel: '$INTERACTIVE_COMMIT_FOOTER_LABEL'/g" "$config_file"
-            
+
             rm -f "$config_file.bak"
-            
+
             success "Branch validation configured with your settings"
         fi
     fi
@@ -342,7 +342,7 @@ function show_post_installation_summary() {
     echo "   • ecs.php, rector.php, phpstan.neon.dist - Code quality configs"
     echo ""
     echo "2. Try the available commands:"
-    
+
     if [ $IS_DDEV_PROJECT -eq 1 ]; then
         echo "   ddev composer ecs          # Check/fix code style"
         echo "   ddev composer rector       # Apply automated refactoring"
@@ -354,17 +354,17 @@ function show_post_installation_summary() {
         echo "   composer phpstan           # Run static analysis"
         echo "   composer psalm             # Additional static analysis"
     fi
-    
+
     echo ""
     echo "3. Test your Git hooks:"
     echo "   • Create a test branch with proper naming"
-    
+
     if [ "$INTERACTIVE_REQUIRE_TICKETS" = true ]; then
         echo "     Example: git checkout -b feature/$INTERACTIVE_TICKET_PREFIX-123-test-booster"
     else
         echo "     Example: git checkout -b feature/test-booster"
     fi
-    
+
     echo "   • Make a commit with conventional format"
     echo "     Example: git commit -m \"feat: add PHP Booster integration\""
     echo ""
@@ -374,13 +374,13 @@ function show_post_installation_summary() {
     echo ""
     echo "📚 Documentation: https://terrorsquad.github.io/php-booster/"
     echo ""
-    
+
     if [ "$INTERACTIVE_REQUIRE_TICKETS" = true ]; then
         echo "💡 Tip: Your commit messages will automatically include:"
         echo "   $INTERACTIVE_COMMIT_FOOTER_LABEL: $INTERACTIVE_TICKET_PREFIX-XXX"
         echo ""
     fi
-    
+
     success "Happy coding with PHP Booster! 🚀"
     echo ""
 }
@@ -1341,7 +1341,7 @@ function main() {
     local current_version
     current_version=$(get_booster_version)
     show_version_info "$current_version"
-    
+
     # --- Interactive Mode ---
     if [ "$INTERACTIVE_MODE" = true ] && [ "$SKIP_INTERACTIVE" = false ]; then
         run_interactive_mode
@@ -1352,7 +1352,7 @@ function main() {
     update_readme
     update_gitignore
     update_tool_paths
-    
+
     # Apply interactive configuration if mode was enabled
     if [ "$INTERACTIVE_MODE" = true ]; then
         apply_interactive_configuration
@@ -1388,7 +1388,7 @@ function main() {
     if [ $IS_DDEV_PROJECT -eq 1 ]; then
         success "Please run 'ddev restart' to apply the DDEV configuration changes."
     fi
-    
+
     # Show post-installation summary in interactive mode
     if [ "$INTERACTIVE_MODE" = true ]; then
         show_post_installation_summary
