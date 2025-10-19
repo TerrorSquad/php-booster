@@ -31,6 +31,17 @@ To integrate the booster into your existing PHP project:
 
 2. Run the following command to integrate the booster into your project:
 
+    **Interactive Mode (Recommended for first-time setup):**
+    ```bash
+    curl -sSL https://raw.githubusercontent.com/TerrorSquad/php-booster/main/booster/integrate_booster.sh | bash -s -- -I
+    ```
+    
+    The interactive wizard will guide you through:
+    - Selecting which code quality tools to install
+    - Configuring Git workflow and ticket IDs
+    - Setting up IDE configurations
+    
+    **Quick Mode (Use defaults):**
     ```bash
     curl -sSL https://raw.githubusercontent.com/TerrorSquad/php-booster/main/booster/integrate_booster.sh | bash
     ```

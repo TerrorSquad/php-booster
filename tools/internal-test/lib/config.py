@@ -16,6 +16,7 @@ class Config:
     script_dir: Path
     root_dir: Path
     use_colors: bool
+    automated: bool = False
 
 
 class Colors:

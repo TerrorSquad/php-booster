@@ -27,6 +27,10 @@ Examples:
   %(prog)s full laravel my-test-app     # Run complete test suite
   %(prog)s test-hooks laravel my-test-app # Test git hooks functionality
   %(prog)s test-github-actions laravel my-test-app # Test GitHub Actions integration
+  %(prog)s test-interactive             # Test interactive mode without requiring a project
+  %(prog)s test-interactive-project laravel my-test-app # Test interactive mode with a project
+  %(prog)s test-interactive-project laravel my-test-app --automated # Automated interactive test
+  %(prog)s clean-interactive-test       # Clean up interactive test directory
   %(prog)s clean laravel my-test-app    # Clean up test environment
   %(prog)s status laravel my-test-app   # Show current status
 
@@ -48,6 +52,9 @@ relative to the repository root unless --target-dir is specified.
             "verify",
             "test-hooks",
             "test-github-actions",
+            "test-interactive",
+            "test-interactive-project",
+            "clean-interactive-test",
             "clean",
             "status",
             "help",
@@ -75,6 +82,12 @@ relative to the repository root unless --target-dir is specified.
         type=Path,
         help="Target directory for the test project (default: tests/<project_type>/<project_name>)",
     )
+    
+    parser.add_argument(
+        "--automated",
+        action="store_true",
+        help="Run in automated mode (no manual input required). Only applies to interactive tests.",
+    )
 
     args = parser.parse_args()
 
@@ -96,6 +109,7 @@ relative to the repository root unless --target-dir is specified.
         script_dir=script_dir,
         root_dir=root_dir,
         use_colors=os.getenv("NO_COLOR") is None,
+        automated=args.automated,
     )
 
 
