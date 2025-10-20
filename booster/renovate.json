@@ -15,7 +15,7 @@
       "schedule": ["every weekend"]
     },
     {
-      "matchPackagePatterns": ["^php/", "phpunit/", "phpstan/", "psalm/", "symfony/"],
+      "matchPackagePatterns": ["phpunit/", "phpstan/", "psalm/", "symfony/", "doctrine/", "guzzlehttp/"],
       "groupName": "PHP dependencies"
     }
   ],
