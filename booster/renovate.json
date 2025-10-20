@@ -1,0 +1,26 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:base"
+  ],
+  "packageRules": [
+    {
+      "matchUpdateTypes": ["minor", "patch"],
+      "matchCurrentVersion": "!/^0/",
+      "automerge": true
+    },
+    {
+      "matchDepTypes": ["devDependencies"],
+      "groupName": "dev dependencies",
+      "schedule": ["every weekend"]
+    },
+    {
+      "matchPackagePatterns": ["phpunit/", "phpstan/", "psalm/", "symfony/", "doctrine/", "guzzlehttp/"],
+      "groupName": "PHP dependencies"
+    }
+  ],
+  "timezone": "Europe/Paris",
+  "schedule": ["every weekend"],
+  "labels": ["dependencies", "renovate"],
+  "branchPrefix": "deps/"
+}
