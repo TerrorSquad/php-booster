@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.1](https://github.com/TerrorSquad/php-booster/compare/v1.6.0...v1.6.1) (2025-10-20)
+
+
+### Bug Fixes
+
+* consolidate interactive mode testing into main framework ([eae166e](https://github.com/TerrorSquad/php-booster/commit/eae166eb86bbd77a40e1a7119fe8301b2e335f12))
+
 ## [1.6.0](https://github.com/TerrorSquad/php-booster/compare/v1.5.0...v1.6.0) (2025-10-11)
 
 
