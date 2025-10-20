@@ -604,6 +604,15 @@ function copy_files() {
         warn "validate-branch-name.config.cjs missing in booster."
     fi
 
+    # Copy renovate config (for automated dependency updates)
+    local renovate_cfg="${BOOSTER_INTERNAL_PATH}/renovate.json"
+    if [ -f "$renovate_cfg" ]; then
+        cp "$renovate_cfg" . || warn "Failed to copy renovate.json"
+        log "  Copied renovate.json for automated dependency management"
+    else
+        log "  renovate.json not found in booster. Skipping (optional)."
+    fi
+
     success "Common files copied (tools filtered to runtime essentials)."
 }
 
