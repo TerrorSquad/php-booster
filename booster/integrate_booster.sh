@@ -178,10 +178,11 @@ function select_tools_to_install() {
     echo "  2. Rector                   - Automated refactoring & PHP upgrades"
     echo "  3. PHPStan                  - Static analysis (bug detection)"
     echo "  4. Psalm                    - Additional static analysis"
+    echo "  5. PHP Insights             - Advanced code quality metrics & architecture"
     echo ""
 
-    local tools=("ecs" "rector" "phpstan" "psalm")
-    local tool_names=("ECS (EasyCodingStandard)" "Rector" "PHPStan" "Psalm")
+    local tools=("ecs" "rector" "phpstan" "psalm" "phpinsights")
+    local tool_names=("ECS (EasyCodingStandard)" "Rector" "PHPStan" "Psalm" "PHP Insights")
 
     if confirm_action "Install all tools? (Recommended for new integrations)" "y"; then
         INTERACTIVE_TOOLS_SELECTED=("${tools[@]}")
@@ -340,6 +341,7 @@ function show_post_installation_summary() {
     echo "   • validate-branch-name.config.cjs  - Branch naming rules"
     echo "   • commitlint.config.ts             - Commit message rules"
     echo "   • ecs.php, rector.php, phpstan.neon.dist - Code quality configs"
+    echo "   • phpinsights.php                  - PHP Insights configuration"
     echo ""
     echo "2. Try the available commands:"
 
@@ -348,11 +350,13 @@ function show_post_installation_summary() {
         echo "   ddev composer rector       # Apply automated refactoring"
         echo "   ddev composer phpstan      # Run static analysis"
         echo "   ddev composer psalm        # Additional static analysis"
+        echo "   ddev composer phpinsights  # Run PHP Insights analysis"
     else
         echo "   composer ecs               # Check/fix code style"
         echo "   composer rector            # Apply automated refactoring"
         echo "   composer phpstan           # Run static analysis"
         echo "   composer psalm             # Additional static analysis"
+        echo "   composer phpinsights       # Run PHP Insights analysis"
     fi
 
     echo ""
@@ -767,7 +771,7 @@ function update_tool_paths() {
     fi
 
     # --- Copy Config Files ---
-    local cq_files=("rector.php" "phpstan.neon.dist" "ecs.php" "psalm.xml")
+    local cq_files=("rector.php" "phpstan.neon.dist" "ecs.php" "psalm.xml" "phpinsights.php")
     for file in "${cq_files[@]}"; do
         local src_path="${BOOSTER_INTERNAL_PATH}/${file}"
         if [ -f "$src_path" ]; then
