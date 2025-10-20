@@ -23,7 +23,7 @@ Example: `adr-0003-use-rector-for-refactoring.md`
 
 ## Status
 
-[Proposed | Accepted | Rejected | Deprecated | Superseded by [ADR-XXX](adr-XXX-title.md)]
+[Proposed | Accepted | Rejected | Deprecated | Superseded by ADR-XXX]
 
 **Date**: [YYYY-MM-DD]
 
@@ -78,16 +78,16 @@ Example: `adr-0003-use-rector-for-refactoring.md`
 
 [Optional: Link to related ADRs or reference relevant documentation]
 
-- [ADR-XXXX: Related Decision](adr-XXXX-title.md)
-- [Relevant Documentation](/link/to/docs)
+- ADR-XXXX: Related Decision
+- Relevant Documentation Link
 
 ## References
 
 [Optional: Include links to external resources, discussions, or research that informed this decision]
 
-- [Article or Documentation](https://example.com)
-- [GitHub Discussion](https://github.com/org/repo/discussions/123)
-- [Research Paper or Blog Post](https://example.com)
+- Article or Documentation: https://example.com
+- GitHub Discussion: https://github.com/org/repo/discussions/123
+- Research Paper or Blog Post: https://example.com
 
 ---
 

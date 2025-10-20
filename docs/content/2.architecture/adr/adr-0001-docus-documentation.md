@@ -114,7 +114,7 @@ docs/
 
 ## Related Decisions
 
-- [ADR-0002: ZX for Git Hooks](./adr-0002-zx-git-hooks.md) - Similar modern tooling philosophy
+- [ADR-0002: ZX for Git Hooks](/architecture/adr/adr-0002-zx-git-hooks) - Similar modern tooling philosophy
 
 ## References
 

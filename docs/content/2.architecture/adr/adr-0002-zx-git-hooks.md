@@ -143,11 +143,11 @@ await $`git commit -m ${userInput}`;
 
 ## Related Decisions
 
-- [ADR-0001: Docus for Documentation](./adr-0001-docus-documentation.md) - Similar modern tooling approach
+- [ADR-0001: Docus for Documentation](/architecture/adr/adr-0001-docus-documentation) - Similar modern tooling approach
 
 ## References
 
 - [Google ZX GitHub Repository](https://github.com/google/zx)
 - [ZX Documentation](https://google.github.io/zx/)
-- [PHP Booster Git Hooks Implementation](../../../booster/tools/git-hooks/)
-- [Shared Utilities](../../../booster/tools/git-hooks/shared/utils.mjs)
+- PHP Booster Git Hooks Implementation: `booster/tools/git-hooks/`
+- Shared Utilities: `booster/tools/git-hooks/shared/utils.mjs`
