@@ -6,6 +6,19 @@ A comprehensive test suite for validating the PHP Booster integration across dif
 
 This test suite provides automated testing of the PHP Booster integration process, ensuring that all tools, configurations, and git hooks work correctly in both Laravel and Symfony projects.
 
+## Quick Test: Renovate Feature
+
+To quickly test only the Renovate feature without requiring DDEV or a full integration:
+
+```bash
+# Run from repository root
+./tools/test-renovate-feature.sh
+```
+
+This runs:
+- JavaScript/TypeScript tests for renovate.json structure (12 tests)
+- Python unit tests for verification logic (3 tests)
+
 ## Usage
 
 ### Quick Start
@@ -76,6 +89,39 @@ The test suite is designed for use in GitHub Actions and other CI environments. 
 
 For developers working on the PHP Booster itself, the integration tests provide confidence that changes don't break the end-to-end user experience.
 
+### Unit Tests
+
+In addition to the full integration tests, there are standalone unit tests that can be run without DDEV:
+
+#### Renovate Configuration Tests
+```bash
+# Run Python unit tests for renovate.json verification logic
+cd tools/internal-test
+python3 test_renovate_verification.py
+```
+
+#### Git Hooks Tests (JavaScript/TypeScript)
+```bash
+# Run all git hooks tests
+cd booster
+pnpm test:hooks
+
+# Run specific test suite
+pnpm vitest run tools/git-hooks/tests/renovate.test.mjs
+pnpm vitest run tools/git-hooks/tests/file-handling.test.mjs
+
+# Watch mode for development
+pnpm test:hooks:watch
+```
+
+The renovate tests verify:
+- Valid JSON structure
+- Required schema presence
+- Automerge configuration
+- Package rules (dev dependencies, PHP packages)
+- Scheduling and labeling configuration
+
+
 ## Testing Features
 
 ### Environment Validation
@@ -97,6 +143,10 @@ For developers working on the PHP Booster itself, the integration tests provide 
 - Expected file presence checking
 - Composer package validation
 - PHP tool functionality testing
+- Renovate configuration validation
+  - JSON structure verification
+  - Required properties checking
+  - Package rules validation
 
 ### Git Hooks Testing
 - Valid branch name acceptance
