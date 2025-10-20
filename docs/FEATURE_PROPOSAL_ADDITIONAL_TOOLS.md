@@ -416,32 +416,39 @@ echo -e "\nChecking recommended versions..."
 
 ## 5. Documentation & Knowledge Sharing
 
-### Docsify Integration
+### Docus Integration
 
-**Description**: Add Docsify for easy project documentation.
+**Description**: Add [Docus](https://docus.dev/) for modern, Vue-based documentation with advanced features.
 
 **Implementation Steps**:
-1. Add Docsify configuration and templates
+1. Add Docus configuration and templates
 2. Create standard documentation structure
-3. Add GitHub Pages integration
+3. Configure automated deployment through GitHub Pages or Netlify
 
 **Example Structure**:
 ```
 docs/
-├── README.md           # Home page
-├── _sidebar.md         # Sidebar navigation
-├── architecture/       # Architecture documentation
-├── development/        # Development guidelines
-├── api/                # API documentation
-├── style/              # Style guidelines
-└── troubleshooting/    # Common issues and solutions
+├── content/
+│   ├── 0.index.md              # Home page
+│   ├── 1.architecture/         # Architecture documentation 
+│   ├── 2.development/          # Development guidelines
+│   ├── 3.api/                  # API documentation
+│   ├── 4.style/                # Style guidelines
+│   └── 5.troubleshooting/      # Common issues and solutions
+├── public/                     # Static assets
+├── components/                 # Custom Vue components
+├── app.config.ts               # Docus configuration
+└── tokens.config.ts            # Theme customization
 ```
 
 **Benefits**:
-- Simple, searchable documentation
-- Easy to maintain with Markdown
-- Automated publishing through GitHub Pages
-- Collaborative documentation process
+- Vue-powered documentation with superior interactivity
+- Vue components for complex documentation needs
+- Built-in dark/light mode and theme customization
+- Content query system for dynamic documentation
+- Excellent code highlighting and MDC support
+- Seamless deployment through Netlify or Vercel
+- Built on Nuxt content engine for performance
 
 ### Architectural Decision Records (ADRs)
 
