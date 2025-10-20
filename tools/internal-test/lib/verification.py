@@ -50,6 +50,7 @@ class IntegrationVerifier:
             "tools/git-hooks/shared/utils.ts",
             "validate-branch-name.config.cjs",
             "package.json",
+            "renovate.json",
         ]
 
         missing_files: List[str] = []
