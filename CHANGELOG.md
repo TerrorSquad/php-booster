@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.7.0](https://github.com/TerrorSquad/php-booster/compare/v1.6.1...v1.7.0) (2025-10-20)
+
+
+### Features
+
+* add comprehensive tests for Renovate feature ([df1ac33](https://github.com/TerrorSquad/php-booster/commit/df1ac33dcdd354e92fa9f74a5652ae0c4c68c6da))
+* add Renovate bot integration for automated dependency updates ([849dfcd](https://github.com/TerrorSquad/php-booster/commit/849dfcd083926c9f8a7bd399c0d282e660889086))
+* implement Renovate bot integration for automated dependency updates ([23f3d4c](https://github.com/TerrorSquad/php-booster/commit/23f3d4c925f1a468e236feece045628a73039919))
+
+
+### Bug Fixes
+
+* address code review feedback for Renovate implementation ([36eab14](https://github.com/TerrorSquad/php-booster/commit/36eab14c6684b43b6d5e82d1a66436f5c1fdcc13))
+* use correct Composer package patterns in renovate.json ([3d73c16](https://github.com/TerrorSquad/php-booster/commit/3d73c16c5f2a1e9bac38818858ae8d4bdda4b42b))
+
 ## [1.6.1](https://github.com/TerrorSquad/php-booster/compare/v1.6.0...v1.6.1) (2025-10-20)
 
 
