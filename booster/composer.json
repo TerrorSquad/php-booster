@@ -13,7 +13,8 @@
 		"phpstan/phpstan": "^2.1.26",
 		"symplify/easy-coding-standard": "^12.6.0",
 		"zircote/swagger-php": "^5.3.2",
-		"psalm/phar": "^6.13.1"
+		"psalm/phar": "^6.13.1",
+		"phan/phan": "^5.5"
 	},
 	"scripts": {
 		"post-install-cmd": [
@@ -29,6 +30,8 @@
 		"phpstan:sonar": "vendor/bin/phpstan analyse -c phpstan.neon.dist --error-format=prettyJson > phpstan_sonar.json",
 		"psalm:sonar": "vendor/bin/psalm --report=sonarqube.json; mv sonarqube.json psalm_sonar.json",
 		"psalm-phar:sonar": "vendor/bin/psalm.phar --report=sonarqube.json; mv sonarqube.json psalm_sonar.json",
+		"phan": "vendor/bin/phan --color --allow-polyfill-parser",
+		"phan:sonar": "vendor/bin/phan --output-mode=json --output=phan_sonar.json --allow-polyfill-parser || true",
 		"rector": "vendor/bin/rector",
 		"deptrac": "vendor/bin/deptrac",
 		"deptrac:image": "vendor/bin/deptrac --formatter=graphviz-image --output=deptrac.png",
