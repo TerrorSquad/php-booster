@@ -147,6 +147,7 @@ class TestOrchestrator:
                 "rector.php",
                 "phpstan.neon.dist",
                 "psalm.xml",
+                "phpinsights.php",
                 ".editorconfig",
                 ".booster-version",  # The actual version stamp filename
                 "documentation/openapi.yml",
