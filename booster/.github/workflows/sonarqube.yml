@@ -59,6 +59,9 @@ jobs:
       - name: Run Psalm
         run: composer psalm-phar:sonar || composer psalm:sonar || true
 
+      - name: Run Phan
+        run: composer phan:sonar || true
+
       - name: Run Pest tests
         run: composer test:coverage:pest || true
 

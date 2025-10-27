@@ -6,7 +6,7 @@ A curated collection of tools and best practices for PHP development.
 
 ## Key Features
 - Streamlined local development (optionally with [DDEV](https://ddev.com/)).
-- Static analysis with [PHPStan](https://phpstan.org/) and [Psalm](https://psalm.dev/).
+- Static analysis with [PHPStan](https://phpstan.org/), [Psalm](https://psalm.dev/), and [Phan](https://github.com/phan/phan).
 - Automated code formatting with [EasyCodingStandard](https://github.com/symplify/easy-coding-standard).
 - Automatic refactoring with [Rector](https://getrector.org/).
 - Git hooks for quality enforcement.

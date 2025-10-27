@@ -178,10 +178,11 @@ function select_tools_to_install() {
     echo "  2. Rector                   - Automated refactoring & PHP upgrades"
     echo "  3. PHPStan                  - Static analysis (bug detection)"
     echo "  4. Psalm                    - Additional static analysis"
+    echo "  5. Phan                     - Static analysis (comprehensive)"
     echo ""
 
-    local tools=("ecs" "rector" "phpstan" "psalm")
-    local tool_names=("ECS (EasyCodingStandard)" "Rector" "PHPStan" "Psalm")
+    local tools=("ecs" "rector" "phpstan" "psalm" "phan")
+    local tool_names=("ECS (EasyCodingStandard)" "Rector" "PHPStan" "Psalm" "Phan")
 
     if confirm_action "Install all tools? (Recommended for new integrations)" "y"; then
         INTERACTIVE_TOOLS_SELECTED=("${tools[@]}")
@@ -339,7 +340,7 @@ function show_post_installation_summary() {
     echo "1. Review the integrated files:"
     echo "   • validate-branch-name.config.cjs  - Branch naming rules"
     echo "   • commitlint.config.ts             - Commit message rules"
-    echo "   • ecs.php, rector.php, phpstan.neon.dist - Code quality configs"
+    echo "   • ecs.php, rector.php, phpstan.neon.dist, psalm.xml, .phan/config.php - Code quality configs"
     echo ""
     echo "2. Try the available commands:"
 
@@ -348,11 +349,13 @@ function show_post_installation_summary() {
         echo "   ddev composer rector       # Apply automated refactoring"
         echo "   ddev composer phpstan      # Run static analysis"
         echo "   ddev composer psalm        # Additional static analysis"
+        echo "   ddev composer phan         # Run Phan static analysis"
     else
         echo "   composer ecs               # Check/fix code style"
         echo "   composer rector            # Apply automated refactoring"
         echo "   composer phpstan           # Run static analysis"
         echo "   composer psalm             # Additional static analysis"
+        echo "   composer phan              # Run Phan static analysis"
     fi
 
     echo ""
@@ -786,6 +789,15 @@ function update_tool_paths() {
         fi
     done
 
+    # --- Copy .phan Directory ---
+    local booster_phan_path="${BOOSTER_INTERNAL_PATH}/.phan"
+    if [ -d "$booster_phan_path" ]; then
+        log "  Copying '$booster_phan_path' to '.phan'..."
+        cp -R "$booster_phan_path" . || warn "Failed to copy .phan directory."
+    else
+        log "  Booster .phan directory not found. Skipping."
+    fi
+
     success "Code quality tool configs and documentation copied."
 
     log "Dynamically updating paths in tool configuration files using temp files and sed..."
@@ -917,6 +929,21 @@ function update_tool_paths() {
 
     replace_placeholder "$phpstan_file" "$phpstan_placeholder_regex" "$phpstan_dirs_file" || return_code=1
     rm -f "$phpstan_dirs_file" # Clean up
+
+    # --- Process Phan config.php file ---
+    local phan_file=".phan/config.php"
+    local phan_dirs_file="phan_dirs.txt"
+    local phan_placeholder_regex="/^[[:space:]]*'DIRECTORY',[[:space:]]*$/"
+
+    rm -f "$phan_dirs_file" && touch "$phan_dirs_file"
+    if [ -s "$php_dirs_file" ]; then
+        while IFS= read -r dir; do
+            printf "        '%s',\n" "$dir" >>"$phan_dirs_file"
+        done <"$php_dirs_file"
+    fi
+
+    replace_placeholder "$phan_file" "$phan_placeholder_regex" "$phan_dirs_file" || return_code=1
+    rm -f "$phan_dirs_file" # Clean up
 
     # --- Final Cleanup and Status ---
     rm -f "$php_dirs_file"
