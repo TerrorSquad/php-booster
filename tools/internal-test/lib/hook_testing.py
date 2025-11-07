@@ -40,23 +40,7 @@ class HookTester:
         self.log.section("🔒 Testing Branch Validation")
 
         # Return to main branch and create final commit
-        main_branch = None
-        try:
-            self.cmd.run_command(
-                ["git", "checkout", "main"], cwd=self.config.target_dir, check=False
-            )
-            main_branch = "main"
-        except:
-            try:
-                self.cmd.run_command(
-                    ["git", "checkout", "master"],
-                    cwd=self.config.target_dir,
-                    check=False,
-                )
-                main_branch = "master"
-            except:
-                self.log.error("Could not checkout main or master branch")
-                sys.exit(1)
+        main_branch = self._switch_to_default_branch()
 
         if not main_branch:
             self.log.error("Could not determine main branch name")
@@ -79,41 +63,13 @@ class HookTester:
         self._test_valid_branch()
 
         # Return to main branch before testing invalid branch
-        try:
-            self.cmd.run_command(
-                ["git", "checkout", "main"], cwd=self.config.target_dir, check=False
-            )
-        except:
-            try:
-                self.cmd.run_command(
-                    ["git", "checkout", "master"],
-                    cwd=self.config.target_dir,
-                    check=False,
-                )
-            except:
-                pass
+        self._switch_to_default_branch()
 
         # Test invalid branch
         self._test_invalid_branch()
 
         # Return to main branch
-        main_branch = None
-        try:
-            self.cmd.run_command(
-                ["git", "checkout", "main"], cwd=self.config.target_dir, check=False
-            )
-            main_branch = "main"
-        except:
-            try:
-                self.cmd.run_command(
-                    ["git", "checkout", "master"],
-                    cwd=self.config.target_dir,
-                    check=False,
-                )
-                main_branch = "master"
-            except:
-                self.log.error("Could not checkout main or master branch")
-                sys.exit(1)
+        main_branch = self._switch_to_default_branch()
 
         if not main_branch:
             self.log.error("Could not determine main branch name")
@@ -171,6 +127,32 @@ class HookTester:
             self.log.error(f"Error: {e}")
             sys.exit(1)
 
+    def _switch_to_default_branch(self) -> str:
+        """
+        Switch to the default branch (master or main) and return its name.
+        Returns the branch name on success, exits on failure.
+        """
+        result = self.cmd.run_command(
+            ["git", "checkout", "master"],
+            cwd=self.config.target_dir,
+            check=False,
+            capture_output=True,
+        )
+        if result.returncode == 0:
+            return "master"
+
+        result = self.cmd.run_command(
+            ["git", "checkout", "main"],
+            cwd=self.config.target_dir,
+            check=False,
+            capture_output=True,
+        )
+        if result.returncode == 0:
+            return "main"
+
+        self.log.error("Could not checkout master or main branch")
+        sys.exit(1)
+
     def _test_valid_branch(self):
         """Test valid branch and commit"""
         print("")
@@ -179,7 +161,7 @@ class HookTester:
         self.log.info("Branch: feature/PRJ-123-test-feature")
         print("└──────────────────────────────────────────────────────────────┘")
         print("")
-        
+
         self.cmd.run_command(
             ["git", "checkout", "-b", "feature/PRJ-123-test-feature"],
             cwd=self.config.target_dir,
@@ -315,6 +297,20 @@ echo "Another test";
             else:
                 print(result.stderr)
             print("═══════════════════════════════════")
+
+            # Unstage the test file first
+            self.cmd.run_command(
+                ["git", "reset", "HEAD", "test_commit2.php"],
+                cwd=self.config.target_dir,
+                check=False,
+                capture_output=True,
+            )
+
+            # Clean up the test file
+            test_file = self.config.target_dir / "test_commit2.php"
+            if test_file.exists():
+                test_file.unlink()
+                self.log.info("Cleaned up test file")
             print("")
 
     def test_github_actions(self):
