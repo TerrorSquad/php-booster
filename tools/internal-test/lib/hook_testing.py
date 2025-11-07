@@ -37,10 +37,7 @@ class HookTester:
             )
             sys.exit(1)
 
-        self.log.info("")
-        self.log.info("Testing branch validation...")
-        self.log.info("=======================")
-        self.log.info("")
+        self.log.section("🔒 Testing Branch Validation")
 
         # Return to main branch and create final commit
         main_branch = None
@@ -176,6 +173,13 @@ class HookTester:
 
     def _test_valid_branch(self):
         """Test valid branch and commit"""
+        print("")
+        self.log.info("Testing valid branch format...")
+        print("┌──────────────────────────────────────────────────────────────┐")
+        self.log.info("Branch: feature/PRJ-123-test-feature")
+        print("└──────────────────────────────────────────────────────────────┘")
+        print("")
+        
         self.cmd.run_command(
             ["git", "checkout", "-b", "feature/PRJ-123-test-feature"],
             cwd=self.config.target_dir,
@@ -190,10 +194,12 @@ echo "Hello, World!";
 """
         )
 
-        self.log.info(f"Created test file: {test_file}")
-        self.log.info("File contents:")
+        print("")
+        self.log.info("Test file created:")
+        print("─────────────────────────")
         print(test_file.read_text())
-        self.log.info("")
+        print("─────────────────────────")
+        print("")
 
         self.log.info("Adding test file to git...")
         self.cmd.run_command(
@@ -243,10 +249,12 @@ echo "Hello, World!";
 
     def _test_invalid_branch(self):
         """Test invalid branch rejection"""
-        self.log.info("")
-        self.log.info("Testing invalid branch name validation...")
-        self.log.info("=================================")
-        self.log.info("Creating branch with invalid format: 'invalid-branch-format'")
+        print("")
+        self.log.info("Testing invalid branch format...")
+        print("┌──────────────────────────────────────────────────────────────┐")
+        self.log.warn("Branch: invalid-branch-format (should be rejected)")
+        print("└──────────────────────────────────────────────────────────────┘")
+        print("")
 
         self.cmd.run_command(
             ["git", "checkout", "-b", "invalid-branch-format"],
@@ -287,20 +295,27 @@ echo "Another test";
         )
 
         if result.returncode == 0:
-            self.log.error("Invalid branch incorrectly accepted")
-            self.log.error(
-                "This is a test failure - branch validation hook did not work!"
-            )
+            self.log.error("❌ Invalid branch incorrectly accepted")
+            print("")
+            print("┌──────────────────────────────────────────────────────────────┐")
+            self.log.error("Test failure: Branch validation hook did not work!")
+            print("└──────────────────────────────────────────────────────────────┘")
+            print("")
             sys.exit(1)
         else:
-            self.log.success("Invalid branch correctly rejected")
-            self.log.info("")
-            self.log.info("Error output from git (expected):")
+            print("")
+            print("┌──────────────────────────────────────────────────────────────┐")
+            self.log.success("✓ Invalid branch correctly rejected")
+            print("└──────────────────────────────────────────────────────────────┘")
+            print("")
+            print("Expected error output from git:")
+            print("═══════════════════════════════════")
             if isinstance(result.stderr, bytes):
                 print(result.stderr.decode())
             else:
                 print(result.stderr)
-            self.log.info("")
+            print("═══════════════════════════════════")
+            print("")
 
     def test_github_actions(self):
         """Test GitHub Actions auto-fix workflows"""
