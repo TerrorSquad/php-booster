@@ -1050,7 +1050,7 @@ function add_code_quality_tools() {
 
                 for dep in "${missing_prod_deps[@]}"; do
                     log "Installing production dependency: $dep"
-                    if "${composer_cmd[@]}" require --no-scripts "$dep"; then
+                    if "${composer_cmd[@]}" require --no-scripts --no-interaction "$dep"; then
                         success "Successfully installed: $dep"
                     else
                         error "Failed to install critical production dependency: $dep"
@@ -1102,7 +1102,7 @@ function add_code_quality_tools() {
 
                 for dep in "${missing_dev_deps[@]}"; do
                     log "Installing dev dependency: $dep"
-                    if "${composer_cmd[@]}" require --dev "$dep"; then
+                    if "${composer_cmd[@]}" require --dev --no-interaction "$dep"; then
                         success "Successfully installed: $dep"
                     else
                         warn "Failed to install: $dep"
