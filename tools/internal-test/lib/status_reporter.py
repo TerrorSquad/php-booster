@@ -14,8 +14,8 @@ class StatusReporter:
         self.state = state_detector
         self.log = logger
 
-    def show_status(self):
-        """Display current test environment status"""
+    def show_status(self) -> None:
+        """Display current test environment status."""
         print("")
         print("═══════════════════════════════════════════════════════════════")
         self.log.info(f"Test environment status for {self.config.project_name}")

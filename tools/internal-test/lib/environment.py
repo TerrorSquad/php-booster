@@ -20,8 +20,8 @@ class EnvironmentChecker:
         self.cmd = command_executor
         self.log = logger
 
-    def check_environment(self):
-        """Check and display environment information"""
+    def check_environment(self) -> None:
+        """Check and display environment information."""
         self.log.info("Environment information:")
         print(f"  - OS: {os.uname().sysname}")
         try:
@@ -39,8 +39,11 @@ class EnvironmentChecker:
         # PATH is usually too long and not very useful for debugging
         # print(f"  - PATH: {os.environ.get('PATH', 'Unknown')}")
 
-    def check_requirements(self):
-        """Check system requirements"""
+    def check_requirements(self) -> None:
+        """
+        Check system requirements.
+        Exits with code 1 if any required command is missing.
+        """
         self.log.info("Checking requirements...")
 
         # Check for required commands (composer is available via DDEV)

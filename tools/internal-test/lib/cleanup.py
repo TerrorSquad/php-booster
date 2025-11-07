@@ -24,8 +24,8 @@ class EnvironmentCleaner:
         self.state = state_detector
         self.log = logger
 
-    def clean_environment(self):
-        """Clean up test environment"""
+    def clean_environment(self) -> None:
+        """Clean up test environment."""
         self.log.info(f"Cleaning up test environment at {self.config.target_dir}")
 
         if self.config.target_dir.exists():

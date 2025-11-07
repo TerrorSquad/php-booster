@@ -26,8 +26,11 @@ class HookTester:
         self.state = state_detector
         self.log = logger
 
-    def test_branch_validation(self):
-        """Test git hooks and branch validation"""
+    def test_branch_validation(self) -> None:
+        """
+        Test git hooks and branch validation.
+        Exits with code 1 if validation fails.
+        """
         if (
             not self.state.is_project_created()
             or not self.state.is_booster_integrated()

@@ -44,7 +44,7 @@ class TestOrchestrator:
         self.status_reporter = StatusReporter(config, self.state, self.log)
         self.cleaner = EnvironmentCleaner(config, self.cmd, self.state, self.log)
 
-    def run_full_test(self):
+    def run_full_test(self) -> None:
         """Run the complete test suite"""
         self.log.banner("🚀 Running Complete Test Suite 🚀")
 
@@ -196,13 +196,15 @@ class TestOrchestrator:
             self.log.error(f"Error during standalone test: {e}")
             return False
 
-    def _test_interactive_mode_project(self, interactive=True):
+    def _test_interactive_mode_project(self, interactive: bool = True) -> bool:
         """
         Test the interactive mode with a real project.
 
         Args:
             interactive: If True, manual user input is required.
                         If False, uses automated mode with default options.
+        Returns:
+            True if the test was successful, False otherwise.
         """
         # Check if project exists
         if not self.state.is_project_created():
@@ -244,8 +246,13 @@ class TestOrchestrator:
             self.log.error("❌ Interactive mode test failed!")
             return False
 
-    def _clean_interactive_test(self):
-        """Clean up temporary test directory created for interactive tests"""
+    def _clean_interactive_test(self) -> bool:
+        """
+        Clean up temporary test directory created for interactive tests
+
+        Returns:
+            True if cleanup was successful or nothing to clean, False if errors occurred
+        """
         import shutil
 
         test_dir = self.config.root_dir / "tests" / "temp_interactive_test"
@@ -261,7 +268,9 @@ class TestOrchestrator:
             self.log.warn("No test directory found. Nothing to clean up.")
             return True
 
-    def _test_interactive_mode(self, mode: str = "standalone", automated: bool = False):
+    def _test_interactive_mode(
+        self, mode: str = "standalone", automated: bool = False
+    ) -> bool:
         """
         Run the interactive mode test with the specified mode.
 
@@ -269,6 +278,9 @@ class TestOrchestrator:
             mode: The test mode to use ('standalone' or 'project')
             automated: Whether to run in automated mode (no manual input required)
                       Only applies to project mode
+
+        Returns:
+            True if test passed successfully, False otherwise
         """
         self.log.info("Running interactive mode test...")
 
