@@ -101,6 +101,39 @@ class HookTester:
             except:
                 pass
 
+        # Commit the final integration state
+        self.log.info(
+            "All branch validation tests passed. Committing final integration state..."
+        )
+
+        # Add all booster files
+        self.cmd.run_command(
+            ["git", "add", "-A"],
+            cwd=self.config.target_dir,
+        )
+
+        # Set environment to skip analysis for the integration commit
+        env = os.environ.copy()
+        env["SKIP_PHPSTAN"] = "1"
+        env["SKIP_PSALM"] = "1"
+
+        try:
+            self.cmd.run_command(
+                [
+                    "git",
+                    "commit",
+                    "-m",
+                    "feat: integrate PHP Booster\n\nIntegrates the PHP Environment Blueprint booster with validated configuration.",
+                ],
+                cwd=self.config.target_dir,
+                env=env,
+            )
+            self.log.success("Successfully committed booster integration")
+        except subprocess.CalledProcessError as e:
+            self.log.error("Failed to commit booster integration")
+            self.log.error(f"Error: {e}")
+            sys.exit(1)
+
     def _test_valid_branch(self):
         """Test valid branch and commit"""
         self.cmd.run_command(
