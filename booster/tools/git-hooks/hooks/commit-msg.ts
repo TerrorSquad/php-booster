@@ -10,10 +10,10 @@
  *
  * Environment Variables:
  * - SKIP_COMMITMSG=1: Skip the entire commit-msg hook
- * - COMMITMSG_VERBOSE=1: Enable verbose output for debugging
+ * - GIT_HOOKS_VERBOSE=1: Enable verbose output for debugging
  */
 
-import { $, fs, path } from 'zx'
+import { $, fs } from 'zx'
 import validateBranchNameConfig from '../../../validate-branch-name.config.cjs'
 import {
   formatDuration,
@@ -25,7 +25,7 @@ import {
 } from '../shared/utils.ts'
 
 // Configure zx
-$.verbose = process.env.COMMITMSG_VERBOSE === '1' || process.env.COMMITMSG_VERBOSE === 'true'
+$.verbose = process.env.GIT_HOOKS_VERBOSE === '1' || process.env.GIT_HOOKS_VERBOSE === 'true'
 
 // Fix locale issues that can occur in VS Code
 process.env.LC_ALL = 'C'

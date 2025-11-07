@@ -1,4 +1,4 @@
-#!/usr/bin/env zx
+#!/usr/bin / env zx
 
 /**
  * Pre-commit hook - ZX TypeScript implementation
@@ -12,7 +12,7 @@
  *
  * Environment Variables:
  * - SKIP_PRECOMMIT=1: Skip the entire pre-commit hook
- * - PRECOMMIT_VERBOSE=1: Enable verbose output for debugging
+ * - GIT_HOOKS_VERBOSE=1: Enable verbose output for debugging
  * - SKIP_RECTOR=1: Skip Rector refactoring
  * - SKIP_ECS=1: Skip ECS code style fixes
  * - SKIP_PHPSTAN=1: Skip PHPStan static analysis
@@ -38,7 +38,7 @@ import {
 } from '../shared/utils.ts'
 
 // Configure zx
-$.verbose = process.env.PRECOMMIT_VERBOSE === '1' || process.env.PRECOMMIT_VERBOSE === 'true'
+$.verbose = process.env.GIT_HOOKS_VERBOSE === '1' || process.env.GIT_HOOKS_VERBOSE === 'true'
 
 // Fix locale issues that can occur in VS Code
 process.env.LC_ALL = 'C'

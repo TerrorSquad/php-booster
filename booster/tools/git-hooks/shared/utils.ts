@@ -5,6 +5,7 @@
  * Provides consistent logging, file operations, and tool detection
  */
 
+import { config as dotenvConfig } from 'dotenv'
 import { $, chalk, fs, path, ProcessOutput } from 'zx'
 
 // Configure zx behavior
@@ -13,6 +14,48 @@ $.verbose = false
 // Force chalk to output colors even in non-TTY environments (like CI or WSL)
 chalk.level = 3 // Force truecolor support
 process.env.FORCE_COLOR = '3'
+
+/**
+ * Load environment variables from file if it exists
+ * Supports .env, .git-hooks.env, or custom file via GIT_HOOKS_ENV_FILE
+ */
+async function loadEnvironmentFile(): Promise<void> {
+  // Check for environment files in order of preference
+  let envFile = ''
+  if (process.env.GIT_HOOKS_ENV_FILE && await fs.pathExists(process.env.GIT_HOOKS_ENV_FILE)) {
+    envFile = process.env.GIT_HOOKS_ENV_FILE
+  } else if (await fs.pathExists('.git-hooks.env')) {
+    envFile = '.git-hooks.env'
+  } else if (await fs.pathExists('.env')) {
+    envFile = '.env'
+  }
+
+  if (!envFile) return
+
+  try {
+    console.log(`ℹ️  Loading environment variables from: ${envFile}`)
+
+    const result = dotenvConfig({ path: envFile })
+    if (result.error) throw result.error
+
+    // Check for verbose mode after loading env vars
+    const isVerbose = process.env.GIT_HOOKS_VERBOSE === '1' || process.env.GIT_HOOKS_VERBOSE === 'true'
+
+    // Show which variables were injected (only in verbose mode)
+    if (isVerbose && result.parsed && Object.keys(result.parsed).length > 0) {
+      const injectedVars = Object.keys(result.parsed)
+      console.log(`✅ Injected environment variables: ${injectedVars.join(', ')}`)
+      injectedVars.forEach(key => {
+        console.log(`   ${key}=${result.parsed![key]}`)
+      })
+    }
+  } catch (error) {
+    console.log(`⚠️  Failed to load environment file ${envFile}: ${error instanceof Error ? error.message : String(error)}`)
+  }
+}
+
+// Load environment variables when module is imported
+await loadEnvironmentFile()
 
 /**
  * Options for running commands
@@ -51,10 +94,10 @@ export async function runWithRunner(
  * Logging utilities with consistent formatting
  */
 export const log = {
-  info: (message: string) => console.log(chalk.blue(`ℹ️ ${message}`)),
+  info: (message: string) => console.log(chalk.blue(`ℹ️  ${message}`)),
   success: (message: string) => console.log(chalk.green(`✅ ${message}`)),
   error: (message: string) => console.log(chalk.red(`❌ ${message}`)),
-  warn: (message: string) => console.log(chalk.yellow(`⚠️ ${message}`)),
+  warn: (message: string) => console.log(chalk.yellow(`⚠️  ${message}`)),
   step: (message: string) => console.log(chalk.cyan(`📋 ${message}`)),
   tool: (tool: string, message: string) =>
     console.log(chalk.yellow(`🔧 Running ${tool}: ${message}`)),

@@ -29,7 +29,7 @@ elif command -v ddev >/dev/null 2>&1; then
             # verbosity settings without exposing unrelated host environment values.
             # Whitelist derived from hook/utility usage: SKIP_PRECOMMIT, SKIP_COMMITMSG,
             # SKIP_RECTOR, SKIP_ECS, SKIP_PHPSTAN, SKIP_PSALM, SKIP_DEPTRAC,
-            # PRECOMMIT_VERBOSE, COMMITMSG_VERBOSE, FORCE_COLOR, LC_ALL, LANG,
+            # GIT_HOOKS_VERBOSE, FORCE_COLOR, LC_ALL, LANG,
             whitelist=(
                 "SKIP_PRECOMMIT"
                 "SKIP_COMMITMSG"
@@ -38,8 +38,7 @@ elif command -v ddev >/dev/null 2>&1; then
                 "SKIP_PHPSTAN"
                 "SKIP_PSALM"
                 "SKIP_DEPTRAC"
-                "PRECOMMIT_VERBOSE"
-                "COMMITMSG_VERBOSE"
+                "GIT_HOOKS_VERBOSE"
             )
 
             env_flags=()
