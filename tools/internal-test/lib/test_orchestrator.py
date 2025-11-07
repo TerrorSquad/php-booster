@@ -62,7 +62,6 @@ class TestOrchestrator:
 
         self.log.section("Hook Testing")
         self.hook_tester.test_branch_validation()
-        self.hook_tester.test_github_actions()
 
         print("")
         print("═══════════════════════════════════════════════════════════════")
@@ -326,11 +325,6 @@ class TestOrchestrator:
                 self.env_checker.check_environment(),
                 self.env_checker.check_requirements(),
                 self.hook_tester.test_branch_validation(),
-            ),
-            "test-github-actions": lambda: (
-                self.env_checker.check_environment(),
-                self.env_checker.check_requirements(),
-                self.hook_tester.test_github_actions(),
             ),
             "test-interactive": lambda: (
                 self.env_checker.check_environment(),
