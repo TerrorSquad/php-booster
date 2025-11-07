@@ -2,4 +2,3 @@ onlyBuiltDependencies:
   - core-js
   - esbuild
   - protobufjs
-  - rollup
