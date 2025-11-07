@@ -39,20 +39,30 @@ class HookTester:
 
         self.log.info("Testing branch validation...")
 
-        # Return to main/master first
+        # Return to main branch and create final commit
+        main_branch = None
         try:
             self.cmd.run_command(
-                ["git", "checkout", "master"], cwd=self.config.target_dir, check=False
+                ["git", "checkout", "main"], cwd=self.config.target_dir, check=False
             )
+            main_branch = "main"
         except:
             try:
                 self.cmd.run_command(
-                    ["git", "checkout", "main"],
+                    ["git", "checkout", "master"],
                     cwd=self.config.target_dir,
                     check=False,
                 )
+                main_branch = "master"
             except:
-                pass
+                self.log.error("Could not checkout main or master branch")
+                sys.exit(1)
+
+        if not main_branch:
+            self.log.error("Could not determine main branch name")
+            sys.exit(1)
+
+        self.log.info(f"Switched back to {main_branch} branch")
 
         # Clean up existing test branches
         for branch in ["feature/PRJ-123-test-feature", "invalid-branch-format"]:
@@ -87,10 +97,12 @@ class HookTester:
         self._test_invalid_branch()
 
         # Return to main branch
+        main_branch = None
         try:
             self.cmd.run_command(
                 ["git", "checkout", "main"], cwd=self.config.target_dir, check=False
             )
+            main_branch = "main"
         except:
             try:
                 self.cmd.run_command(
@@ -98,13 +110,31 @@ class HookTester:
                     cwd=self.config.target_dir,
                     check=False,
                 )
+                main_branch = "master"
+            except:
+                self.log.error("Could not checkout main or master branch")
+                sys.exit(1)
+
+        if not main_branch:
+            self.log.error("Could not determine main branch name")
+            sys.exit(1)
+
+        self.log.info(f"Switched back to {main_branch} branch")
+        self.log.info("All branch validation tests passed")
+
+        # Clean up test branches before final commit
+        for branch in ["feature/PRJ-123-test-feature", "invalid-branch-format"]:
+            try:
+                self.cmd.run_command(
+                    ["git", "branch", "-D", branch],
+                    cwd=self.config.target_dir,
+                    check=False,
+                )
+                self.log.info(f"Cleaned up test branch: {branch}")
             except:
                 pass
 
-        # Commit the final integration state
-        self.log.info(
-            "All branch validation tests passed. Committing final integration state..."
-        )
+        self.log.info(f"Committing final integration state to {main_branch} branch...")
 
         # Add all booster files
         self.cmd.run_command(
