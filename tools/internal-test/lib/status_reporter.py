@@ -16,14 +16,20 @@ class StatusReporter:
 
     def show_status(self):
         """Display current test environment status"""
-        self.log.info(f"Test environment status for {self.config.project_name}:")
+        print("")
+        print("═══════════════════════════════════════════════════════════════")
+        self.log.info(f"Test environment status for {self.config.project_name}")
+        print("═══════════════════════════════════════════════════════════════")
+        print("")
         print(f"  - Project type: {self.config.project_type}")
         print(f"  - Target directory: {self.config.target_dir}")
+        print("")
         print(f"  - Project exists: {'✓' if self.state.is_project_created() else '✗'}")
         print(f"  - DDEV running: {'✓' if self.state.is_ddev_running() else '✗'}")
         print(
             f"  - Booster integrated: {'✓' if self.state.is_booster_integrated() else '✗'}"
         )
+        print("")
 
         # Show booster version if integrated
         version = self.state.get_integrated_version()

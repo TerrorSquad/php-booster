@@ -28,3 +28,22 @@ class Logger:
 
     def error(self, message: str):
         print(f"{self._color(Colors.RED, 'ERROR')} {message}", file=sys.stderr)
+
+    def section(self, title: str):
+        """Print a section header with a title"""
+        print("")
+        print("═══════════════════════════════════════════════════════════════")
+        self.info(title)
+        print("═══════════════════════════════════════════════════════════════")
+        print("")
+
+    def banner(self, title: str):
+        """Print a banner box with a title"""
+        print("")
+        print("╔════════════════════════════════════════════════════════════════╗")
+        print("║                                                                ║")
+        print(f"║{title:^64}║")
+        print("║                                                                ║")
+        print("╚════════════════════════════════════════════════════════════════╝")
+        print("")
+        print("")

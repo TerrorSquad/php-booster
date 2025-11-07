@@ -45,19 +45,37 @@ class TestOrchestrator:
 
     def run_full_test(self):
         """Run the complete test suite"""
+        self.log.banner("🚀 Running Complete Test Suite 🚀")
+
+        self.log.section("Environment Check")
         self.env_checker.check_environment()
         self.env_checker.check_requirements()
+
+        self.log.section("Project Setup")
         self.project_setup.setup_project()
+
+        self.log.section("Booster Integration")
         self.booster_integration.integrate_booster()
+
+        self.log.section("Integration Verification")
         self.verifier.verify_integration()
+
+        self.log.section("Hook Testing")
         self.hook_tester.test_branch_validation()
         self.hook_tester.test_github_actions()
 
-        self.log.success(
-            f"Test completed successfully! Project is available at: {self.config.target_dir}"
-        )
-        self.log.info(f"To clean up, run: {sys.argv[0]} clean")
-        self.log.info(f"To stop DDEV: cd {self.config.target_dir} && ddev stop")
+        print("")
+        print("═══════════════════════════════════════════════════════════════")
+        self.log.success(f"Test completed successfully!")
+        print("═══════════════════════════════════════════════════════════════")
+        print("")
+        self.log.info(f"Project is available at: {self.config.target_dir}")
+        print("")
+        self.log.info("Next steps:")
+        print("")
+        self.log.info(f"  1. To clean up: {sys.argv[0]} clean")
+        self.log.info(f"  2. To stop DDEV: cd {self.config.target_dir} && ddev stop")
+        print("")
 
     def _test_interactive_mode_standalone(self):
         """
@@ -68,10 +86,7 @@ class TestOrchestrator:
         import subprocess
         import shutil
 
-        self.log.info("=" * 70)
-        self.log.info("Standalone Interactive Mode Test")
-        self.log.info("=" * 70)
-        self.log.info("")
+        self.log.banner("🧪 Standalone Interactive Mode Test 🧪")
 
         # Get the repository root directory
         root_dir = self.config.root_dir

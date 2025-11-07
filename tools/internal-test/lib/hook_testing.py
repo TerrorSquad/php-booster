@@ -37,7 +37,10 @@ class HookTester:
             )
             sys.exit(1)
 
+        self.log.info("")
         self.log.info("Testing branch validation...")
+        self.log.info("=======================")
+        self.log.info("")
 
         # Return to main branch and create final commit
         main_branch = None
@@ -120,7 +123,10 @@ class HookTester:
             sys.exit(1)
 
         self.log.info(f"Switched back to {main_branch} branch")
+        self.log.info("")
         self.log.info("All branch validation tests passed")
+        self.log.info("==========================")
+        self.log.info("")
 
         # Clean up test branches before final commit
         for branch in ["feature/PRJ-123-test-feature", "invalid-branch-format"]:
@@ -134,7 +140,11 @@ class HookTester:
             except:
                 pass
 
-        self.log.info(f"Committing final integration state to {main_branch} branch...")
+        self.log.info("")
+        self.log.info("Creating final integration commit...")
+        self.log.info("================================")
+        self.log.info(f"Target branch: {main_branch}")
+        self.log.info("")
 
         # Add all booster files
         self.cmd.run_command(
@@ -183,7 +193,9 @@ echo "Hello, World!";
         self.log.info(f"Created test file: {test_file}")
         self.log.info("File contents:")
         print(test_file.read_text())
+        self.log.info("")
 
+        self.log.info("Adding test file to git...")
         self.cmd.run_command(
             ["git", "add", "test_commit.php"], cwd=self.config.target_dir
         )
@@ -201,7 +213,9 @@ echo "Hello, World!";
             )
 
             self.log.success("Valid branch + commit message accepted")
+            self.log.info("")
 
+            self.log.info("Checking commit details...")
             # Check commit log
             result = self.cmd.run_command(
                 ["git", "log", "-1", "--pretty=format:%h %s"],
@@ -229,7 +243,9 @@ echo "Hello, World!";
 
     def _test_invalid_branch(self):
         """Test invalid branch rejection"""
+        self.log.info("")
         self.log.info("Testing invalid branch name validation...")
+        self.log.info("=================================")
         self.log.info("Creating branch with invalid format: 'invalid-branch-format'")
 
         self.cmd.run_command(
@@ -278,11 +294,13 @@ echo "Another test";
             sys.exit(1)
         else:
             self.log.success("Invalid branch correctly rejected")
+            self.log.info("")
             self.log.info("Error output from git (expected):")
             if isinstance(result.stderr, bytes):
                 print(result.stderr.decode())
             else:
                 print(result.stderr)
+            self.log.info("")
 
     def test_github_actions(self):
         """Test GitHub Actions auto-fix workflows"""
@@ -295,7 +313,10 @@ echo "Another test";
             )
             sys.exit(1)
 
+        self.log.info("")
         self.log.info("Testing GitHub Actions auto-fix integration...")
+        self.log.info("=====================================")
+        self.log.info("")
 
         # Check if GitHub Actions workflows were copied
         workflows_dir = self.config.target_dir / ".github" / "workflows"
