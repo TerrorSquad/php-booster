@@ -6,7 +6,8 @@ Main orchestrator for the PHP Booster integration tests
 import os
 import sys
 import subprocess
-import shutil
+from pathlib import Path
+from typing import Callable, Dict, List, Any
 
 from .booster_integration import BoosterIntegration
 from .cleanup import EnvironmentCleaner
@@ -76,22 +77,42 @@ class TestOrchestrator:
         self.log.info(f"  2. To stop DDEV: cd {self.config.target_dir} && ddev stop")
         print("")
 
-    def _test_interactive_mode_standalone(self):
+    # Define expected files as a class attribute
+    EXPECTED_BOOSTER_FILES = [
+        "package.json",
+        "commitlint.config.ts",
+        "validate-branch-name.config.cjs",
+        "pnpm-workspace.yaml",
+        "ecs.php",
+        "rector.php",
+        "phpstan.neon.dist",
+        "psalm.xml",
+        ".editorconfig",
+        ".booster-version",
+        "documentation/openapi.yml",
+        "tools/git-hooks/hooks/commit-msg",
+        "tools/git-hooks/shared/utils.ts",
+    ]
+
+    def _verify_expected_files(self, test_dir: Path) -> List[str]:
+        """Verify that all expected files were created in test directory"""
+        return [
+            file
+            for file in self.EXPECTED_BOOSTER_FILES
+            if not (test_dir / file).exists()
+        ]
+
+    def _test_interactive_mode_standalone(self) -> bool:
         """
         Test interactive mode without requiring a full project setup.
         This is a simplified version that tests only the interactive mode feature
         without the overhead of creating a full Laravel/Symfony project.
         """
-        import subprocess
-        import shutil
-
         self.log.banner("🧪 Standalone Interactive Mode Test 🧪")
 
-        # Get the repository root directory
         root_dir = self.config.root_dir
-
-        # Path to the booster integration script
         booster_script = root_dir / "booster" / "integrate_booster.sh"
+        test_dir = root_dir / "tests" / "temp_interactive_test"
 
         if not booster_script.exists():
             self.log.error(f"Booster script not found at: {booster_script}")
@@ -99,13 +120,11 @@ class TestOrchestrator:
 
         self.log.info(f"Found booster script at: {booster_script}")
 
-        # Create temporary test directory
-        test_dir = root_dir / "tests" / "temp_interactive_test"
-        if not test_dir.exists():
-            self.log.info(f"Creating test directory: {test_dir}")
-            test_dir.mkdir(parents=True, exist_ok=True)
+        # Create test directory
+        test_dir.mkdir(parents=True, exist_ok=True)
+        self.log.info(f"Test directory created at: {test_dir}")
 
-        # Prepare simulated answers
+        # Automated input for interactive mode
         answers = [
             "y",  # Install all tools?
             "y",  # Use ticket IDs?
@@ -114,25 +133,17 @@ class TestOrchestrator:
             "y",  # Install IDE settings?
             "y",  # Proceed with configuration?
         ]
-
         input_string = "\n".join(answers) + "\n"
 
-        self.log.info(f"Running integration script with -I flag and simulated input")
-        self.log.info(f"Working directory: {test_dir}")
-
-        # Run the script with simulated input
+        # Set up environment variables
         env = os.environ.copy()
         env["BOOSTER_LOCAL_DEV"] = "1"
         env["BOOSTER_LOCAL_PATH"] = str(root_dir / "booster")
 
+        # Run integration script
         try:
             result = subprocess.run(
-                [
-                    "bash",
-                    str(booster_script),
-                    "-I",
-                    "-v",
-                ],  # Added -v for verbose output
+                ["bash", str(booster_script), "-I", "-v"],
                 input=input_string,
                 text=True,
                 capture_output=True,
@@ -140,10 +151,10 @@ class TestOrchestrator:
                 env=env,
             )
 
-            # Print output summary
+            # Log output summary
             if result.stdout:
                 self.log.info("Integration script output (truncated):")
-                for line in result.stdout.splitlines()[-20:]:  # Show last 20 lines
+                for line in result.stdout.splitlines()[-20:]:
                     self.log.info(line)
 
             if result.stderr:
@@ -151,57 +162,35 @@ class TestOrchestrator:
                 for line in result.stderr.splitlines():
                     self.log.warn(line)
 
-            # Verify that the expected files were created
-            expected_files = [
-                "package.json",
-                "commitlint.config.ts",
-                "validate-branch-name.config.cjs",
-                "pnpm-workspace.yaml",
-                "ecs.php",
-                "rector.php",
-                "phpstan.neon.dist",
-                "psalm.xml",
-                ".editorconfig",
-                ".booster-version",  # The actual version stamp filename
-                "documentation/openapi.yml",
-                "tools/git-hooks/hooks/commit-msg",
-                "tools/git-hooks/shared/utils.ts",  # Correct extension is .ts
-            ]
-
-            missing_files = []
-            for file in expected_files:
-                file_path = test_dir / file
-                if not file_path.exists():
-                    missing_files.append(file)
-
+            # Check for missing files
+            missing_files = self._verify_expected_files(test_dir)
             if missing_files:
-                self.log.error(f"The following expected files were not created:")
+                self.log.error("The following expected files were not created:")
                 for file in missing_files:
                     self.log.error(f"  - {file}")
                 return False
 
-            # Validate ticket prefix in branch validation config
+            # Validate ticket prefix configuration
             branch_config_path = test_dir / "validate-branch-name.config.cjs"
             if branch_config_path.exists():
                 with open(branch_config_path, "r") as f:
-                    content = f.read()
-                    if "PRJ-" not in content:
+                    if "PRJ-" not in f.read():
                         self.log.error(
-                            f"Ticket prefix 'PRJ' not found in branch validation config!"
+                            "Ticket prefix 'PRJ' not found in branch validation config!"
                         )
                         return False
                 self.log.success(
                     "Branch validation config contains correct ticket prefix."
                 )
 
-            if result.returncode == 0:
+            success = result.returncode == 0
+            if success:
                 self.log.success("Standalone interactive test completed successfully!")
-                return True
             else:
                 self.log.error(
                     f"Standalone interactive test failed with exit code: {result.returncode}"
                 )
-                return False
+            return success
 
         except Exception as e:
             self.log.error(f"Error during standalone test: {e}")
@@ -293,38 +282,45 @@ class TestOrchestrator:
             self.log.error(f"Unknown test mode: {mode}")
             return False
 
-    def run_action(self, action: str):
-        """Run a specific test action"""
-        actions = {
+    def _run_with_env_check(self, func: Callable[[], Any]) -> Any:
+        """
+        Wrapper to run a function with environment checks
+
+        Args:
+            func: The function to execute after environment checks
+
+        Returns:
+            The result of the function execution
+        """
+        self.env_checker.check_environment()
+        self.env_checker.check_requirements()
+        return func()
+
+    def run_action(self, action: str) -> None:
+        """
+        Run a specific test action
+
+        Args:
+            action: The name of the action to run
+        """
+        actions: Dict[str, Callable[[], Any]] = {
             "full": self.run_full_test,
             "env-check": lambda: (
                 self.env_checker.check_environment(),
                 self.env_checker.check_requirements(),
             ),
-            "setup": lambda: (
-                self.env_checker.check_environment(),
-                self.env_checker.check_requirements(),
-                self.project_setup.setup_project(),
+            "setup": lambda: self._run_with_env_check(self.project_setup.setup_project),
+            "setup-resume": lambda: self._run_with_env_check(
+                self.project_setup.setup_resume
             ),
-            "setup-resume": lambda: (
-                self.env_checker.check_environment(),
-                self.env_checker.check_requirements(),
-                self.project_setup.setup_resume(),
+            "integrate": lambda: self._run_with_env_check(
+                self.booster_integration.integrate_booster
             ),
-            "integrate": lambda: (
-                self.env_checker.check_environment(),
-                self.env_checker.check_requirements(),
-                self.booster_integration.integrate_booster(),
+            "verify": lambda: self._run_with_env_check(
+                self.verifier.verify_integration
             ),
-            "verify": lambda: (
-                self.env_checker.check_environment(),
-                self.env_checker.check_requirements(),
-                self.verifier.verify_integration(),
-            ),
-            "test-hooks": lambda: (
-                self.env_checker.check_environment(),
-                self.env_checker.check_requirements(),
-                self.hook_tester.test_branch_validation(),
+            "test-hooks": lambda: self._run_with_env_check(
+                self.hook_tester.test_branch_validation
             ),
             "test-interactive": lambda: (
                 self.env_checker.check_environment(),
