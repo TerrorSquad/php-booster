@@ -166,6 +166,9 @@ echo "Hello, World!";
 
     def _test_invalid_branch(self):
         """Test invalid branch rejection"""
+        self.log.info("Testing invalid branch name validation...")
+        self.log.info("Creating branch with invalid format: 'invalid-branch-format'")
+
         self.cmd.run_command(
             ["git", "checkout", "-b", "invalid-branch-format"],
             cwd=self.config.target_dir,
@@ -180,6 +183,11 @@ echo "Another test";
 """
         )
 
+        self.log.info(f"Created test file: {test_file}")
+        self.log.info("File contents:")
+        print(test_file.read_text())
+
+        self.log.info("Adding test file to git...")
         self.cmd.run_command(
             ["git", "add", "test_commit2.php"], cwd=self.config.target_dir
         )
@@ -190,6 +198,7 @@ echo "Another test";
         env["SKIP_PSALM"] = "1"
 
         # This should fail due to invalid branch name
+        self.log.info("Attempting commit on invalid branch (should fail)...")
         result = self.cmd.run_command(
             ["git", "commit", "-m", "add another test"],
             cwd=self.config.target_dir,
@@ -200,9 +209,17 @@ echo "Another test";
 
         if result.returncode == 0:
             self.log.error("Invalid branch incorrectly accepted")
+            self.log.error(
+                "This is a test failure - branch validation hook did not work!"
+            )
             sys.exit(1)
         else:
             self.log.success("Invalid branch correctly rejected")
+            self.log.info("Error output from git (expected):")
+            if isinstance(result.stderr, bytes):
+                print(result.stderr.decode())
+            else:
+                print(result.stderr)
 
     def test_github_actions(self):
         """Test GitHub Actions auto-fix workflows"""
@@ -281,10 +298,13 @@ echo "Another test";
 
     def _validate_workflow_content(self):
         """Validate that workflows contain expected content"""
+        self.log.info("Validating GitHub Actions workflow content...")
         workflows_dir = self.config.target_dir / ".github" / "workflows"
 
         # Check main workflow
         main_workflow = workflows_dir / "php-auto-fix-simple.yml"
+        self.log.info(f"Checking main workflow file: {main_workflow}")
+
         with open(main_workflow, "r") as f:
             content = f.read()
 
@@ -300,20 +320,32 @@ echo "Another test";
             "composer install",
         ]
 
+        self.log.info("Checking for required workflow components...")
         for requirement in required_content:
             if requirement not in content:
                 self.log.error(f"Main workflow missing required content: {requirement}")
+                self.log.error(
+                    "This indicates the workflow file is not properly configured"
+                )
                 sys.exit(1)
+            else:
+                self.log.info(f"Found required component: {requirement}")
 
         self.log.success("Main workflow contains all required components")
 
         # Check simple workflow
         simple_workflow = workflows_dir / "php-auto-fix-simple.yml"
+        self.log.info(f"Checking simple workflow file: {simple_workflow}")
+
         with open(simple_workflow, "r") as f:
             simple_content = f.read()
 
+        self.log.info("Checking if workflow uses reusable action...")
         if "./.github/actions/php-auto-fix" not in simple_content:
             self.log.error("Simple workflow doesn't use the reusable action")
+            self.log.error(
+                "The workflow should reference ./.github/actions/php-auto-fix"
+            )
             sys.exit(1)
 
         self.log.success("Simple workflow correctly uses reusable action")
