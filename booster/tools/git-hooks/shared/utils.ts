@@ -51,10 +51,10 @@ export async function runWithRunner(
  * Logging utilities with consistent formatting
  */
 export const log = {
-  info: (message: string) => console.log(chalk.blue(`ℹ️  ${message}`)),
+  info: (message: string) => console.log(chalk.blue(`ℹ️ ${message}`)),
   success: (message: string) => console.log(chalk.green(`✅ ${message}`)),
   error: (message: string) => console.log(chalk.red(`❌ ${message}`)),
-  warn: (message: string) => console.log(chalk.yellow(`⚠️  ${message}`)),
+  warn: (message: string) => console.log(chalk.yellow(`⚠️ ${message}`)),
   step: (message: string) => console.log(chalk.cyan(`📋 ${message}`)),
   tool: (tool: string, message: string) =>
     console.log(chalk.yellow(`🔧 Running ${tool}: ${message}`)),
