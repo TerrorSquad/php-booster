@@ -1,4 +1,4 @@
-#!/usr/bin / env zx
+#!/usr/bin/env zx
 
 /**
  * Pre-commit hook - ZX TypeScript implementation
