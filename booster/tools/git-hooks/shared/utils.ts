@@ -33,7 +33,7 @@ async function loadEnvironmentFile(): Promise<void> {
   if (!envFile) return
 
   try {
-    console.log(`ℹ️  Loading environment variables from: ${envFile}`)
+    console.log(`ℹ️ Loading environment variables from: ${envFile}`)
 
     const result = dotenvConfig({ path: envFile })
     if (result.error) throw result.error
@@ -46,11 +46,11 @@ async function loadEnvironmentFile(): Promise<void> {
       const injectedVars = Object.keys(result.parsed)
       console.log(`✅ Injected environment variables: ${injectedVars.join(', ')}`)
       injectedVars.forEach(key => {
-        console.log(`   ${key}=${result.parsed![key]}`)
+        console.log(`  ${key}=${result.parsed![key]}`)
       })
     }
   } catch (error) {
-    console.log(`⚠️  Failed to load environment file ${envFile}: ${error instanceof Error ? error.message : String(error)}`)
+    console.log(`⚠️ Failed to load environment file ${envFile}: ${error instanceof Error ? error.message : String(error)}`)
   }
 }
 
@@ -94,10 +94,10 @@ export async function runWithRunner(
  * Logging utilities with consistent formatting
  */
 export const log = {
-  info: (message: string) => console.log(chalk.blue(`ℹ️  ${message}`)),
+  info: (message: string) => console.log(chalk.blue(`ℹ️ ${message}`)),
   success: (message: string) => console.log(chalk.green(`✅ ${message}`)),
   error: (message: string) => console.log(chalk.red(`❌ ${message}`)),
-  warn: (message: string) => console.log(chalk.yellow(`⚠️  ${message}`)),
+  warn: (message: string) => console.log(chalk.yellow(`⚠️ ${message}`)),
   step: (message: string) => console.log(chalk.cyan(`📋 ${message}`)),
   tool: (tool: string, message: string) =>
     console.log(chalk.yellow(`🔧 Running ${tool}: ${message}`)),
