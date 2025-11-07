@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.8.0](https://github.com/TerrorSquad/php-booster/compare/v1.7.0...v1.8.0) (2025-11-07)
+
+
+### Features
+
+* enhance branch validation logging and output formatting in hook testing ([7d8dd97](https://github.com/TerrorSquad/php-booster/commit/7d8dd979417801260eca15efc430a540d43183a6))
+* enhance branch validation tests with detailed logging and error handling ([b2cda46](https://github.com/TerrorSquad/php-booster/commit/b2cda4638e2c8731595f903be3323d237a42cba2))
+* enhance logging and output formatting in integration scripts and tests ([97832eb](https://github.com/TerrorSquad/php-booster/commit/97832ebd932cad1bf255877bf3e23a1e07b20e5e))
+* implement final integration commit for PHP Booster with validation checks ([548b729](https://github.com/TerrorSquad/php-booster/commit/548b729838c149cfaa0384f4a59bf6ae6ae4c32e))
+* improve branch checkout logic and error handling in hook testing ([c4c86bc](https://github.com/TerrorSquad/php-booster/commit/c4c86bca4c080b61a69480111f8ce988f8cf7b23))
+* improve logging output formatting for environment variable loading and logging utilities ([d814d63](https://github.com/TerrorSquad/php-booster/commit/d814d6336e79c4e8a27b08b034a03ce1db5fad90))
+* refactor branch switching logic in hook testing utilities ([9f0457f](https://github.com/TerrorSquad/php-booster/commit/9f0457fbe3f1a33126bd65dfc3df4e14d7e4bc27))
+
 ## [1.7.0](https://github.com/TerrorSquad/php-booster/compare/v1.6.1...v1.7.0) (2025-10-20)
 
 
