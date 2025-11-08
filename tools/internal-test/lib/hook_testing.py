@@ -169,7 +169,7 @@ echo "Hello, World!";
         )
 
         print("")
-        self.log.info("Test file created:")
+        self.log.info(f"Created test file: {test_file}")
         print("─────────────────────────")
         print(test_file.read_text())
         print("─────────────────────────")
