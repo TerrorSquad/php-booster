@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.9.0](https://github.com/TerrorSquad/php-booster/compare/v1.8.0...v1.9.0) (2025-11-08)
+
+
+### Features
+
+* add --no-interaction flag to composer require commands for non-interactive installations ([df549d9](https://github.com/TerrorSquad/php-booster/commit/df549d97c0fb6e34cdcb4341514c775efa0c9e18))
+* enhance TestOrchestrator with expected file verification and improved interactive mode testing ([1350b37](https://github.com/TerrorSquad/php-booster/commit/1350b37b39f6b2be878e94e398dabbc2ea4bfc32))
+
+
+### Bug Fixes
+
+* correct shebang line in pre-commit hook ([ab39afb](https://github.com/TerrorSquad/php-booster/commit/ab39afb7d142315952ca8f0f3df8dafc448aefb6))
+
 ## [1.8.0](https://github.com/TerrorSquad/php-booster/compare/v1.7.0...v1.8.0) (2025-11-07)
 
 
