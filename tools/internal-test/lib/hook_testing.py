@@ -51,17 +51,6 @@ class HookTester:
 
         self.log.info(f"Switched back to {main_branch} branch")
 
-        # Clean up existing test branches
-        for branch in ["feature/PRJ-123-test-feature", "invalid-branch-format"]:
-            try:
-                self.cmd.run_command(
-                    ["git", "branch", "-D", branch],
-                    cwd=self.config.target_dir,
-                    check=False,
-                )
-            except:
-                pass
-
         # Test valid branch
         self._test_valid_branch()
 
