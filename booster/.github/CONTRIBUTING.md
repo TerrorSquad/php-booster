@@ -195,7 +195,7 @@ All git hooks now include built-in performance monitoring:
 - We use [ZX](https://google.github.io/zx/) for TypeScript-based git hooks that enforce code quality and commit message standards.
 - We use [CommitLint](https://commitlint.js.org/) to ensure that all commit messages follow the Conventional Commits specification.
 - We use a pull request template to ensure consistent and informative pull requests.
-- For detailed git hooks documentation, see the [Git Hooks Guide](../../docs/content/3.tools/4.git_hooks.md).
+- For detailed git hooks documentation, see the project's Git Hooks documentation.
 
 ### Required Visual Studio Code Extensions
 
