@@ -9,10 +9,14 @@ contribution.
   - [Initial Setup](#initial-setup)
   - [Contributing](#contributing)
   - [Branch Naming](#branch-naming)
+  - [Commit Message Format](#commit-message-format)
   - [Developer Tooling](#developer-tooling)
   - [Environment Variables](#environment-variables)
   - [Hook Footers](#hook-footers)
-  - [Commit Messages](#commit-messages)
+  - [Configuration Reference](#configuration-reference)
+  - [Common Workflow Examples](#common-workflow-examples)
+  - [Performance Monitoring](#performance-monitoring)
+  - [Troubleshooting](#troubleshooting)
   - [Tools We Use](#tools-we-use)
     - [Required Visual Studio Code Extensions](#required-visual-studio-code-extensions)
     - [Required PHPStorm Extensions](#required-phpstorm-extensions)
@@ -61,22 +65,11 @@ Examples:
 
 If the ticket pattern is enabled in config and you use a ticket prefix, it must include the number (e.g. `PRJ-123-...`).
 
-### Commits and commit messages
-
-Commit Size: Aim for small, focused commits that address a single issue or feature
-Commit Messages: Follow the Conventional Commits specification
-
-We use Conventional Commits to maintain a clear and informative commit history. This helps us automate changelog
-generation, versioning, and other project
-management tasks.
-
-### Commit Messages
+### Commit Message Format
 
 Follow the [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) specification for clear and consistent commit messages.
 
 Each commit message should adhere to the following format:
-
-#### Format
 
 ```
 <type>[optional scope]: <description>
@@ -86,20 +79,14 @@ Each commit message should adhere to the following format:
 [optional footer(s)]
 ```
 
-- type: The type of change (e.g., feat, fix, chore, docs, etc.).
-- scope (optional): The scope of the change (e.g., the component or module affected).
-- description: A brief description of the change.
-- body (optional): A more detailed explanation of the change, if necessary.
-- footer(s) (optional): Additional information like breaking changes or issue references (e.g., "BREAKING CHANGE: ..."
-  or "Fixes #123").
-- **type**: The type of change (e.g., feat, fix, chore, docs).
-- **scope** (optional): The area of the codebase affected.
-- **description**: A brief summary of the change.
-- **body** (optional): Detailed explanation, if needed.
-- **footer(s)** (optional): Additional info like breaking changes or issue references.
+Where:
+- **type**: The type of change (e.g., feat, fix, chore, docs)
+- **scope** (optional): The area of the codebase affected
+- **description**: A brief summary of the change
+- **body** (optional): Detailed explanation, if needed
+- **footer(s)** (optional): Additional info like breaking changes or issue references
 
-#### Examples
-
+Examples:
 - `feat: add user authentication`
 - `fix(auth): correct password validation error`
 - `chore: update dependencies`
@@ -178,7 +165,7 @@ All git hooks now include built-in performance monitoring:
 - **Individual tool timing**: Each tool shows execution time (e.g., "PHPStan completed successfully (2.3s)")
 - **Total execution time**: Hooks display total time taken (e.g., "All pre-commit checks passed! (Total time: 8.7s)")
 - **Failed tool timing**: Even failed tools show how long they ran before failing
-- **Performance insights**: Use `PRECOMMIT_VERBOSE=1` to see detailed output and identify slow tools
+- **Performance insights**: Use `GIT_HOOKS_VERBOSE=1` to see detailed output and identify slow tools
 
 ### Troubleshooting
 
@@ -188,7 +175,7 @@ All git hooks now include built-in performance monitoring:
 | Missing footer | Ensure branch has valid ticket segment & config has prefixes. |
 | Slow pre-commit | Use `SKIP_PRECOMMIT=1`, or tool-specific skips (e.g., `SKIP_PHPSTAN=1 SKIP_PSALM=1`). Check performance timing to identify slow tools. |
 | Emergency commit needed | Use `SKIP_PRECOMMIT=1` + `SKIP_COMMITMSG=1` for complete bypass. |
-| Performance analysis | Enable `PRECOMMIT_VERBOSE=1` to see detailed tool execution times and identify bottlenecks. |
+| Performance analysis | Enable `GIT_HOOKS_VERBOSE=1` to see detailed tool execution times and identify bottlenecks. |
 
 ## Tools We Use
 
