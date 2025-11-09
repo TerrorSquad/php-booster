@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.9.1](https://github.com/TerrorSquad/php-booster/compare/v1.9.0...v1.9.1) (2025-11-09)
+
+
+### Bug Fixes
+
+* remove duplicate commit message format section and update TOC ([97a521d](https://github.com/TerrorSquad/php-booster/commit/97a521d8463400803dfc1b9e9552f024d1ec5b7e))
+* remove invalid documentation path reference ([a6ba5cc](https://github.com/TerrorSquad/php-booster/commit/a6ba5cc7808fc851bc005cb949bd17e95df9ef6e))
+
 ## [1.9.0](https://github.com/TerrorSquad/php-booster/compare/v1.8.0...v1.9.0) (2025-11-08)
 
 
