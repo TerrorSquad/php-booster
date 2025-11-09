@@ -26,6 +26,7 @@ import {
   formatDuration,
   getStagedPhpFiles,
   getPsalmBinary,
+  isSkipped,
   log,
   PHPTool,
   runTool,
@@ -161,7 +162,7 @@ async function main(): Promise<void> {
   log.step('Starting pre-commit checks...')
 
   // Check if we should skip the entire hook
-  if (process.env.SKIP_PRECOMMIT === '1' || process.env.SKIP_PRECOMMIT === 'true') {
+  if (isSkipped('precommit')) {
     log.info('Skipping pre-commit checks (SKIP_PRECOMMIT environment variable set)')
     process.exit(0)
   }

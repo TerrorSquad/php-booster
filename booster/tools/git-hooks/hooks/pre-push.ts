@@ -175,7 +175,7 @@ async function main(): Promise<void> {
   log.step('Starting pre-push checks...')
 
   // Check if we should skip the entire hook
-  if (process.env.SKIP_PREPUSH === '1' || process.env.SKIP_PREPUSH === 'true') {
+  if (isSkipped('prepush')) {
     log.info('Skipping pre-push checks (SKIP_PREPUSH environment variable set)')
     process.exit(0)
   }
