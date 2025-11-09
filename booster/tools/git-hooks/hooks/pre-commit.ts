@@ -44,6 +44,114 @@ $.verbose = process.env.GIT_HOOKS_VERBOSE === '1' || process.env.GIT_HOOKS_VERBO
 process.env.LC_ALL = 'C'
 process.env.LANG = 'C'
 
+/**
+ * Configuration for a PHP quality tool
+ */
+interface ToolConfig {
+  name: string
+  description: string
+  shouldRun: () => Promise<boolean>
+  run: (files: string[], binary?: string) => Promise<void>
+  stagesFilesAfter?: boolean
+  required?: boolean
+  getBinary?: () => Promise<string | null>
+}
+
+/**
+ * Centralized tool configurations
+ */
+const TOOLS: ToolConfig[] = [
+  {
+    name: 'Rector',
+    description: 'Running automatic refactoring...',
+    shouldRun: () => shouldRunTool(PHPTool.RECTOR),
+    run: async (files) => { await runVendorBin('rector', ['process', '--ansi', ...files]) },
+    stagesFilesAfter: true,
+  },
+  {
+    name: 'ECS',
+    description: 'Running code style fixes...',
+    shouldRun: () => shouldRunTool(PHPTool.ECS),
+    run: async (files) => { await runVendorBin('ecs', ['check', '--fix', '--ansi', ...files]) },
+    stagesFilesAfter: true,
+  },
+  {
+    name: 'PHPStan',
+    description: 'Running static analysis...',
+    shouldRun: () => shouldRunTool(PHPTool.PHPSTAN),
+    run: async (files) => { await runVendorBin('phpstan', ['analyse', '-c', 'phpstan.neon.dist', ...files]) },
+  },
+  {
+    name: 'Deptrac',
+    description: 'Running architecture analysis...',
+    shouldRun: () => shouldRunTool(PHPTool.DEPTRAC),
+    run: async (files) => {
+      await runVendorBin('deptrac')
+
+      // Optional: Generate and add deptrac image if configured
+      try {
+        await runVendorBin('deptrac', ['--formatter=graphviz', '--output=deptrac.png'])
+        if (await fs.pathExists('./deptrac.png')) {
+          await runWithRunner(['git', 'add', 'deptrac.png'], { quiet: true })
+          log.info('Added deptrac.png to staging area')
+        }
+      } catch (error: unknown) {
+        // Image generation is optional, don't fail if it doesn't work
+        const errorMessage = error instanceof Error ? error.message : String(error)
+        log.warn(`Deptrac image generation failed: ${errorMessage}`)
+      }
+    },
+  },
+  {
+    name: 'Psalm',
+    description: 'Running static analysis...',
+    shouldRun: async () => {
+      const psalmBin = await getPsalmBinary()
+      return psalmBin !== null && !isToolSkipped(PHPTool.PSALM)
+    },
+    getBinary: () => getPsalmBinary(),
+    run: async (files, binary) => {
+      const psalmBin = binary || 'psalm'
+      await runVendorBin(psalmBin, ['--show-info=false', ...files])
+    },
+  },
+]/**
+ * Run all configured quality tools on the provided files
+ */
+async function runQualityTools(phpFiles: string[]): Promise<boolean> {
+  let allSuccessful = true
+
+  for (const tool of TOOLS) {
+    if (!(await tool.shouldRun())) continue
+
+    // Get the binary to use (if the tool supports custom binary detection)
+    const binary = tool.getBinary ? await tool.getBinary() : null
+
+    // Skip if binary detection failed for tools that require it
+    if (tool.getBinary && binary === null) {
+      log.skip(`${tool.name} binary not found. Skipping...`)
+      continue
+    }
+
+    const success = await runTool(tool.name, tool.description, () =>
+      binary !== null ? tool.run(phpFiles, binary) : tool.run(phpFiles))
+
+    if (success && tool.stagesFilesAfter) {
+      await stageFiles(phpFiles)
+    }
+
+    if (!success) {
+      allSuccessful = false
+      if (tool.required) {
+        log.error(`${tool.name} is required but failed`)
+        return false
+      }
+    }
+  }
+
+  return allSuccessful
+}
+
 async function main(): Promise<void> {
   const startTime = Date.now()
 
@@ -76,87 +184,8 @@ async function main(): Promise<void> {
     process.exit(1)
   }
 
-  // Track overall success
-  let allSuccessful = true
-
-  // Run Rector if available
-  if (await shouldRunTool(PHPTool.RECTOR)) {
-    const success = await runTool('Rector', 'Running automatic refactoring...', async () => {
-      await runVendorBin('rector', ['process', '--ansi', ...phpFiles])
-    })
-
-    if (success) {
-      // Stage any changes made by Rector
-      await stageFiles(phpFiles)
-    } else {
-      allSuccessful = false
-    }
-  }
-
-  // Run ECS if available
-  if (await shouldRunTool(PHPTool.ECS)) {
-    const success = await runTool('ECS', 'Running code style fixes...', async () => {
-      await runVendorBin('ecs', ['check', '--fix', '--ansi', ...phpFiles])
-    })
-
-    if (success) {
-      // Stage any changes made by ECS
-      await stageFiles(phpFiles)
-    } else {
-      allSuccessful = false
-    }
-  }
-
-  // Run PHPStan if available
-  if (await shouldRunTool(PHPTool.PHPSTAN)) {
-    const success = await runTool('PHPStan', 'Running static analysis...', async () => {
-      await runVendorBin('phpstan', ['analyse', '-c', 'phpstan.neon.dist', ...phpFiles])
-    })
-
-    if (!success) {
-      allSuccessful = false
-    }
-  }
-
-  // Run Deptrac if available (architectural analysis)
-  if (await shouldRunTool(PHPTool.DEPTRAC)) {
-    const success = await runTool('Deptrac', 'Running architecture analysis...', async () => {
-      await runVendorBin('deptrac')
-    })
-
-    if (success) {
-      // Optional: Generate and add deptrac image if configured
-      try {
-        await runVendorBin('deptrac', ['--formatter=graphviz', '--output=deptrac.png'])
-        if (await fs.pathExists('./deptrac.png')) {
-          await runWithRunner(['git', 'add', 'deptrac.png'], { quiet: true })
-          log.info('Added deptrac.png to staging area')
-        }
-      } catch (error: unknown) {
-        // Image generation is optional, don't fail if it doesn't work
-        const errorMessage = error instanceof Error ? error.message : String(error)
-        log.warn(`Deptrac image generation failed: ${errorMessage}`)
-      }
-    } else {
-      allSuccessful = false
-    }
-  }
-
-  // Run Psalm if available
-  const psalmBin = await getPsalmBinary()
-  if (psalmBin && !isToolSkipped(PHPTool.PSALM)) {
-    const success = await runTool('Psalm', 'Running static analysis...', async () => {
-      await runVendorBin(psalmBin, ['--show-info=false', ...phpFiles])
-    })
-
-    if (!success) {
-      allSuccessful = false
-    }
-  } else if (!psalmBin) {
-    log.skip('Psalm not found in vendor/bin. Skipping...')
-  } else {
-    log.skip('Psalm skipped (SKIP_PSALM environment variable set)')
-  }
+  // Run all quality tools
+  let allSuccessful = await runQualityTools(phpFiles)
 
   // Final result with performance summary
   const totalDuration = Date.now() - startTime
