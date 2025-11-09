@@ -26,7 +26,6 @@ import {
   formatDuration,
   getStagedPhpFiles,
   getPsalmBinary,
-  isToolSkipped,
   log,
   PHPTool,
   runTool,
@@ -106,8 +105,12 @@ const TOOLS: ToolConfig[] = [
     name: 'Psalm',
     description: 'Running static analysis...',
     shouldRun: async () => {
-      const psalmBin = await getPsalmBinary()
-      return psalmBin !== null && !isToolSkipped(PHPTool.PSALM)
+      // Use shouldRunTool with checkVendorBin=false since Psalm has custom binary detection
+      if (!(await shouldRunTool(PHPTool.PSALM, false))) {
+        return false
+      }
+      // Check if either psalm or psalm.phar exists
+      return await getPsalmBinary() !== null
     },
     getBinary: () => getPsalmBinary(),
     run: async (files, binary) => {

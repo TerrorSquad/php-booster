@@ -147,11 +147,11 @@ export const PHPTool = {
 export type PHPTool = (typeof PHPTool)[keyof typeof PHPTool]
 
 /**
- * Check if a tool is explicitly skipped via environment variable
- * @param toolName Name of the tool
+ * Check if a tool or check is explicitly skipped via environment variable
+ * @param name Name of the tool/check (will be converted to SKIP_<NAME>)
  */
-export function isToolSkipped(toolName: PHPTool): boolean {
-  const skipEnvVar = `SKIP_${toolName.toUpperCase()}`
+export function isSkipped(name: string): boolean {
+  const skipEnvVar = `SKIP_${name.toUpperCase()}`
   return process.env[skipEnvVar] === '1' || process.env[skipEnvVar] === 'true'
 }
 
@@ -182,15 +182,16 @@ export async function getPsalmBinary(): Promise<string | null> {
  * Check if a tool should be executed (exists and not skipped)
  * Logs skip reason if tool should not run
  * @param toolName Name of the tool
+ * @param checkVendorBin Whether to verify the tool exists in vendor/bin (default: true)
  * @returns true if tool should run, false if it should be skipped
  */
-export async function shouldRunTool(toolName: PHPTool): Promise<boolean> {
-  if (isToolSkipped(toolName)) {
+export async function shouldRunTool(toolName: PHPTool, checkVendorBin: boolean = true): Promise<boolean> {
+  if (isSkipped(toolName)) {
     log.skip(`${toolName} skipped (SKIP_${toolName.toUpperCase()} environment variable set)`)
     return false
   }
 
-  if (!(await hasVendorBin(toolName))) {
+  if (checkVendorBin && !(await hasVendorBin(toolName))) {
     log.skip(`${toolName} not found in vendor/bin. Skipping...`)
     return false
   }
