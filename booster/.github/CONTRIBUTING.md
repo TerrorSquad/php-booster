@@ -109,10 +109,10 @@ Commitlint plus the `commit-msg` hook will append the ticket footer automaticall
 
 ### Developer Tooling
 
-Git hooks (managed via Husky) enforce naming, formatting and static analysis:
+Git hooks (TypeScript/ZX-based, see `tools/git-hooks/hooks/`) enforce naming, formatting and static analysis:
 * `commit-msg`: branch validation, commitlint, ticket footer insertion
 * `pre-commit`: PHP lint, Rector, ECS, Deptrac, PHPStan, Psalm (auto-fix where possible)
-* `pre-push`: deptrac, tests, API spec & HTML doc generation (conditional)
+* `pre-push`: Deptrac, tests, API spec & HTML doc generation (conditional)
 
 ### Environment Variables
 
@@ -120,15 +120,18 @@ Git hooks (managed via Husky) enforce naming, formatting and static analysis:
 |----------|--------|
 | **Global Hook Control** |  |
 | `SKIP_PRECOMMIT=1` | Skips the entire pre-commit hook (for emergency commits). |
+| `SKIP_PREPUSH=1` | Skips the entire pre-push hook (for emergency commits). |
 | `SKIP_COMMITMSG=1` | Skips the entire commit-msg hook (for emergency commits). |
-| `PRECOMMIT_VERBOSE=1` | Enable verbose output for pre-commit hook debugging. |
-| `COMMITMSG_VERBOSE=1` | Enable verbose output for commit-msg hook debugging. |
-| **Tool-specific Skip Controls** |  |
+| `GIT_HOOKS_VERBOSE=1` | Enable verbose output for all git hooks (debugging). |
+| **Tool-specific Skip Controls (pre-commit)** |  |
 | `SKIP_RECTOR=1` | Skip Rector refactoring. |
 | `SKIP_ECS=1` | Skip ECS code style fixes. |
 | `SKIP_PHPSTAN=1` | Skip PHPStan static analysis. |
 | `SKIP_PSALM=1` | Skip Psalm static analysis. |
 | `SKIP_DEPTRAC=1` | Skip Deptrac architecture analysis. |
+| **Tool-specific Skip Controls (pre-push)** |  |
+| `SKIP_PHPUNIT=1` | Skip PHPUnit tests. |
+| `SKIP_API_DOCS=1` | Skip API documentation generation. |
 
 ### Hook Footers
 
@@ -160,6 +163,12 @@ SKIP_RECTOR=1 git commit -m "refactor: manual cleanup"
 
 # Emergency commit bypassing all validation
 SKIP_PRECOMMIT=1 SKIP_COMMITMSG=1 git commit -m "hotfix: emergency fix"
+
+# Skip tests and documentation before push
+SKIP_PHPUNIT=1 SKIP_API_DOCS=1 git push
+
+# Verbose output for debugging
+GIT_HOOKS_VERBOSE=1 git commit -m "feat: new feature"
 ```
 
 ### Performance Monitoring
@@ -183,9 +192,10 @@ All git hooks now include built-in performance monitoring:
 
 ## Tools We Use
 
-- We use [Husky](https://typicode.github.io/husky/) to manage Git hooks. This helps us enforce code quality and commit   message standards.
-- We use [Commitlint](https://commitlint.js.org/) to ensure that all commit messages follow the Conventional Commits specification.
+- We use [ZX](https://google.github.io/zx/) for TypeScript-based git hooks that enforce code quality and commit message standards.
+- We use [CommitLint](https://commitlint.js.org/) to ensure that all commit messages follow the Conventional Commits specification.
 - We use a pull request template to ensure consistent and informative pull requests.
+- For detailed git hooks documentation, see the [Git Hooks Guide](../../docs/content/3.tools/4.git_hooks.md).
 
 ### Required Visual Studio Code Extensions
 
