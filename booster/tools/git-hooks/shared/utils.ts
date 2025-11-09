@@ -165,6 +165,15 @@ export async function hasVendorBin(toolName: PHPTool | string): Promise<boolean>
 }
 
 /**
+ * Check if a node_modules binary exists
+ * @param toolName Name of the tool
+ */
+export async function hasNodeBin(toolName: string): Promise<boolean> {
+  const binPath = `./node_modules/.bin/${toolName}`
+  return await fs.pathExists(binPath)
+}
+
+/**
  * Get available Psalm binary (psalm or psalm.phar)
  * @returns The binary name if found, null if neither exists
  */

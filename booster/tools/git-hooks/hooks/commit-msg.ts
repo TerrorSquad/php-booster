@@ -18,6 +18,8 @@ import validateBranchNameConfig from '../../../validate-branch-name.config.cjs'
 import {
   formatDuration,
   getCurrentBranch,
+  hasNodeBin,
+  isSkipped,
   log,
   runTool,
   runWithRunner,
@@ -138,8 +140,8 @@ async function checkDependencies(): Promise<void> {
     process.exit(1)
   }
 
-  const commitlintExists = await fs.pathExists('./node_modules/.bin/commitlint')
-  const validateBranchExists = await fs.pathExists('./node_modules/.bin/validate-branch-name')
+  const commitlintExists = await hasNodeBin('commitlint')
+  const validateBranchExists = await hasNodeBin('validate-branch-name')
 
   if (!commitlintExists) {
     log.error('commitlint not found in node_modules/.bin/')
@@ -249,7 +251,7 @@ async function main(): Promise<void> {
   log.step('Starting commit-msg validation...')
 
   // Check if we should skip the entire hook
-  if (process.env.SKIP_COMMITMSG === '1' || process.env.SKIP_COMMITMSG === 'true') {
+  if (isSkipped('commitmsg')) {
     log.info('Skipping commit-msg validation (SKIP_COMMITMSG environment variable set)')
     process.exit(0)
   }
