@@ -109,6 +109,29 @@ runs:
         echo "files=$EXISTING_FILES" >> $GITHUB_OUTPUT
         echo "Changed files: $EXISTING_FILES"
 
+    - name: Check PHP syntax
+      if: steps.get-files.outputs.files != ''
+      shell: bash
+      run: |
+        CHANGED_FILES="${{ steps.get-files.outputs.files }}"
+        if [ -n "$CHANGED_FILES" ]; then
+          echo "🔍 Checking PHP syntax..."
+          SYNTAX_ERRORS=0
+          for file in $CHANGED_FILES; do
+            if ! php -l "$file" > /dev/null 2>&1; then
+              echo "❌ Syntax error in: $file"
+              php -l "$file"
+              SYNTAX_ERRORS=1
+            fi
+          done
+
+          if [ $SYNTAX_ERRORS -eq 1 ]; then
+            echo "❌ Cannot auto-fix files with syntax errors. Please fix syntax errors first."
+            exit 1
+          fi
+          echo "✅ All files have valid PHP syntax"
+        fi
+
     - name: Run Rector
       if: steps.get-files.outputs.files != '' && inputs.skip-rector != 'true'
       shell: bash
@@ -116,7 +139,7 @@ runs:
         CHANGED_FILES="${{ steps.get-files.outputs.files }}"
         if [ -n "$CHANGED_FILES" ] && [ -f "vendor/bin/rector" ]; then
           echo "🔧 Running Rector on: $CHANGED_FILES"
-          ./vendor/bin/rector process $CHANGED_FILES --no-progress-bar --ansi || true
+          ./vendor/bin/rector process $CHANGED_FILES --no-progress-bar --ansi
         else
           echo "ℹ️ Rector not available or no files to process"
         fi
@@ -128,7 +151,7 @@ runs:
         CHANGED_FILES="${{ steps.get-files.outputs.files }}"
         if [ -n "$CHANGED_FILES" ] && [ -f "vendor/bin/ecs" ]; then
           echo "🔧 Running ECS on: $CHANGED_FILES"
-          ./vendor/bin/ecs check --fix $CHANGED_FILES --ansi || true
+          ./vendor/bin/ecs check --fix $CHANGED_FILES --ansi
         else
           echo "ℹ️ ECS not available or no files to process"
         fi
