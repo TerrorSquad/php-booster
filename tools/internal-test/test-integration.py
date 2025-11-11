@@ -22,21 +22,21 @@ def create_config() -> Config:
         epilog="""
 Examples:
   %(prog)s env-check                    # Check environment and requirements
-  %(prog)s setup laravel my-test-app    # Set up a Laravel test project
-  %(prog)s integrate laravel my-test-app # Integrate booster into existing project
-  %(prog)s full laravel my-test-app     # Run complete test suite
-  %(prog)s test-hooks laravel my-test-app # Test git hooks functionality
-  %(prog)s test-github-actions laravel my-test-app # Test GitHub Actions integration
+  %(prog)s setup laravel                # Set up a Laravel test project
+  %(prog)s integrate laravel            # Integrate booster into existing project
+  %(prog)s full laravel                 # Run complete test suite
+  %(prog)s test-hooks laravel           # Test git hooks functionality
+  %(prog)s test-github-actions laravel  # Test GitHub Actions integration
   %(prog)s test-interactive             # Test interactive mode without requiring a project
-  %(prog)s test-interactive-project laravel my-test-app # Test interactive mode with a project
-  %(prog)s test-interactive-project laravel my-test-app --automated # Automated interactive test
+  %(prog)s test-interactive-project laravel # Test interactive mode with a project
+  %(prog)s test-interactive-project laravel --automated # Automated interactive test
   %(prog)s clean-interactive-test       # Clean up interactive test directory
-  %(prog)s clean laravel my-test-app    # Clean up test environment
-  %(prog)s status laravel my-test-app   # Show current status
+  %(prog)s clean laravel                # Clean up test environment
+  %(prog)s status laravel               # Show current status
 
 Supported project types: laravel, symfony
 
-The script creates test projects in tests/<project_type>/<project_name>
+The script creates test projects in tests/<project_type>/booster-test
 relative to the repository root unless --target-dir is specified.
 """,
     )
@@ -71,16 +71,9 @@ relative to the repository root unless --target-dir is specified.
     )
 
     parser.add_argument(
-        "project_name",
-        nargs="?",
-        default="test-project",
-        help="Name of the test project (default: test-project)",
-    )
-
-    parser.add_argument(
         "--target-dir",
         type=Path,
-        help="Target directory for the test project (default: tests/<project_type>/<project_name>)",
+        help="Target directory for the test project (default: tests/<project_type>/booster-test)",
     )
 
     parser.add_argument(
@@ -91,20 +84,23 @@ relative to the repository root unless --target-dir is specified.
 
     args = parser.parse_args()
 
+    # Use fixed project name
+    project_name = "booster-test"
+
     # Determine paths
     script_dir = Path(__file__).parent.absolute()
     root_dir = script_dir.parent.parent
 
     # Set target directory
     if args.target_dir is None:
-        target_dir = root_dir / "tests" / args.project_type / args.project_name
+        target_dir = root_dir / "tests" / args.project_type / project_name
     else:
         target_dir = Path(args.target_dir)
 
     return Config(
         action=args.action,
         project_type=args.project_type,
-        project_name=args.project_name,
+        project_name=project_name,
         target_dir=target_dir,
         script_dir=script_dir,
         root_dir=root_dir,

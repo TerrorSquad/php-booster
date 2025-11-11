@@ -11,17 +11,15 @@ This test suite provides automated testing of the PHP Booster integration proces
 ### Quick Start
 
 ```bash
-# Check environment and requirements
+# Using Makefile (recommended)
+make test              # Run Laravel test
+make test-symfony      # Run Symfony test
+make test-clean        # Clean up test environments
+
+# Or using Python script directly
 ./test-integration.py env-check
-
-# Set up a Laravel test project
-./test-integration.py setup laravel my-test-app
-
-# Run complete integration test
-./test-integration.py full laravel my-test-app
-
-# Clean up when done
-./test-integration.py clean laravel my-test-app
+./test-integration.py full laravel
+./test-integration.py clean laravel
 ```
 
 ### Available Actions
@@ -46,14 +44,25 @@ This test suite provides automated testing of the PHP Booster integration proces
 ### Examples
 
 ```bash
-# Test with custom project directory
-./test-integration.py setup laravel my-app --target-dir /tmp/my-test
+# Makefile shortcuts
+make test              # Run full Laravel integration test
+make test-symfony      # Run full Symfony integration test
+make test-hooks        # Test git hooks functionality
+make test-env          # Check environment and requirements
+make test-status       # Show test environment status
+make test-clean        # Clean up all test environments
 
-# Test Symfony project
-./test-integration.py full symfony symfony-test
+# Python script directly
+./test-integration.py full laravel
+./test-integration.py full symfony
+./test-integration.py setup laravel
+./test-integration.py verify laravel
+./test-integration.py test-hooks laravel
+./test-integration.py status laravel
+./test-integration.py clean laravel
 
-# Check status of existing project
-./test-integration.py status laravel my-test-app
+# Custom target directory (advanced)
+./test-integration.py full laravel --target-dir /tmp/my-test
 ```
 
 ## Dependencies
@@ -125,32 +134,32 @@ Run `env-check` to verify all required commands are available:
 Check DDEV status and restart if needed:
 ```bash
 # Check DDEV status
-./test-integration.py status laravel my-project
+./test-integration.py status laravel
 
 # Resume a stopped project
-./test-integration.py setup-resume laravel my-project
+./test-integration.py setup-resume laravel
 ```
-./test-integration.py
 
-# Full test with specific framework
-./test-integration.py full symfony
+## Command Reference
 
-# Full test with custom project name
-./test-integration.py full laravel my-custom-project
-
-# Individual test steps
-./test-integration.py setup            # Only create and set up project
-./test-integration.py integrate        # Only run booster integration
-./test-integration.py verify           # Only verify integration worked
-./test-integration.py test-hooks       # Only test git hooks and branch validation
-./test-integration.py status           # Show current test environment status
-./test-integration.py clean            # Clean up test environment
-
+```bash
 # Environment check
 ./test-integration.py env-check
 
-# Custom target directory
-./test-integration.py full laravel custom-project /path/to/target
+# Full test (complete suite)
+./test-integration.py full laravel
+./test-integration.py full symfony
+
+# Individual test steps
+./test-integration.py setup laravel      # Only create and set up project
+./test-integration.py integrate laravel  # Only run booster integration
+./test-integration.py verify laravel     # Only verify integration worked
+./test-integration.py test-hooks laravel # Only test git hooks
+./test-integration.py status laravel     # Show status
+./test-integration.py clean laravel      # Clean up
+
+# Custom target directory (advanced use case)
+./test-integration.py full laravel --target-dir /path/to/target
 ```
 
 **Available Actions:**
@@ -167,6 +176,8 @@ Check DDEV status and restart if needed:
 **Supported Frameworks:**
 - `laravel` (default)
 - `symfony`
+
+**Note:** Project name is fixed as `booster-test` to ensure consistent, reproducible test environments.
 
 ## GitHub Actions
 
@@ -185,8 +196,8 @@ The workflow uses the same Python test script and provides the same comprehensiv
 The Python test script provides comprehensive verification:
 
 ### Project Setup
-- Creates fresh Laravel or Symfony projects using DDEV with framework-specific naming
-- Framework-specific project names prevent DDEV conflicts (e.g., `booster-test-laravel`, `booster-test-symfony`)
+- Creates fresh Laravel or Symfony projects using DDEV
+- Fixed project name `booster-test` ensures consistent test environments
 - Initializes git repository with proper configuration
 - Sets up DDEV containers and services with unique project identification
 
@@ -227,21 +238,22 @@ The test script provides:
 
 ## Cleaning Up
 
-The Python script creates test projects with framework-specific naming:
-- Laravel: `tests/laravel/booster-test-laravel` 
-- Symfony: `tests/symfony/booster-test-symfony`
-
-This prevents DDEV project name conflicts when testing multiple frameworks.
+The test script creates projects in:
+- Laravel: `tests/laravel/booster-test` 
+- Symfony: `tests/symfony/booster-test`
 
 To clean up:
 ```bash
-# Automatic cleanup (specify framework)
+# Using Makefile (recommended)
+make test-clean
+
+# Or using Python script directly
 ./test-integration.py clean laravel
 ./test-integration.py clean symfony
 
-# Manual cleanup example
-cd tests/laravel/booster-test-laravel && ddev delete -y
-rm -rf tests/laravel/booster-test-laravel
+# Manual cleanup example (if needed)
+cd tests/laravel/booster-test && ddev delete -y
+rm -rf tests/laravel/booster-test
 ```
 
 ## Local Development Mode
@@ -253,5 +265,9 @@ For testing local changes to the booster before committing:
 # Set these environment variables if needed:
 export BOOSTER_LOCAL_DEV=1
 export BOOSTER_LOCAL_PATH="/path/to/booster"
-./test-integration.py full
+
+# Run tests
+make test
+# or
+./test-integration.py full laravel
 ```
