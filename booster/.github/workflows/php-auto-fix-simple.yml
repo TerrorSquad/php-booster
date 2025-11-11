@@ -1,12 +1,9 @@
 name: PHP Auto-Fix (Simple)
 
 on:
-  push:
-    branches: [ main, master, develop, 'feature/**', 'fix/**' ]
-    paths: [ '**.php' ]
   pull_request:
-    branches: [ main, master, develop ]
-    paths: [ '**.php' ]
+    branches: [main, master, develop]
+    paths: ['**.php']
 
 permissions:
   contents: write
@@ -15,11 +12,11 @@ permissions:
 jobs:
   auto-fix:
     runs-on: ubuntu-latest
-    
-    # Skip if commit message contains [skip auto-fix] or if it's already an auto-fix commit
+
+    # Skip if PR title contains [skip auto-fix] or if it's already an auto-fix commit
     if: |
-      !contains(github.event.head_commit.message, '[skip auto-fix]') &&
-      !contains(github.event.head_commit.message, 'style: auto-fix code with Rector and ECS')
+      !contains(github.event.pull_request.title, '[skip auto-fix]') &&
+      !contains(github.event.pull_request.head.sha, 'style: auto-fix code with Rector and ECS')
 
     steps:
       - name: Checkout code
@@ -37,14 +34,10 @@ jobs:
       - name: Push changes
         if: steps.auto-fix.outputs.changes-made == 'true'
         run: |
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            git push origin HEAD:${{ github.head_ref }}
-          else
-            git push origin HEAD:${{ github.ref_name }}
-          fi
+          git push origin HEAD:${{ github.head_ref }}
 
       - name: Comment on PR
-        if: github.event_name == 'pull_request' && steps.auto-fix.outputs.changes-made == 'true'
+        if: steps.auto-fix.outputs.changes-made == 'true'
         uses: actions/github-script@v7
         with:
           script: |

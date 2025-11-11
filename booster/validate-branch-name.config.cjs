@@ -11,7 +11,7 @@ const config = {
   /** Branch name (after type and optional ticket) */
   namePattern: '[a-zA-Z0-9]+(-[a-zA-Z0-9]+)*',
   /** Branches to skip validation */
-  skipped: ['wip', 'main', 'master', 'develop/test', 'develop/host1', 'develop/host2'],
+  skipped: ['wip', 'main', 'master', 'develop/test', 'develop/test2', 'develop/host1', 'develop/host2'],
   /** Commit footer label to append with ticket (configurable) */
   commitFooterLabel: 'Closes',
 };
