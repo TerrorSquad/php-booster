@@ -104,7 +104,7 @@ jobs:
 
       - name: Update Node.js version in DDEV config
         run: |
-          CURRENT_NODE=$(grep 'nodejs_version:' booster/.ddev/config.yaml | sed 's/.*: "\(.*\)"/\1/')
+          CURRENT_NODE=$(grep 'nodejs_version:' booster/.ddev/config.yaml | sed -n 's/^nodejs_version: "\([^"]*\)".*/\1/p')
           LATEST_NODE="${{ steps.node-version.outputs.latest }}"
 
           echo "Current Node.js: $CURRENT_NODE"
