@@ -5,9 +5,7 @@
   "version": "1.9.1",
   "scripts": {
     "commit": "commit",
-    "generate:api-doc:html": "redocly build-docs documentation/openapi.yml --output=documentation/openapi.html",
-    "test:hooks": "vitest run tools/git-hooks",
-    "test:hooks:watch": "vitest watch tools/git-hooks"
+    "generate:api-doc:html": "redocly build-docs documentation/openapi.yml --output=documentation/openapi.html"
   },
   "husky": {
     "hooksPath": "tools/git-hooks/hooks"
