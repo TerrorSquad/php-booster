@@ -23,7 +23,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '24'
 
       - name: Get latest Node.js LTS version
         id: node-version
@@ -33,6 +33,21 @@ jobs:
           echo "latest=$LATEST_LTS" >> $GITHUB_OUTPUT
           echo "Latest Node.js LTS: $LATEST_LTS"
 
+      - name: Update Node.js version in DDEV config
+        run: |
+          CURRENT_NODE=$(grep 'nodejs_version:' booster/.ddev/config.yaml | sed -n 's/^nodejs_version: "\([^"]*\)".*/\1/p')
+          LATEST_NODE="${{ steps.node-version.outputs.latest }}"
+
+          echo "Current Node.js: $CURRENT_NODE"
+          echo "Latest Node.js LTS: $LATEST_NODE"
+
+          if [ "$CURRENT_NODE" != "$LATEST_NODE" ]; then
+            sed -i "s/nodejs_version: \"$CURRENT_NODE\"/nodejs_version: \"$LATEST_NODE\"/" booster/.ddev/config.yaml
+            echo "updated=true" >> $GITHUB_ENV
+            echo "Updated Node.js from $CURRENT_NODE to $LATEST_NODE"
+          else
+            echo "Node.js version is already up to date"
+          fi
       - name: Get latest pnpm version
         id: pnpm-version
         run: |
@@ -40,6 +55,93 @@ jobs:
           LATEST_PNPM=$(npm view pnpm version)
           echo "latest=$LATEST_PNPM" >> $GITHUB_OUTPUT
           echo "Latest pnpm: $LATEST_PNPM"
+
+      - name: Update pnpm packageManager
+        working-directory: booster
+        run: |
+          CURRENT_PNPM=$(jq -r '.packageManager' package.json | sed 's/pnpm@//')
+          LATEST_PNPM="${{ steps.pnpm-version.outputs.latest }}"
+
+          echo "Current pnpm: $CURRENT_PNPM"
+          echo "Latest pnpm: $LATEST_PNPM"
+
+          if [ "$CURRENT_PNPM" != "$LATEST_PNPM" ]; then
+            jq ".packageManager = \"pnpm@$LATEST_PNPM\"" package.json > package.json.tmp
+            mv package.json.tmp package.json
+            echo "updated=true" >> $GITHUB_ENV
+            echo "Updated pnpm from $CURRENT_PNPM to $LATEST_PNPM"
+          else
+            echo "pnpm version is already up to date"
+          fi
+      - name: Check NPM package updates
+        id: npm-updates
+        working-directory: booster
+        run: |
+          # Check for outdated NPM packages using npm registry API
+          echo "Checking NPM packages for updates..."
+          HAS_UPDATES=false
+
+          # Read packages from package.json
+          PACKAGES=$(jq -r '.devDependencies | keys[]' package.json)
+
+          for PACKAGE in $PACKAGES; do
+            CURRENT_VERSION=$(jq -r ".devDependencies.\"$PACKAGE\"" package.json | sed 's/[\^~]//')
+
+            # Get latest version from NPM registry
+            LATEST_VERSION=$(curl -s "https://registry.npmjs.org/$PACKAGE/latest" | \
+              jq -r '.version' 2>/dev/null || echo "")
+
+            if [ -n "$LATEST_VERSION" ] && [ "$LATEST_VERSION" != "null" ]; then
+              echo "$PACKAGE: $CURRENT_VERSION -> $LATEST_VERSION"
+
+              # Simple version comparison
+              if [ "$CURRENT_VERSION" != "$LATEST_VERSION" ]; then
+                HAS_UPDATES=true
+              fi
+            fi
+          done
+
+          echo "has_updates=$HAS_UPDATES" >> $GITHUB_OUTPUT
+
+      - name: Update @types/node if Node.js version changed
+        if: env.updated == 'true'
+        working-directory: booster
+        run: |
+          LATEST_NODE="${{ steps.node-version.outputs.latest }}"
+          NODE_MAJOR=$(echo "$LATEST_NODE" | cut -d. -f1)
+          echo "Updating @types/node to ^$NODE_MAJOR..."
+
+          # Update package.json directly using jq
+          jq ".devDependencies[\"@types/node\"] = \"^$NODE_MAJOR\"" package.json > package.json.tmp
+          mv package.json.tmp package.json
+
+          echo "Updated @types/node to version ^$NODE_MAJOR"
+
+      - name: Update NPM dependencies if needed
+        if: env.updated == 'true' && steps.npm-updates.outputs.has_updates == 'true'
+        working-directory: booster
+        run: |
+          echo "Updating NPM packages to latest versions..."
+
+          # Read all dev dependencies
+          PACKAGES=$(jq -r '.devDependencies | keys[]' package.json)
+
+          for PACKAGE in $PACKAGES; do
+            # Get latest version from NPM registry
+            LATEST_VERSION=$(curl -s "https://registry.npmjs.org/$PACKAGE/latest" | \
+              jq -r '.version' 2>/dev/null || echo "")
+
+            if [ -n "$LATEST_VERSION" ] && [ "$LATEST_VERSION" != "null" ]; then
+              echo "Updating $PACKAGE to $LATEST_VERSION"
+
+              # Update package.json with latest version (using ^ prefix)
+              jq ".devDependencies[\"$PACKAGE\"] = \"^$LATEST_VERSION\"" package.json > package.json.tmp
+              mv package.json.tmp package.json
+            fi
+          done
+
+          echo "NPM package versions updated in package.json"
+          echo "Note: pnpm-lock.yaml NOT updated - run 'pnpm install' locally to test"
 
       - name: Check PHP package updates
         id: php-updates
@@ -71,85 +173,6 @@ jobs:
           done
 
           echo "has_updates=$HAS_UPDATES" >> $GITHUB_OUTPUT
-
-      - name: Check NPM package updates
-        id: npm-updates
-        working-directory: booster
-        run: |
-          # Check for outdated NPM packages using npm registry API
-          echo "Checking NPM packages for updates..."
-          HAS_UPDATES=false
-
-          # Read packages from package.json
-          PACKAGES=$(jq -r '.devDependencies | keys[]' package.json)
-
-          for PACKAGE in $PACKAGES; do
-            CURRENT_VERSION=$(jq -r ".devDependencies.\"$PACKAGE\"" package.json | sed 's/[\^~]//')
-
-            # Get latest version from NPM registry
-            LATEST_VERSION=$(curl -s "https://registry.npmjs.org/$PACKAGE/latest" | \
-              jq -r '.version' 2>/dev/null || echo "")
-
-            if [ -n "$LATEST_VERSION" ] && [ "$LATEST_VERSION" != "null" ]; then
-              echo "$PACKAGE: $CURRENT_VERSION -> $LATEST_VERSION"
-
-              # Simple version comparison
-              if [ "$CURRENT_VERSION" != "$LATEST_VERSION" ]; then
-                HAS_UPDATES=true
-              fi
-            fi
-          done
-
-          echo "has_updates=$HAS_UPDATES" >> $GITHUB_OUTPUT
-
-      - name: Update Node.js version in DDEV config
-        run: |
-          CURRENT_NODE=$(grep 'nodejs_version:' booster/.ddev/config.yaml | sed -n 's/^nodejs_version: "\([^"]*\)".*/\1/p')
-          LATEST_NODE="${{ steps.node-version.outputs.latest }}"
-
-          echo "Current Node.js: $CURRENT_NODE"
-          echo "Latest Node.js LTS: $LATEST_NODE"
-
-          if [ "$CURRENT_NODE" != "$LATEST_NODE" ]; then
-            sed -i "s/nodejs_version: \"$CURRENT_NODE\"/nodejs_version: \"$LATEST_NODE\"/" booster/.ddev/config.yaml
-            echo "updated=true" >> $GITHUB_ENV
-            echo "Updated Node.js from $CURRENT_NODE to $LATEST_NODE"
-          else
-            echo "Node.js version is already up to date"
-          fi
-
-      - name: Update @types/node if Node.js version changed
-        if: env.updated == 'true'
-        working-directory: booster
-        run: |
-          LATEST_NODE="${{ steps.node-version.outputs.latest }}"
-          NODE_MAJOR=$(echo "$LATEST_NODE" | cut -d. -f1)
-          echo "Updating @types/node to ^$NODE_MAJOR..."
-
-          # Update package.json directly using jq
-          jq ".devDependencies[\"@types/node\"] = \"^$NODE_MAJOR\"" package.json > package.json.tmp
-          mv package.json.tmp package.json
-
-          echo "Updated @types/node to version ^$NODE_MAJOR"
-
-      - name: Update pnpm packageManager
-        working-directory: booster
-        run: |
-          CURRENT_PNPM=$(jq -r '.packageManager' package.json | sed 's/pnpm@//')
-          LATEST_PNPM="${{ steps.pnpm-version.outputs.latest }}"
-
-          echo "Current pnpm: $CURRENT_PNPM"
-          echo "Latest pnpm: $LATEST_PNPM"
-
-          if [ "$CURRENT_PNPM" != "$LATEST_PNPM" ]; then
-            jq ".packageManager = \"pnpm@$LATEST_PNPM\"" package.json > package.json.tmp
-            mv package.json.tmp package.json
-            echo "updated=true" >> $GITHUB_ENV
-            echo "Updated pnpm from $CURRENT_PNPM to $LATEST_PNPM"
-          else
-            echo "pnpm version is already up to date"
-          fi
-
       - name: Update PHP dependencies
         if: steps.php-updates.outputs.has_updates == 'true'
         working-directory: booster
@@ -172,32 +195,6 @@ jobs:
           done
 
           echo "updated=true" >> $GITHUB_ENV
-
-      - name: Update NPM dependencies if needed
-        if: env.updated == 'true' && steps.npm-updates.outputs.has_updates == 'true'
-        working-directory: booster
-        run: |
-          echo "Updating NPM packages to latest versions..."
-
-          # Read all dev dependencies
-          PACKAGES=$(jq -r '.devDependencies | keys[]' package.json)
-
-          for PACKAGE in $PACKAGES; do
-            # Get latest version from NPM registry
-            LATEST_VERSION=$(curl -s "https://registry.npmjs.org/$PACKAGE/latest" | \
-              jq -r '.version' 2>/dev/null || echo "")
-
-            if [ -n "$LATEST_VERSION" ] && [ "$LATEST_VERSION" != "null" ]; then
-              echo "Updating $PACKAGE to $LATEST_VERSION"
-
-              # Update package.json with latest version (using ^ prefix)
-              jq ".devDependencies[\"$PACKAGE\"] = \"^$LATEST_VERSION\"" package.json > package.json.tmp
-              mv package.json.tmp package.json
-            fi
-          done
-
-          echo "NPM package versions updated in package.json"
-          echo "Note: pnpm-lock.yaml NOT updated - run 'pnpm install' locally to test"
 
       - name: Generate update summary
         if: env.updated == 'true'
