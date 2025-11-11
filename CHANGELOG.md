@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.2](https://github.com/TerrorSquad/php-booster/compare/v1.9.1...v1.9.2) (2025-11-11)
+
+
+### Bug Fixes
+
+* add PHP syntax checking before auto-fixing with Rector and ECS ([14bd133](https://github.com/TerrorSquad/php-booster/commit/14bd13354c640cd3de49dc14315311b0f6228a5a))
+
 ## [1.9.1](https://github.com/TerrorSquad/php-booster/compare/v1.9.0...v1.9.1) (2025-11-09)
 
 
