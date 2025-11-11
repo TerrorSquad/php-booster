@@ -1,40 +1,40 @@
 {
-  "name": "generic/php-ddev-booster",
-  "type": "project",
-  "version": "1.9.1",
-  "authors": [
-    {
-      "name": "DDEV User",
-      "email": "nobody@example.com"
-    }
-  ],
-  "require-dev": {
-    "rector/rector": "^2.1.7",
-    "phpstan/phpstan": "^2.1.26",
-    "symplify/easy-coding-standard": "^12.6.0",
-    "zircote/swagger-php": "^5.3.2",
-    "psalm/phar": "^6.13.1"
-  },
-  "scripts": {
-    "post-install-cmd": [
-      "yes | pnpm install"
-    ],
-    "post-update-cmd": [
-      "yes | pnpm install"
-    ],
-    "generate-api-spec": "php documentation/api.php",
-    "check-cs": "vendor/bin/ecs check --ansi",
-    "fix-cs": "vendor/bin/ecs check --fix --ansi",
-    "phpstan": "vendor/bin/phpstan analyse -c phpstan.neon.dist",
-    "phpstan:sonar": "vendor/bin/phpstan analyse -c phpstan.neon.dist --error-format=prettyJson > phpstan_sonar.json",
-    "psalm:sonar": "vendor/bin/psalm --report=sonarqube.json; mv sonarqube.json psalm_sonar.json",
-    "psalm-phar:sonar": "vendor/bin/psalm.phar --report=sonarqube.json; mv sonarqube.json psalm_sonar.json",
-    "rector": "vendor/bin/rector",
-    "deptrac": "vendor/bin/deptrac",
-    "deptrac:image": "vendor/bin/deptrac --formatter=graphviz-image --output=deptrac.png",
-    "test:pest": "vendor/bin/pest --colors=always",
-    "test:phpunit": "vendor/bin/phpunit --colors=always",
-    "test:coverage:pest": "XDEBUG_MODE=coverage vendor/bin/pest --colors=always --coverage-clover=coverage.xml",
-    "test:coverage:phpunit": "XDEBUG_MODE=coverage vendor/bin/phpunit --colors=always --coverage-clover=coverage.xml"
-  }
+	"name": "generic/php-ddev-booster",
+	"type": "project",
+	"version": "1.9.1",
+	"authors": [
+		{
+			"name": "DDEV User",
+			"email": "nobody@example.com"
+		}
+	],
+	"require-dev": {
+		"rector/rector": "^2.2.7",
+		"phpstan/phpstan": "^2.1.x-dev",
+		"symplify/easy-coding-standard": "^13.0.0",
+		"zircote/swagger-php": "^4.x-dev",
+		"psalm/phar": "^6.x-dev"
+	},
+	"scripts": {
+		"post-install-cmd": [
+			"yes | pnpm install"
+		],
+		"post-update-cmd": [
+			"yes | pnpm install"
+		],
+		"generate-api-spec": "php documentation/api.php",
+		"check-cs": "vendor/bin/ecs check --ansi",
+		"fix-cs": "vendor/bin/ecs check --fix --ansi",
+		"phpstan": "vendor/bin/phpstan analyse -c phpstan.neon.dist",
+		"phpstan:sonar": "vendor/bin/phpstan analyse -c phpstan.neon.dist --error-format=prettyJson > phpstan_sonar.json",
+		"psalm:sonar": "vendor/bin/psalm --report=sonarqube.json; mv sonarqube.json psalm_sonar.json",
+		"psalm-phar:sonar": "vendor/bin/psalm.phar --report=sonarqube.json; mv sonarqube.json psalm_sonar.json",
+		"rector": "vendor/bin/rector",
+		"deptrac": "vendor/bin/deptrac",
+		"deptrac:image": "vendor/bin/deptrac --formatter=graphviz-image --output=deptrac.png",
+		"test:pest": "vendor/bin/pest --colors=always",
+		"test:phpunit": "vendor/bin/phpunit --colors=always",
+		"test:coverage:pest": "XDEBUG_MODE=coverage vendor/bin/pest --colors=always --coverage-clover=coverage.xml",
+		"test:coverage:phpunit": "XDEBUG_MODE=coverage vendor/bin/phpunit --colors=always --coverage-clover=coverage.xml"
+	}
 }
