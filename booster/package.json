@@ -2,7 +2,7 @@
   "name": "php_booster",
   "private": true,
   "type": "module",
-  "version": "1.9.2",
+  "version": "1.9.3",
   "scripts": {
     "commit": "commit",
     "generate:api-doc:html": "redocly build-docs documentation/openapi.yml --output=documentation/openapi.html"
