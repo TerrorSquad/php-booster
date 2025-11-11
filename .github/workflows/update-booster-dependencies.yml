@@ -56,14 +56,14 @@ jobs:
           for PACKAGE in $PACKAGES; do
             CURRENT_VERSION=$(jq -r ".\"require-dev\".\"$PACKAGE\"" composer.json | sed 's/[\^~]//')
 
-            # Get latest version from Packagist
-            LATEST_VERSION=$(curl -s "https://repo.packagist.org/p2/$PACKAGE.json" | \
-              jq -r '.packages."'$PACKAGE'" | keys | .[0]' 2>/dev/null || echo "")
+            # Get latest stable version from Packagist v1 API (exclude dev, alpha, beta, RC)
+            LATEST_VERSION=$(curl -s "https://packagist.org/packages/$PACKAGE.json" | \
+              jq -r '.package.versions | to_entries | map(select(.key | test("^[0-9]+\\.[0-9]+\\.[0-9]+$"))) | .[0].key' 2>/dev/null || echo "")
 
             if [ -n "$LATEST_VERSION" ] && [ "$LATEST_VERSION" != "null" ]; then
               echo "$PACKAGE: $CURRENT_VERSION -> $LATEST_VERSION"
 
-              # Simple version comparison (not perfect but good enough for major/minor updates)
+              # Simple version comparison
               if [ "$CURRENT_VERSION" != "$LATEST_VERSION" ]; then
                 HAS_UPDATES=true
               fi
@@ -154,19 +154,19 @@ jobs:
         if: steps.php-updates.outputs.has_updates == 'true'
         working-directory: booster
         run: |
-          # Update PHP package versions in composer.json using Packagist API
+          # Update PHP package versions in composer.json using Packagist v1 API
           PACKAGES=$(jq -r '.["require-dev"] | keys[]' composer.json)
 
           for PACKAGE in $PACKAGES; do
-            # Get latest version from Packagist
-            LATEST_VERSION=$(curl -s "https://repo.packagist.org/p2/$PACKAGE.json" | \
-              jq -r '.packages."'$PACKAGE'" | keys | .[0]' 2>/dev/null || echo "")
+            # Get latest stable version from Packagist (exclude dev, alpha, beta, RC)
+            LATEST_VERSION=$(curl -s "https://packagist.org/packages/$PACKAGE.json" | \
+              jq -r '.package.versions | to_entries | map(select(.key | test("^[0-9]+\\.[0-9]+\\.[0-9]+$"))) | .[0].key' 2>/dev/null || echo "")
 
             if [ -n "$LATEST_VERSION" ] && [ "$LATEST_VERSION" != "null" ]; then
               echo "Updating $PACKAGE to ^$LATEST_VERSION"
 
-              # Update composer.json with new version constraint
-              jq ".\"require-dev\".\"$PACKAGE\" = \"^$LATEST_VERSION\"" composer.json > composer.json.tmp
+              # Update composer.json with new version constraint (2 spaces indentation)
+              jq --indent 2 ".\"require-dev\".\"$PACKAGE\" = \"^$LATEST_VERSION\"" composer.json > composer.json.tmp
               mv composer.json.tmp composer.json
             fi
           done
@@ -229,12 +229,37 @@ jobs:
 
           # PHP package changes
           if [ "${{ steps.php-updates.outputs.has_updates }}" == "true" ]; then
-            echo "### PHP Packages (composer.json)" >> update-summary.md
-            git diff HEAD booster/composer.json | grep "^\+" | grep -v "^+++" > /tmp/php-diff.txt || true
-            if [ -s /tmp/php-diff.txt ]; then
-              echo "\`\`\`diff" >> update-summary.md
-              cat /tmp/php-diff.txt >> update-summary.md
-              echo "\`\`\`" >> update-summary.md
+            echo "### PHP Packages" >> update-summary.md
+
+            # Get current versions from git
+            git diff HEAD booster/composer.json > /tmp/composer-diff.txt || true
+
+            if [ -s /tmp/composer-diff.txt ]; then
+              # Parse the diff to extract package names and versions
+              grep '^[+-]' /tmp/composer-diff.txt | grep -v '^[+-][+-][+-]' | grep '"' | while IFS= read -r line; do
+                if [[ $line =~ \"([^\"]+)\":[[:space:]]*\"([^\"]+)\" ]]; then
+                  PACKAGE="${BASH_REMATCH[1]}"
+                  VERSION="${BASH_REMATCH[2]}"
+
+                  if [[ $line =~ ^- ]]; then
+                    OLD_VERSION="$VERSION"
+                  elif [[ $line =~ ^+ ]]; then
+                    NEW_VERSION="$VERSION"
+                    if [ -n "$OLD_VERSION" ]; then
+                      echo "- \`$PACKAGE\`: $OLD_VERSION → $NEW_VERSION" >> update-summary.md
+                      OLD_VERSION=""
+                    fi
+                  fi
+                fi
+              done
+
+              # If no changes were parsed, check if there are any at all
+              if ! grep -q "^- \`" update-summary.md 2>/dev/null; then
+                echo "- Updated to latest versions" >> update-summary.md
+              fi
+              echo "" >> update-summary.md
+            else
+              echo "- No changes detected" >> update-summary.md
               echo "" >> update-summary.md
             fi
           fi
