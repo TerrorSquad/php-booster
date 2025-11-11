@@ -206,9 +206,12 @@ jobs:
           echo "" >> update-summary.md
 
           # Node.js changes
-          CURRENT_NODE=$(git diff HEAD booster/.ddev/config.yaml | grep -A1 "^-nodejs_version" | tail -1 | sed 's/.*"\(.*\)"/\1/' || echo "")
-          NEW_NODE="${{ steps.node-version.outputs.latest }}"
-          if [ -n "$CURRENT_NODE" ] && [ "$CURRENT_NODE" != "$NEW_NODE" ]; then
+          if git diff --quiet HEAD booster/.ddev/config.yaml; then
+            NODE_CHANGED=false
+          else
+            NODE_CHANGED=true
+            CURRENT_NODE=$(git diff HEAD booster/.ddev/config.yaml | grep "^-nodejs_version" | sed 's/.*"\(.*\)".*/\1/')
+            NEW_NODE="${{ steps.node-version.outputs.latest }}"
             echo "### Node.js" >> update-summary.md
             echo "- Updated from \`$CURRENT_NODE\` to \`$NEW_NODE\`" >> update-summary.md
             echo "- Updated \`@types/node\` to match" >> update-summary.md
@@ -216,62 +219,70 @@ jobs:
           fi
 
           # pnpm changes
-          if git diff --quiet HEAD booster/package.json; then
-            :
-          else
-            echo "### Package Manager" >> update-summary.md
-            echo "- Updated pnpm to \`${{ steps.pnpm-version.outputs.latest }}\`" >> update-summary.md
-            echo "" >> update-summary.md
+          PNPM_CHANGED=false
+          if ! git diff --quiet HEAD booster/package.json; then
+            # Check if packageManager field changed
+            OLD_PNPM=$(git diff HEAD booster/package.json | grep "^-.*packageManager" | sed 's/.*"pnpm@\([^"]*\)".*/\1/')
+            NEW_PNPM=$(git diff HEAD booster/package.json | grep "^+.*packageManager" | sed 's/.*"pnpm@\([^"]*\)".*/\1/')
+
+            if [ -n "$OLD_PNPM" ] && [ -n "$NEW_PNPM" ] && [ "$OLD_PNPM" != "$NEW_PNPM" ]; then
+              PNPM_CHANGED=true
+              echo "### Package Manager" >> update-summary.md
+              echo "- Updated pnpm from \`$OLD_PNPM\` to \`$NEW_PNPM\`" >> update-summary.md
+              echo "" >> update-summary.md
+            fi
           fi
 
           # PHP package changes
           if [ "${{ steps.php-updates.outputs.has_updates }}" == "true" ]; then
-            echo "### PHP Packages" >> update-summary.md
+            if ! git diff --quiet HEAD booster/composer.json; then
+              echo "### PHP Packages" >> update-summary.md
 
-            # Get current versions from git
-            git diff HEAD booster/composer.json > /tmp/composer-diff.txt || true
+              # Parse composer.json diff for package changes
+              git diff HEAD booster/composer.json | grep -E '^\-[[:space:]]+"[^"]+": "\^' > /tmp/old-packages.txt || true
+              git diff HEAD booster/composer.json | grep -E '^\+[[:space:]]+"[^"]+": "\^' > /tmp/new-packages.txt || true
 
-            if [ -s /tmp/composer-diff.txt ]; then
-              # Parse the diff to extract package names and versions
-              grep '^[+-]' /tmp/composer-diff.txt | grep -v '^[+-][+-][+-]' | grep '"' | while IFS= read -r line; do
-                if [[ $line =~ \"([^\"]+)\":[[:space:]]*\"([^\"]+)\" ]]; then
-                  PACKAGE="${BASH_REMATCH[1]}"
-                  VERSION="${BASH_REMATCH[2]}"
+              # Process each changed package
+              while IFS= read -r old_line; do
+                PACKAGE=$(echo "$old_line" | sed -n 's/.*"\([^"]*\)": "\^\([^"]*\)".*/\1/p')
+                OLD_VER=$(echo "$old_line" | sed -n 's/.*"\([^"]*\)": "\^\([^"]*\)".*/\2/p')
 
-                  if [[ $line =~ ^- ]]; then
-                    OLD_VERSION="$VERSION"
-                  elif [[ $line =~ ^+ ]]; then
-                    NEW_VERSION="$VERSION"
-                    if [ -n "$OLD_VERSION" ]; then
-                      echo "- \`$PACKAGE\`: $OLD_VERSION → $NEW_VERSION" >> update-summary.md
-                      OLD_VERSION=""
-                    fi
-                  fi
+                # Find matching new version
+                NEW_VER=$(grep "\"$PACKAGE\"" /tmp/new-packages.txt | sed -n 's/.*"\^\([^"]*\)".*/\1/p' || echo "")
+
+                if [ -n "$NEW_VER" ] && [ "$OLD_VER" != "$NEW_VER" ]; then
+                  echo "- \`$PACKAGE\`: ^$OLD_VER → ^$NEW_VER" >> update-summary.md
                 fi
-              done
+              done < /tmp/old-packages.txt
 
-              # If no changes were parsed, check if there are any at all
-              if ! grep -q "^- \`" update-summary.md 2>/dev/null; then
-                echo "- Updated to latest versions" >> update-summary.md
-              fi
-              echo "" >> update-summary.md
-            else
-              echo "- No changes detected" >> update-summary.md
               echo "" >> update-summary.md
             fi
           fi
 
           # NPM package changes
+          NPM_CHANGED=false
           if [ "${{ steps.npm-updates.outputs.has_updates }}" == "true" ]; then
-            echo "### NPM Packages (package.json)" >> update-summary.md
-            echo "Updated to latest versions. See \`package.json\` for details." >> update-summary.md
-            echo "" >> update-summary.md
+            if ! git diff --quiet HEAD booster/package.json; then
+              NPM_CHANGED=true
+              echo "### NPM Packages" >> update-summary.md
+              echo "Updated devDependencies to latest versions. See \`package.json\` for details." >> update-summary.md
+              echo "" >> update-summary.md
+            fi
           fi
 
+          # Files Changed - only list files that actually changed
           echo "### Files Changed" >> update-summary.md
-          echo "- \`booster/.ddev/config.yaml\` (Node.js version)" >> update-summary.md
-          echo "- \`booster/package.json\` (pnpm, @types/node, devDependencies)" >> update-summary.md
-          echo "- \`booster/composer.json\` (PHP package versions)" >> update-summary.md
+          if [ "$NODE_CHANGED" = true ]; then
+            echo "- \`booster/.ddev/config.yaml\` (Node.js version)" >> update-summary.md
+          fi
+          if [ "$PNPM_CHANGED" = true ] || [ "$NPM_CHANGED" = true ] || [ "$NODE_CHANGED" = true ]; then
+            echo "- \`booster/package.json\`" >> update-summary.md
+          fi
+          if [ "${{ steps.php-updates.outputs.has_updates }}" == "true" ]; then
+            if ! git diff --quiet HEAD booster/composer.json; then
+              echo "- \`booster/composer.json\`" >> update-summary.md
+            fi
+          fi
 
           cat update-summary.md
 
