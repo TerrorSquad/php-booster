@@ -10,14 +10,16 @@
  *
  * Environment Variables:
  * - SKIP_COMMITMSG=1: Skip the entire commit-msg hook
- * - COMMITMSG_VERBOSE=1: Enable verbose output for debugging
+ * - GIT_HOOKS_VERBOSE=1: Enable verbose output for debugging
  */
 
-import { $, fs, path } from 'zx'
+import { $, fs } from 'zx'
 import validateBranchNameConfig from '../../../validate-branch-name.config.cjs'
 import {
   formatDuration,
   getCurrentBranch,
+  hasNodeBin,
+  isSkipped,
   log,
   runTool,
   runWithRunner,
@@ -25,7 +27,7 @@ import {
 } from '../shared/utils.ts'
 
 // Configure zx
-$.verbose = process.env.COMMITMSG_VERBOSE === '1' || process.env.COMMITMSG_VERBOSE === 'true'
+$.verbose = process.env.GIT_HOOKS_VERBOSE === '1' || process.env.GIT_HOOKS_VERBOSE === 'true'
 
 // Fix locale issues that can occur in VS Code
 process.env.LC_ALL = 'C'
@@ -138,8 +140,8 @@ async function checkDependencies(): Promise<void> {
     process.exit(1)
   }
 
-  const commitlintExists = await fs.pathExists('./node_modules/.bin/commitlint')
-  const validateBranchExists = await fs.pathExists('./node_modules/.bin/validate-branch-name')
+  const commitlintExists = await hasNodeBin('commitlint')
+  const validateBranchExists = await hasNodeBin('validate-branch-name')
 
   if (!commitlintExists) {
     log.error('commitlint not found in node_modules/.bin/')
@@ -249,7 +251,7 @@ async function main(): Promise<void> {
   log.step('Starting commit-msg validation...')
 
   // Check if we should skip the entire hook
-  if (process.env.SKIP_COMMITMSG === '1' || process.env.SKIP_COMMITMSG === 'true') {
+  if (isSkipped('commitmsg')) {
     log.info('Skipping commit-msg validation (SKIP_COMMITMSG environment variable set)')
     process.exit(0)
   }

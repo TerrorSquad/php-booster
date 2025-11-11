@@ -24,8 +24,11 @@ class ProjectSetup:
         self.state = state_detector
         self.log = logger
 
-    def setup_project(self):
-        """Set up the test project"""
+    def setup_project(self) -> None:
+        """
+        Set up the test project.
+        Exits with code 1 if project already exists or type is unknown.
+        """
         if self.state.is_project_created():
             self.log.warn(
                 f"Project already exists at {self.config.target_dir}. Use 'setup-resume' to continue or 'clean' to start fresh."
@@ -47,7 +50,8 @@ class ProjectSetup:
 
         self.log.success(f"Project setup complete at {self.config.target_dir}")
 
-    def _setup_symfony(self):
+    def _setup_symfony(self) -> None:
+        """Set up a Symfony project."""
         """Set up Symfony project with DDEV"""
         self.log.info("Creating Symfony project using DDEV...")
 

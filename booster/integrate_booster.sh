@@ -3,6 +3,7 @@
 # This script is used to integrate the php-booster into your project (potentially DDEV)
 
 # --- Configuration ---
+
 BOOSTER_REPO_URL="https://github.com/TerrorSquad/php-booster.git"
 BOOSTER_TARGET_DIR="php-booster"
 BOOSTER_INTERNAL_PATH="${BOOSTER_TARGET_DIR}/booster"
@@ -14,10 +15,14 @@ BOOSTER_LOCAL_DEV="${BOOSTER_LOCAL_DEV:-0}"
 BOOSTER_LOCAL_PATH="${BOOSTER_LOCAL_PATH:-../booster}"
 
 # --- ANSI color codes ---
+
 GREEN='\033[0;32m'
 RED='\033[0;31m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
+
+
+# --- Script Configuration ---
 
 VERBOSE=false
 NO_CLEANUP=false
@@ -25,12 +30,16 @@ IS_DDEV_PROJECT=0
 INTERACTIVE_MODE=false
 SKIP_INTERACTIVE=false
 
-# Interactive mode configuration
+# --- Interactive Mode Configuration ---
+
 INTERACTIVE_INSTALL_TOOLS=true
 INTERACTIVE_TOOLS_SELECTED=()
 INTERACTIVE_TICKET_PREFIX=""
 INTERACTIVE_REQUIRE_TICKETS=false
 INTERACTIVE_COMMIT_FOOTER_LABEL="Closes"
+
+
+# --- Environment Configuration ---
 
 # Set the memory limit for Composer to unlimited (can help with large dependency trees)
 export COMPOSER_MEMORY_LIMIT=-1
@@ -44,12 +53,14 @@ export SYMFONY_FLEX_RECIPES_AUTO_ACCEPT=1
 # Extract version from booster composer.json
 function get_booster_version() {
     local booster_composer="${BOOSTER_INTERNAL_PATH}/composer.json"
+
     if [ -f "$booster_composer" ]; then
         jq -r '.version // "unknown"' "$booster_composer"
     else
         echo "unknown"
     fi
 }
+
 
 # Get the currently installed booster version
 function get_installed_version() {
@@ -108,12 +119,15 @@ function log() {
     fi
 }
 
+
 function warn() {
     echo -e "${YELLOW}[WARN] $1${NC}"
 }
 
+
 function error() {
     echo -e "${RED}[ERROR] $1${NC}" >&2
+
     # Clean up before exiting on error
     cleanup_silent
     exit 1
@@ -141,7 +155,9 @@ function show_welcome_banner() {
     echo "║                                                                ║"
     echo "╚════════════════════════════════════════════════════════════════╝"
     echo ""
+    echo ""
     info "Welcome! This wizard will help you configure PHP Booster for your project."
+    echo ""
     echo ""
 }
 
@@ -168,9 +184,11 @@ function confirm_action() {
 
 function select_tools_to_install() {
     echo ""
+    echo ""
     echo "═══════════════════════════════════════════════════════════════"
     info "Step 1: Select Code Quality Tools"
     echo "═══════════════════════════════════════════════════════════════"
+    echo ""
     echo ""
     echo "PHP Booster includes the following code quality tools:"
     echo ""
@@ -209,9 +227,11 @@ function select_tools_to_install() {
 
 function configure_git_workflow() {
     echo ""
+    echo ""
     echo "═══════════════════════════════════════════════════════════════"
     info "Step 2: Configure Git Workflow"
     echo "═══════════════════════════════════════════════════════════════"
+    echo ""
     echo ""
     echo "Git workflow features:"
     echo "  • Branch naming validation (e.g., feature/PRJ-123-my-feature)"
@@ -270,15 +290,18 @@ function configure_ide_settings() {
 
 function show_configuration_summary() {
     echo ""
+    echo ""
     echo "═══════════════════════════════════════════════════════════════"
     info "Configuration Summary"
     echo "═══════════════════════════════════════════════════════════════"
     echo ""
-
+    echo ""
     echo "📦 Tools to install:"
+    echo ""
     for tool in "${INTERACTIVE_TOOLS_SELECTED[@]}"; do
         echo "   ✓ $tool"
     done
+    echo ""
     echo ""
 
     echo "🔧 Git Workflow:"
@@ -329,13 +352,16 @@ function apply_interactive_configuration() {
 
 function show_post_installation_summary() {
     echo ""
+    echo ""
     echo "╔════════════════════════════════════════════════════════════════╗"
     echo "║                                                                ║"
     echo "║              ✅ PHP Booster Setup Complete! ✅                 ║"
     echo "║                                                                ║"
     echo "╚════════════════════════════════════════════════════════════════╝"
     echo ""
+    echo ""
     echo "📋 Next Steps:"
+    echo ""
     echo ""
     echo "1. Review the integrated files:"
     echo "   • validate-branch-name.config.cjs  - Branch naming rules"
@@ -345,19 +371,24 @@ function show_post_installation_summary() {
     echo "2. Try the available commands:"
 
     if [ $IS_DDEV_PROJECT -eq 1 ]; then
+        echo ""
         echo "   ddev composer ecs          # Check/fix code style"
         echo "   ddev composer rector       # Apply automated refactoring"
         echo "   ddev composer phpstan      # Run static analysis"
         echo "   ddev composer psalm        # Additional static analysis"
+        echo ""
         echo "   ddev composer phan         # Run Phan static analysis"
     else
+        echo ""
         echo "   composer ecs               # Check/fix code style"
         echo "   composer rector            # Apply automated refactoring"
         echo "   composer phpstan           # Run static analysis"
         echo "   composer psalm             # Additional static analysis"
+        echo ""
         echo "   composer phan              # Run Phan static analysis"
     fi
 
+    echo ""
     echo ""
     echo "3. Test your Git hooks:"
     echo "   • Create a test branch with proper naming"
@@ -431,9 +462,11 @@ function is_ddev_project() {
 
 # --- Core Logic Functions ---
 
+
 function download_php_booster() {
     if [ "$BOOSTER_LOCAL_DEV" = "1" ]; then
         log "Using local php-booster for development..."
+
         # Clean up previous attempts first
         rm -rf "$BOOSTER_TARGET_DIR" # Remove target dir if it exists
 
@@ -1044,7 +1077,7 @@ function add_code_quality_tools() {
 
                 for dep in "${missing_prod_deps[@]}"; do
                     log "Installing production dependency: $dep"
-                    if "${composer_cmd[@]}" require --no-scripts "$dep"; then
+                    if "${composer_cmd[@]}" require --no-scripts --no-interaction "$dep"; then
                         success "Successfully installed: $dep"
                     else
                         error "Failed to install critical production dependency: $dep"
@@ -1096,7 +1129,7 @@ function add_code_quality_tools() {
 
                 for dep in "${missing_dev_deps[@]}"; do
                     log "Installing dev dependency: $dep"
-                    if "${composer_cmd[@]}" require --dev "$dep"; then
+                    if "${composer_cmd[@]}" require --dev --no-interaction "$dep"; then
                         success "Successfully installed: $dep"
                     else
                         warn "Failed to install: $dep"
@@ -1341,8 +1374,9 @@ function show_version_info_and_exit() {
 
 # --- Main Execution ---
 
-function main() {
 
+function main() {
+    # Process command line arguments
     while getopts ":vchiIN" opt; do
         case $opt in
         v) VERBOSE=true ;;
@@ -1439,10 +1473,13 @@ function main() {
 }
 
 # --- Script Entry Point ---
+
 # Ensure script exits immediately if a command fails (safer execution)
 set -e
+
 # Ensure pipe failures are caught
 set -o pipefail
+
 
 # Run main function, passing all arguments
 main "$@"

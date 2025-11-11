@@ -9,10 +9,14 @@ contribution.
   - [Initial Setup](#initial-setup)
   - [Contributing](#contributing)
   - [Branch Naming](#branch-naming)
+  - [Commit Message Format](#commit-message-format)
   - [Developer Tooling](#developer-tooling)
   - [Environment Variables](#environment-variables)
   - [Hook Footers](#hook-footers)
-  - [Commit Messages](#commit-messages)
+  - [Configuration Reference](#configuration-reference)
+  - [Common Workflow Examples](#common-workflow-examples)
+  - [Performance Monitoring](#performance-monitoring)
+  - [Troubleshooting](#troubleshooting)
   - [Tools We Use](#tools-we-use)
     - [Required Visual Studio Code Extensions](#required-visual-studio-code-extensions)
     - [Required PHPStorm Extensions](#required-phpstorm-extensions)
@@ -61,22 +65,11 @@ Examples:
 
 If the ticket pattern is enabled in config and you use a ticket prefix, it must include the number (e.g. `PRJ-123-...`).
 
-### Commits and commit messages
-
-Commit Size: Aim for small, focused commits that address a single issue or feature
-Commit Messages: Follow the Conventional Commits specification
-
-We use Conventional Commits to maintain a clear and informative commit history. This helps us automate changelog
-generation, versioning, and other project
-management tasks.
-
-### Commit Messages
+### Commit Message Format
 
 Follow the [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) specification for clear and consistent commit messages.
 
 Each commit message should adhere to the following format:
-
-#### Format
 
 ```
 <type>[optional scope]: <description>
@@ -86,20 +79,14 @@ Each commit message should adhere to the following format:
 [optional footer(s)]
 ```
 
-- type: The type of change (e.g., feat, fix, chore, docs, etc.).
-- scope (optional): The scope of the change (e.g., the component or module affected).
-- description: A brief description of the change.
-- body (optional): A more detailed explanation of the change, if necessary.
-- footer(s) (optional): Additional information like breaking changes or issue references (e.g., "BREAKING CHANGE: ..."
-  or "Fixes #123").
-- **type**: The type of change (e.g., feat, fix, chore, docs).
-- **scope** (optional): The area of the codebase affected.
-- **description**: A brief summary of the change.
-- **body** (optional): Detailed explanation, if needed.
-- **footer(s)** (optional): Additional info like breaking changes or issue references.
+Where:
+- **type**: The type of change (e.g., feat, fix, chore, docs)
+- **scope** (optional): The area of the codebase affected
+- **description**: A brief summary of the change
+- **body** (optional): Detailed explanation, if needed
+- **footer(s)** (optional): Additional info like breaking changes or issue references
 
-#### Examples
-
+Examples:
 - `feat: add user authentication`
 - `fix(auth): correct password validation error`
 - `chore: update dependencies`
@@ -109,10 +96,10 @@ Commitlint plus the `commit-msg` hook will append the ticket footer automaticall
 
 ### Developer Tooling
 
-Git hooks (managed via Husky) enforce naming, formatting and static analysis:
+Git hooks (TypeScript/ZX-based, see `tools/git-hooks/hooks/`) enforce naming, formatting and static analysis:
 * `commit-msg`: branch validation, commitlint, ticket footer insertion
 * `pre-commit`: PHP lint, Rector, ECS, Deptrac, PHPStan, Psalm (auto-fix where possible)
-* `pre-push`: deptrac, tests, API spec & HTML doc generation (conditional)
+* `pre-push`: Deptrac, tests, API spec & HTML doc generation (conditional)
 
 ### Environment Variables
 
@@ -120,15 +107,18 @@ Git hooks (managed via Husky) enforce naming, formatting and static analysis:
 |----------|--------|
 | **Global Hook Control** |  |
 | `SKIP_PRECOMMIT=1` | Skips the entire pre-commit hook (for emergency commits). |
+| `SKIP_PREPUSH=1` | Skips the entire pre-push hook (for emergency commits). |
 | `SKIP_COMMITMSG=1` | Skips the entire commit-msg hook (for emergency commits). |
-| `PRECOMMIT_VERBOSE=1` | Enable verbose output for pre-commit hook debugging. |
-| `COMMITMSG_VERBOSE=1` | Enable verbose output for commit-msg hook debugging. |
-| **Tool-specific Skip Controls** |  |
+| `GIT_HOOKS_VERBOSE=1` | Enable verbose output for all git hooks (debugging). |
+| **Tool-specific Skip Controls (pre-commit)** |  |
 | `SKIP_RECTOR=1` | Skip Rector refactoring. |
 | `SKIP_ECS=1` | Skip ECS code style fixes. |
 | `SKIP_PHPSTAN=1` | Skip PHPStan static analysis. |
 | `SKIP_PSALM=1` | Skip Psalm static analysis. |
 | `SKIP_DEPTRAC=1` | Skip Deptrac architecture analysis. |
+| **Tool-specific Skip Controls (pre-push)** |  |
+| `SKIP_PHPUNIT=1` | Skip PHPUnit tests. |
+| `SKIP_API_DOCS=1` | Skip API documentation generation. |
 
 ### Hook Footers
 
@@ -160,6 +150,12 @@ SKIP_RECTOR=1 git commit -m "refactor: manual cleanup"
 
 # Emergency commit bypassing all validation
 SKIP_PRECOMMIT=1 SKIP_COMMITMSG=1 git commit -m "hotfix: emergency fix"
+
+# Skip tests and documentation before push
+SKIP_PHPUNIT=1 SKIP_API_DOCS=1 git push
+
+# Verbose output for debugging
+GIT_HOOKS_VERBOSE=1 git commit -m "feat: new feature"
 ```
 
 ### Performance Monitoring
@@ -169,7 +165,7 @@ All git hooks now include built-in performance monitoring:
 - **Individual tool timing**: Each tool shows execution time (e.g., "PHPStan completed successfully (2.3s)")
 - **Total execution time**: Hooks display total time taken (e.g., "All pre-commit checks passed! (Total time: 8.7s)")
 - **Failed tool timing**: Even failed tools show how long they ran before failing
-- **Performance insights**: Use `PRECOMMIT_VERBOSE=1` to see detailed output and identify slow tools
+- **Performance insights**: Use `GIT_HOOKS_VERBOSE=1` to see detailed output and identify slow tools
 
 ### Troubleshooting
 
@@ -179,13 +175,14 @@ All git hooks now include built-in performance monitoring:
 | Missing footer | Ensure branch has valid ticket segment & config has prefixes. |
 | Slow pre-commit | Use `SKIP_PRECOMMIT=1`, or tool-specific skips (e.g., `SKIP_PHPSTAN=1 SKIP_PSALM=1`). Check performance timing to identify slow tools. |
 | Emergency commit needed | Use `SKIP_PRECOMMIT=1` + `SKIP_COMMITMSG=1` for complete bypass. |
-| Performance analysis | Enable `PRECOMMIT_VERBOSE=1` to see detailed tool execution times and identify bottlenecks. |
+| Performance analysis | Enable `GIT_HOOKS_VERBOSE=1` to see detailed tool execution times and identify bottlenecks. |
 
 ## Tools We Use
 
-- We use [Husky](https://typicode.github.io/husky/) to manage Git hooks. This helps us enforce code quality and commit   message standards.
-- We use [Commitlint](https://commitlint.js.org/) to ensure that all commit messages follow the Conventional Commits specification.
+- We use [ZX](https://google.github.io/zx/) for TypeScript-based git hooks that enforce code quality and commit message standards.
+- We use [CommitLint](https://commitlint.js.org/) to ensure that all commit messages follow the Conventional Commits specification.
 - We use a pull request template to ensure consistent and informative pull requests.
+- For detailed git hooks documentation, see the project's Git Hooks documentation.
 
 ### Required Visual Studio Code Extensions
 

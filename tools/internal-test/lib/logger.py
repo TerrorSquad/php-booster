@@ -17,14 +17,37 @@ class Logger:
             return f"{color}[{message}]{Colors.RESET}"
         return f"[{message}]"
 
-    def info(self, message: str):
+    def info(self, message: str) -> None:
+        """Print an info message."""
         print(f"{self._color(Colors.BLUE, 'INFO')} {message}")
 
-    def success(self, message: str):
+    def success(self, message: str) -> None:
+        """Print a success message."""
         print(f"{self._color(Colors.GREEN, 'SUCCESS')} {message}")
 
-    def warn(self, message: str):
+    def warn(self, message: str) -> None:
+        """Print a warning message."""
         print(f"{self._color(Colors.YELLOW, 'WARNING')} {message}")
 
-    def error(self, message: str):
+    def error(self, message: str) -> None:
+        """Print an error message to stderr."""
         print(f"{self._color(Colors.RED, 'ERROR')} {message}", file=sys.stderr)
+
+    def section(self, title: str) -> None:
+        """Print a section header with a title."""
+        print("")
+        print("═══════════════════════════════════════════════════════════════")
+        self.info(title)
+        print("═══════════════════════════════════════════════════════════════")
+        print("")
+
+    def banner(self, title: str) -> None:
+        """Print a banner box with a title."""
+        print("")
+        print("╔════════════════════════════════════════════════════════════════╗")
+        print("║                                                                ║")
+        print(f"║{title:^64}║")
+        print("║                                                                ║")
+        print("╚════════════════════════════════════════════════════════════════╝")
+        print("")
+        print("")

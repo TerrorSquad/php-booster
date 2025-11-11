@@ -27,19 +27,22 @@ elif command -v ddev >/dev/null 2>&1; then
             # Forward a conservative whitelist of environment variables from the host
             # into the container so ZX hooks and wrappers can honour skip flags and
             # verbosity settings without exposing unrelated host environment values.
-            # Whitelist derived from hook/utility usage: SKIP_PRECOMMIT, SKIP_COMMITMSG,
-            # SKIP_RECTOR, SKIP_ECS, SKIP_PHPSTAN, SKIP_PSALM, SKIP_DEPTRAC,
-            # PRECOMMIT_VERBOSE, COMMITMSG_VERBOSE, FORCE_COLOR, LC_ALL, LANG,
+            # Whitelist derived from hook/utility usage and documented in hook comments:
+            # - Hook-level skips: SKIP_PRECOMMIT, SKIP_PREPUSH, SKIP_COMMITMSG
+            # - Tool/check skips: SKIP_RECTOR, SKIP_ECS, SKIP_PHPSTAN, SKIP_PSALM, SKIP_DEPTRAC, SKIP_PHPUNIT, SKIP_API_DOCS
+            # - Configuration: GIT_HOOKS_VERBOSE
             whitelist=(
                 "SKIP_PRECOMMIT"
+                "SKIP_PREPUSH"
                 "SKIP_COMMITMSG"
                 "SKIP_RECTOR"
                 "SKIP_ECS"
                 "SKIP_PHPSTAN"
                 "SKIP_PSALM"
                 "SKIP_DEPTRAC"
-                "PRECOMMIT_VERBOSE"
-                "COMMITMSG_VERBOSE"
+                "SKIP_PHPUNIT"
+                "SKIP_API_DOCS"
+                "GIT_HOOKS_VERBOSE"
             )
 
             env_flags=()

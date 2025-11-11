@@ -25,8 +25,11 @@ class IntegrationVerifier:
         self.state = state_detector
         self.log = logger
 
-    def verify_integration(self):
-        """Verify the booster integration"""
+    def verify_integration(self) -> None:
+        """
+        Verify the booster integration.
+        Exits with code 1 if verification fails.
+        """
         if not self.state.is_project_created():
             self.log.error(
                 f"No project found at {self.config.target_dir}. Run 'setup' first."
