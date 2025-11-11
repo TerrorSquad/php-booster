@@ -28,6 +28,11 @@ inputs:
     required: false
     default: "*.php"
 
+  max-lines:
+    description: "Maximum lines of code to process (default: 500)"
+    required: false
+    default: "500"
+
 outputs:
   changes-made:
     description: "Whether any changes were made"
@@ -112,11 +117,24 @@ runs:
           CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD -- '${{ inputs.file-pattern }}' 2>/dev/null | tr '\n' ' ' || echo "")
         fi
 
-        # Filter to only existing files
+        # Filter to only existing files and check line count
         EXISTING_FILES=""
+        MAX_LINES=${{ inputs.max-lines }}
+
         for file in $CHANGED_FILES; do
           if [ -f "$file" ]; then
-            EXISTING_FILES="$EXISTING_FILES $file"
+            # Skip vendor files
+            if [[ "$file" == vendor/* ]] || [[ "$file" == */vendor/* ]]; then
+              echo "ℹ️ Skipping vendor file: $file"
+              continue
+            fi
+
+            LINE_COUNT=$(wc -l < "$file" 2>/dev/null || echo "0")
+            if [ "$LINE_COUNT" -le "$MAX_LINES" ]; then
+              EXISTING_FILES="$EXISTING_FILES $file"
+            else
+              echo "⚠️ Skipping large file: $file (${LINE_COUNT} lines > ${MAX_LINES} lines)"
+            fi
           fi
         done
 
