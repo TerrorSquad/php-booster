@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.9.3](https://github.com/TerrorSquad/php-booster/compare/v1.9.2...v1.9.3) (2025-11-11)
+
+
+### Bug Fixes
+
+* add max-lines input to limit processed file size and skip large files in PHP auto-fix action ([b9ba748](https://github.com/TerrorSquad/php-booster/commit/b9ba748db3c1129c6c6d84e905dc0ac0a8e3bf39))
+* update branch name validation to include 'develop/test2' in skipped branches ([41d76a6](https://github.com/TerrorSquad/php-booster/commit/41d76a687067ef385746592225c8560342c7bc48))
+
 ## [1.9.2](https://github.com/TerrorSquad/php-booster/compare/v1.9.1...v1.9.2) (2025-11-11)
 
 
