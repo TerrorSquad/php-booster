@@ -76,7 +76,7 @@ jobs:
 
       - name: Check requirements
         run: |
-          ./tools/internal-test/test-integration.py env-check
+          make test-env
 
       - name: Run integration test
         run: |
@@ -90,19 +90,32 @@ jobs:
           fi
 
           echo "Running test: $TEST_ACTION for project type: $PROJECT_TYPE"
-          ./tools/internal-test/test-integration.py $TEST_ACTION $PROJECT_TYPE ci-test-${{ github.run_number }}
+
+          # Use Makefile targets for common actions
+          if [ "$TEST_ACTION" = "full" ]; then
+            if [ "$PROJECT_TYPE" = "laravel" ]; then
+              make test-laravel
+            elif [ "$PROJECT_TYPE" = "symfony" ]; then
+              make test-symfony
+            fi
+          elif [ "$TEST_ACTION" = "test-hooks" ]; then
+            make test-hooks
+          else
+            # For other actions, fall back to direct script call
+            ./tools/internal-test/test-integration.py $TEST_ACTION $PROJECT_TYPE
+          fi
 
       - name: Show test results
         if: always()
         run: |
           echo "Test completed. Checking status..."
-          ./tools/internal-test/test-integration.py status || true
+          make test-status
 
       - name: Clean up test environment
         if: always()
         run: |
           echo "Cleaning up test environment..."
-          ./tools/internal-test/test-integration.py clean || true
+          make test-clean
 
           # Additional cleanup for CI
           docker system prune -af || true
@@ -142,7 +155,7 @@ jobs:
 
       - name: Check requirements
         run: |
-          ./tools/internal-test/test-integration.py env-check
+          make test-env
 
       - name: Run manual test
         run: |
@@ -150,19 +163,32 @@ jobs:
           TEST_ACTION="${{ github.event.inputs.test_action }}"
 
           echo "Running manual test: $TEST_ACTION for project type: $PROJECT_TYPE"
-          ./tools/internal-test/test-integration.py $TEST_ACTION $PROJECT_TYPE manual-test-${{ github.run_number }}
+
+          # Use Makefile targets for common actions
+          if [ "$TEST_ACTION" = "full" ]; then
+            if [ "$PROJECT_TYPE" = "laravel" ]; then
+              make test-laravel
+            elif [ "$PROJECT_TYPE" = "symfony" ]; then
+              make test-symfony
+            fi
+          elif [ "$TEST_ACTION" = "test-hooks" ]; then
+            make test-hooks
+          else
+            # For other actions, fall back to direct script call
+            ./tools/internal-test/test-integration.py $TEST_ACTION $PROJECT_TYPE
+          fi
 
       - name: Show test results
         if: always()
         run: |
           echo "Manual test completed. Checking status..."
-          ./tools/internal-test/test-integration.py status || true
+          make test-status
 
       - name: Clean up test environment
         if: always()
         run: |
           echo "Cleaning up test environment..."
-          ./tools/internal-test/test-integration.py clean || true
+          make test-clean
 
           # Additional cleanup for CI
           docker system prune -af || true
