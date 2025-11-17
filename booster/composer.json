@@ -12,7 +12,7 @@
     "rector/rector": "^2.2.8",
     "phpstan/phpstan": "^2.1.32",
     "symplify/easy-coding-standard": "^13.0.0",
-    "zircote/swagger-php": "^5.7.0",
+    "zircote/swagger-php": "^5.7.1",
     "psalm/phar": "^6.13.1"
   },
   "scripts": {
