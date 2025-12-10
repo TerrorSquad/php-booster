@@ -65,8 +65,8 @@ The interactive mode tests verify:
    - .editorconfig
    - .booster-version
    - documentation/openapi.yml
-   - tools/git-hooks/hooks/commit-msg
-   - tools/git-hooks/shared/utils.ts
+   - .husky/commit-msg
+   - .husky/shared/utils.ts
 3. That the branch validation config contains the correct ticket prefix ("PRJ")
 
 ## Automated Test Input

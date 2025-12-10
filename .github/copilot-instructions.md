@@ -54,7 +54,7 @@ Copilot SHOULD NOT generate raw php-cs-fixer, phpstan, rector, or psalm command 
 ---
 ## 5. Git Hooks Architecture
 - Native ZX implementation: All git hooks use Google ZX for secure, cross-platform execution.
-- Common library: `tools/git-hooks/shared/utils.mjs` provides shared functionality and colored logging.
+- Common library: `.husky/shared/utils.ts` provides shared functionality and colored logging.
 - `commit-msg` hook validates branch, lints message, appends footer if needed - all functionality integrated natively.
 - Copilot SHOULD reference the ZX-based hook system and shared utilities instead of legacy scripts.
 

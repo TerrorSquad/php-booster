@@ -14,7 +14,7 @@
  */
 
 import { $, fs } from 'zx'
-import validateBranchNameConfig from '../../../validate-branch-name.config.cjs'
+import validateBranchNameConfig from '../validate-branch-name.config.cjs'
 import {
   formatDuration,
   getCurrentBranch,
@@ -24,7 +24,7 @@ import {
   runTool,
   runWithRunner,
   shouldSkipDuringMerge,
-} from '../shared/utils.ts'
+} from './shared/utils.ts'
 
 // Configure zx
 $.verbose = process.env.GIT_HOOKS_VERBOSE === '1' || process.env.GIT_HOOKS_VERBOSE === 'true'

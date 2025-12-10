@@ -70,9 +70,9 @@ class StateDetector:
 
         # Fallback check: essential booster files (updated for TypeScript architecture)
         return (
-            self.config.target_dir / "tools/git-hooks/shared/utils.ts"
+            self.config.target_dir / ".husky/shared/utils.ts"
         ).exists() and (
-            self.config.target_dir / "tools/git-hooks/hooks/commit-msg.ts"
+            self.config.target_dir / ".husky/commit-msg.ts"
         ).exists()
 
     def get_integrated_version(self) -> Optional[str]:

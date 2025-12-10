@@ -601,32 +601,15 @@ function copy_files() {
         fi
     done
 
-    # Copy selected tool scripts instead of entire tools directory
-    local tools_src="${BOOSTER_INTERNAL_PATH}/tools"
-    if [ -d "$tools_src" ]; then
-        mkdir -p tools/git-hooks
-
-        # Copy git-hooks/hooks directory
-        if [ -d "$tools_src/git-hooks/hooks" ]; then
-            log "  Copying git-hooks/hooks directory"
-            cp -R "$tools_src/git-hooks/hooks" tools/git-hooks/
-            # Set execute permissions for all scripts in hooks directory
-            find "tools/git-hooks/hooks" -type f \( -name "*.sh" -o -name "*.bash" -o -name "*.mjs" \) -exec chmod +x {} \;
-        else
-            warn "  Expected tool directory missing: git-hooks/hooks"
-        fi
-
-        # Copy git-hooks/shared directory
-        if [ -d "$tools_src/git-hooks/shared" ]; then
-            log "  Copying git-hooks/shared directory"
-            cp -R "$tools_src/git-hooks/shared" tools/git-hooks/
-            # Set execute permissions for scripts in shared directory
-            find "tools/git-hooks/shared" -type f \( -name "*.sh" -o -name "*.bash" -o -name "*.mjs" \) -exec chmod +x {} \;
-        else
-            warn "  Expected tool directory missing: git-hooks/shared"
-        fi
+    # Copy .husky directory
+    local husky_src="${BOOSTER_INTERNAL_PATH}/.husky"
+    if [ -d "$husky_src" ]; then
+        log "  Copying .husky directory"
+        cp -R "$husky_src" .
+        # Set execute permissions for scripts and hooks
+        find ".husky" -type f \( -name "*.sh" -o -name "*.bash" -o -name "*.mjs" -o -name "pre-commit" -o -name "commit-msg" -o -name "pre-push" \) -exec chmod +x {} \;
     else
-        warn "  Booster tools directory not found; skipping tools copy."
+        warn "  Expected directory missing: .husky"
     fi
 
     # Copy validate-branch-name config (needed by hooks & scripts)

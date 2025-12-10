@@ -90,8 +90,8 @@ class TestOrchestrator:
         ".editorconfig",
         ".booster-version",
         "documentation/openapi.yml",
-        "tools/git-hooks/hooks/commit-msg",
-        "tools/git-hooks/shared/utils.ts",
+        ".husky/commit-msg",
+        ".husky/shared/utils.ts",
     ]
 
     def _verify_expected_files(self, test_dir: Path) -> List[str]:

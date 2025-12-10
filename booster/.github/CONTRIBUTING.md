@@ -96,7 +96,7 @@ Commitlint plus the `commit-msg` hook will append the ticket footer automaticall
 
 ### Developer Tooling
 
-Git hooks (TypeScript/ZX-based, see `tools/git-hooks/hooks/`) enforce naming, formatting and static analysis:
+Git hooks (TypeScript/ZX-based, see `.husky/`) enforce naming, formatting and static analysis:
 * `commit-msg`: branch validation, commitlint, ticket footer insertion
 * `pre-commit`: PHP lint, Rector, ECS, Deptrac, PHPStan, Psalm (auto-fix where possible)
 * `pre-push`: Deptrac, tests, API spec & HTML doc generation (conditional)

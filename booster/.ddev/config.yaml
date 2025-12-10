@@ -21,7 +21,6 @@ timezone: Europe/Berlin
 hooks:
   pre-start:
     - exec-host: python3 .ddev/php/create-xdebug-local.py
-    - exec-host: git config core.hooksPath tools/git-hooks/hooks
   post-start:
     - exec: yes | pnpm install
     - exec: composer install --prefer-dist --no-progress --no-interaction

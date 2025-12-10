@@ -6,4 +6,4 @@
 HOOK_DIR="$(dirname "$0")"
 
 # Use the generic runner script to execute the TypeScript hook
-exec "$HOOK_DIR/../shared/runner.sh" pnpm zx "tools/git-hooks/hooks/commit-msg.ts" "$@"
+exec "$HOOK_DIR/shared/runner.sh" pnpm zx ".husky/pre-push.ts" "$@"

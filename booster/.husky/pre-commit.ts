@@ -35,7 +35,7 @@ import {
   shouldRunTool,
   shouldSkipDuringMerge,
   stageFiles,
-} from '../shared/utils.ts'
+} from './shared/utils.ts'
 
 // Configure zx
 $.verbose = process.env.GIT_HOOKS_VERBOSE === '1' || process.env.GIT_HOOKS_VERBOSE === 'true'

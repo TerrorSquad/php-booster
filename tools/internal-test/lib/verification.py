@@ -44,13 +44,13 @@ class IntegrationVerifier:
 
         # Check expected files
         expected_files = [
-            "tools/git-hooks/hooks/commit-msg",
-            "tools/git-hooks/hooks/pre-commit",
-            "tools/git-hooks/hooks/pre-push",
-            "tools/git-hooks/hooks/commit-msg.ts",
-            "tools/git-hooks/hooks/pre-commit.ts",
-            "tools/git-hooks/hooks/pre-push.ts",
-            "tools/git-hooks/shared/utils.ts",
+            ".husky/commit-msg",
+            ".husky/pre-commit",
+            ".husky/pre-push",
+            ".husky/commit-msg.ts",
+            ".husky/pre-commit.ts",
+            ".husky/pre-push.ts",
+            ".husky/shared/utils.ts",
             "validate-branch-name.config.cjs",
             "package.json",
             "renovate.json",
