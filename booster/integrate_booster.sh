@@ -54,6 +54,16 @@ export SYMFONY_FLEX_RECIPES_AUTO_ACCEPT=1
 function get_booster_version() {
     local booster_composer="${BOOSTER_INTERNAL_PATH}/composer.json"
 
+    if ! command -v jq &> /dev/null; then
+        # Fallback if jq is not installed
+        if [ -f "$booster_composer" ]; then
+            grep '"version":' "$booster_composer" | head -n 1 | sed -E 's/.*"version": "([^"]+)".*/\1/' || echo "unknown"
+        else
+            echo "unknown"
+        fi
+        return
+    fi
+
     if [ -f "$booster_composer" ]; then
         jq -r '.version // "unknown"' "$booster_composer"
     else
@@ -1081,7 +1091,7 @@ function add_code_quality_tools() {
 
                 # Install packages individually for better error handling
                 local failed_packages=()
-                local critical_packages=("rector/rector" "phpstan/phpstan" "symplify/easy-coding-standard")
+                local critical_packages=("rector/rector" "phpstan/phpstan" "symplify/easy-coding-standard" "deptrac/deptrac")
 
                 for dep in "${missing_dev_deps[@]}"; do
                     log "Installing dev dependency: $dep"
