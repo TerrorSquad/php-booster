@@ -21,6 +21,21 @@ timezone: Europe/Berlin
 hooks:
   pre-start:
     - exec-host: python3 .ddev/php/create-xdebug-local.py
+    # Add hosts git user name and email to ddev web container git config
+    # we will write into homeadditionas to avoid issues when user.name or user.email are not set
+    # path .ddev/homeadditions/.gitconfig will be created with proper permissions
+
+    - exec-host: |
+        GIT_USER_NAME=$(git config --get user.name || echo "")
+        GIT_USER_EMAIL=$(git config --get user.email || echo "")
+        if [ -n "$GIT_USER_NAME" ] && [ -n "$GIT_USER_EMAIL" ]; then
+          mkdir -p .ddev/homeadditions
+          {
+            echo "[user]"
+            echo "    name = $GIT_USER_NAME"
+            echo "    email = $GIT_USER_EMAIL"
+          } > .ddev/homeadditions/.gitconfig
+        fi
   post-start:
     - exec: yes | pnpm install
     - exec: composer install --prefer-dist --no-progress --no-interaction

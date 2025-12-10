@@ -10,3 +10,4 @@ psalm_sonar.json
 .qodo
 .vscode/tasks.json
 .vscode/launch.json
+.ddev/homeadditions/.gitconfig
