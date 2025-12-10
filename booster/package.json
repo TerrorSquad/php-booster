@@ -9,12 +9,12 @@
     "prepare": "husky || true"
   },
   "devDependencies": {
-    "@commitlint/cli": "^20.1.0",
-    "@commitlint/config-conventional": "^20.0.0",
-    "@commitlint/prompt-cli": "^20.1.0",
-    "@commitlint/types": "^20.0.0",
-    "@redocly/cli": "^2.11.1",
-    "@types/node": "^24",
+    "@commitlint/cli": "^20.2.0",
+    "@commitlint/config-conventional": "^20.2.0",
+    "@commitlint/prompt-cli": "^20.2.0",
+    "@commitlint/types": "^20.2.0",
+    "@redocly/cli": "^2.12.6",
+    "@types/node": "^25.0.0",
     "dotenv": "^17.2.3",
     "husky": "^9.1.7",
     "typescript": "^5.9.3",
