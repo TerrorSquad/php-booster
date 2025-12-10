@@ -56,7 +56,14 @@ const PUSH_CHECKS: PushCheckConfig[] = [
     skipKey: 'deptrac',
     shouldRun: async () => {
       // Use shouldRunTool with checkVendorBin=false, then check vendor bin separately for custom logic
-      return (await shouldRunTool(PHPTool.DEPTRAC, false)) && (await hasVendorBin('deptrac'))
+      if (!(await shouldRunTool(PHPTool.DEPTRAC, false))) return false
+      if (!(await hasVendorBin('deptrac'))) return false
+
+      if (!(await fs.pathExists('deptrac.yaml')) && !(await fs.pathExists('deptrac.yml'))) {
+        log.skip('deptrac.yaml (or .yml) not found. Skipping Deptrac...')
+        return false
+      }
+      return true
     },
     run: async () => {
       await runVendorBin('deptrac')

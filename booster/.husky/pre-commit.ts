@@ -84,7 +84,16 @@ const TOOLS: ToolConfig[] = [
   {
     name: 'Deptrac',
     description: 'Running architecture analysis...',
-    shouldRun: () => shouldRunTool(PHPTool.DEPTRAC),
+    shouldRun: async () => {
+      if (!(await shouldRunTool(PHPTool.DEPTRAC))) {
+        return false
+      }
+      if (!(await fs.pathExists('deptrac.yaml')) && !(await fs.pathExists('deptrac.yml'))) {
+        log.skip('deptrac.yaml (or .yml) not found. Skipping Deptrac...')
+        return false
+      }
+      return true
+    },
     run: async (files) => {
       await runVendorBin('deptrac')
 
@@ -121,11 +130,22 @@ const TOOLS: ToolConfig[] = [
   },
 ]/**
  * Run all configured quality tools on the provided files
+ *
+ * Strategy:
+ * 1. Run file-modifying tools (Rector, ECS) sequentially first.
+ *    This ensures code is formatted before analysis.
+ * 2. Run read-only analysis tools (PHPStan, Psalm, Deptrac) in parallel.
+ *    This significantly reduces total execution time.
  */
 async function runQualityTools(phpFiles: string[]): Promise<boolean> {
   let allSuccessful = true
 
-  for (const tool of TOOLS) {
+  // Split tools into sequential (modifiers) and parallel (analyzers)
+  const sequentialTools = TOOLS.filter((t) => t.stagesFilesAfter)
+  const parallelTools = TOOLS.filter((t) => !t.stagesFilesAfter)
+
+  // 1. Run sequential tools (modifiers)
+  for (const tool of sequentialTools) {
     if (!(await tool.shouldRun())) continue
 
     // Get the binary to use (if the tool supports custom binary detection)
@@ -138,7 +158,8 @@ async function runQualityTools(phpFiles: string[]): Promise<boolean> {
     }
 
     const success = await runTool(tool.name, tool.description, () =>
-      binary !== null ? tool.run(phpFiles, binary) : tool.run(phpFiles))
+      binary !== null ? tool.run(phpFiles, binary) : tool.run(phpFiles),
+    )
 
     if (success && tool.stagesFilesAfter) {
       await stageFiles(phpFiles)
@@ -151,6 +172,38 @@ async function runQualityTools(phpFiles: string[]): Promise<boolean> {
         return false
       }
     }
+  }
+
+  // 2. Run parallel tools (analyzers)
+  // We map each tool to a promise that resolves to its success status
+  const parallelPromises = parallelTools.map(async (tool) => {
+    if (!(await tool.shouldRun())) return true
+
+    const binary = tool.getBinary ? await tool.getBinary() : null
+
+    if (tool.getBinary && binary === null) {
+      log.skip(`${tool.name} binary not found. Skipping...`)
+      return true
+    }
+
+    // Note: Logs from parallel tools will be interleaved
+    const success = await runTool(tool.name, tool.description, () =>
+      binary !== null ? tool.run(phpFiles, binary) : tool.run(phpFiles),
+    )
+
+    if (!success && tool.required) {
+      log.error(`${tool.name} is required but failed`)
+    }
+
+    return success
+  })
+
+  // Wait for all parallel tools to complete
+  const results = await Promise.all(parallelPromises)
+
+  // If any parallel tool failed, the overall result is failure
+  if (results.some((res) => !res)) {
+    allSuccessful = false
   }
 
   return allSuccessful
