@@ -16,12 +16,6 @@
     "psalm/phar": "^6.13.1"
   },
   "scripts": {
-    "post-install-cmd": [
-      "yes | pnpm install"
-    ],
-    "post-update-cmd": [
-      "yes | pnpm install"
-    ],
     "generate-api-spec": "php documentation/api.php",
     "check-cs": "vendor/bin/ecs check --ansi",
     "fix-cs": "vendor/bin/ecs check --fix --ansi",
