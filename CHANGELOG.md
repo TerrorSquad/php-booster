@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.10.0](https://github.com/TerrorSquad/php-booster/compare/v1.9.3...v1.10.0) (2025-12-10)
+
+
+### Features
+
+* **git:** use host git user configuration in ddev web container ([25b4ff1](https://github.com/TerrorSquad/php-booster/commit/25b4ff165ea163eb92f5e6d421678df497b5c066))
+* migrate git hooks to .husky directory ([ed9a70b](https://github.com/TerrorSquad/php-booster/commit/ed9a70bec16303e8db1c36ca3a693579775d5858))
+
 ## [1.9.3](https://github.com/TerrorSquad/php-booster/compare/v1.9.2...v1.9.3) (2025-11-11)
 
 
