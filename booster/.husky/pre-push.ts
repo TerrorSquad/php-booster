@@ -19,6 +19,8 @@
 import { $, fs } from 'zx'
 import {
   formatDuration,
+  generateApiDocs,
+  generateDeptracImage,
   hasComposerPackage,
   hasVendorBin,
   isSkipped,
@@ -69,16 +71,7 @@ const PUSH_CHECKS: PushCheckConfig[] = [
       await runVendorBin('deptrac')
 
       // Optional: Generate and add deptrac image if configured
-      try {
-        await runVendorBin('deptrac', ['--formatter=graphviz', '--output=deptrac.png'])
-        if (await fs.pathExists('./deptrac.png')) {
-          await runWithRunner(['git', 'add', 'deptrac.png'], { quiet: true })
-          log.info('Added deptrac.png to staging area')
-        }
-      } catch (error: unknown) {
-        // Image generation is optional, don't fail if it doesn't work
-        log.info('Deptrac image generation skipped (optional)')
-      }
+      await generateDeptracImage()
     },
   },
   {
@@ -105,47 +98,7 @@ const PUSH_CHECKS: PushCheckConfig[] = [
       // Use the documentation/api.php script to generate the spec
       await runWithRunner(['php', 'documentation/api.php'])
 
-      // Check if OpenAPI file was modified
-      try {
-        const diffResult = await runWithRunner(['git', 'diff', '--name-only'], { quiet: true })
-        const modifiedFiles = diffResult.toString().trim().split('\n')
-
-        if (modifiedFiles.includes('documentation/openapi.yml')) {
-          log.tool('API Documentation', 'Generating HTML documentation...')
-
-          try {
-            await runWithRunner(['pnpm', 'generate:api-doc:html'])
-            log.success('HTML documentation generated')
-
-            // Stage the generated files
-            await runWithRunner(
-              ['git', 'add', 'documentation/openapi.html', 'documentation/openapi.yml'],
-              { quiet: true },
-            )
-
-            // Check if there are staged changes and commit them
-            try {
-              await runWithRunner(['git', 'diff', '--cached', '--quiet'], { quiet: true })
-              // If we get here, there are no staged changes
-              log.info('No staged changes for API documentation')
-            } catch {
-              // There are staged changes, commit them
-              await runWithRunner(['git', 'commit', '-m', 'chore: update API documentation'])
-              log.success('API documentation committed')
-            }
-          } catch (error: unknown) {
-            const errorMessage = error instanceof Error ? error.message : String(error)
-            log.error(`HTML documentation generation failed: ${errorMessage}`)
-            throw error
-          }
-        } else {
-          log.info('No changes to OpenAPI specification, skipping HTML generation')
-        }
-      } catch (error: unknown) {
-        // Git operations failed, but this is not critical
-        const errorMessage = error instanceof Error ? error.message : String(error)
-        log.warn(`Could not check for OpenAPI changes: ${errorMessage}`)
-      }
+      await generateApiDocs()
     },
   },
 ]

@@ -24,6 +24,7 @@ import { $, fs } from 'zx'
 import {
   checkPhpSyntax,
   formatDuration,
+  generateDeptracImage,
   getStagedPhpFiles,
   getPsalmBinary,
   isSkipped,
@@ -39,10 +40,6 @@ import {
 
 // Configure zx
 $.verbose = process.env.GIT_HOOKS_VERBOSE === '1' || process.env.GIT_HOOKS_VERBOSE === 'true'
-
-// Fix locale issues that can occur in VS Code
-process.env.LC_ALL = 'C'
-process.env.LANG = 'C'
 
 /**
  * Configuration for a PHP quality tool
@@ -98,17 +95,7 @@ const TOOLS: ToolConfig[] = [
       await runVendorBin('deptrac')
 
       // Optional: Generate and add deptrac image if configured
-      try {
-        await runVendorBin('deptrac', ['--formatter=graphviz', '--output=deptrac.png'])
-        if (await fs.pathExists('./deptrac.png')) {
-          await runWithRunner(['git', 'add', 'deptrac.png'], { quiet: true })
-          log.info('Added deptrac.png to staging area')
-        }
-      } catch (error: unknown) {
-        // Image generation is optional, don't fail if it doesn't work
-        const errorMessage = error instanceof Error ? error.message : String(error)
-        log.warn(`Deptrac image generation failed: ${errorMessage}`)
-      }
+      await generateDeptracImage()
     },
   },
   {

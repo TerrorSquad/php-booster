@@ -15,6 +15,10 @@ $.verbose = false
 chalk.level = 3 // Force truecolor support
 process.env.FORCE_COLOR = '3'
 
+// Fix locale issues that can occur in VS Code
+process.env.LC_ALL = 'C'
+process.env.LANG = 'C'
+
 /**
  * Load environment variables from file if it exists
  * Supports .env, .git-hooks.env, or custom file via GIT_HOOKS_ENV_FILE
@@ -326,13 +330,11 @@ export async function stageFiles(files: string[]): Promise<void> {
   if (files.length === 0) return
 
   try {
-    // Run git add inside DDEV container for consistency with tool execution
-    for (const file of files) {
-      await runWithRunner(['git', 'add', file], { quiet: true })
-    }
+    // Run git add for all files at once for better performance
+    await runWithRunner(['git', 'add', ...files], { quiet: true })
   } catch (error: unknown) {
     log.warn(
-      `Failed to stage some files: ${error instanceof Error ? error.message : String(error)}`,
+      `Failed to stage files: ${error instanceof Error ? error.message : String(error)}`,
     )
   }
 }
@@ -365,8 +367,72 @@ export async function checkPhpSyntax(files: string[]): Promise<boolean> {
   }
 
   return await runTool('PHP Syntax Check', 'Checking PHP syntax...', async () => {
-    for (const file of files) {
-      await runWithRunner(['php', '-l', file], { quiet: true })
-    }
+    // Run syntax checks in parallel
+    const promises = files.map(file => runWithRunner(['php', '-l', file], { quiet: true }))
+    await Promise.all(promises)
   })
+}
+
+/**
+ * Generate Deptrac image and add to git
+ */
+export async function generateDeptracImage(): Promise<void> {
+  try {
+    await runVendorBin('deptrac', ['--formatter=graphviz', '--output=deptrac.png'])
+    if (await fs.pathExists('./deptrac.png')) {
+      await runWithRunner(['git', 'add', 'deptrac.png'], { quiet: true })
+      log.info('Added deptrac.png to staging area')
+    }
+  } catch (error: unknown) {
+    // Image generation is optional, don't fail if it doesn't work
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    log.warn(`Deptrac image generation failed: ${errorMessage}`)
+  }
+}
+
+/**
+ * Generate API documentation if OpenAPI spec has changed
+ */
+export async function generateApiDocs(): Promise<void> {
+  // Check if OpenAPI file was modified
+  try {
+    const diffResult = await runWithRunner(['git', 'diff', '--name-only'], { quiet: true })
+    const modifiedFiles = diffResult.toString().trim().split('\n')
+
+    if (modifiedFiles.includes('documentation/openapi.yml')) {
+      log.tool('API Documentation', 'Generating HTML documentation...')
+
+      try {
+        await runWithRunner(['pnpm', 'generate:api-doc:html'])
+        log.success('HTML documentation generated')
+
+        // Stage the generated files
+        await runWithRunner(
+          ['git', 'add', 'documentation/openapi.html', 'documentation/openapi.yml'],
+          { quiet: true },
+        )
+
+        // Check if there are staged changes and commit them
+        try {
+          await runWithRunner(['git', 'diff', '--cached', '--quiet'], { quiet: true })
+          // If we get here, there are no staged changes
+          log.info('No staged changes for API documentation')
+        } catch {
+          // There are staged changes, commit them
+          await runWithRunner(['git', 'commit', '-m', 'chore: update API documentation'])
+          log.success('API documentation committed')
+        }
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : String(error)
+        log.error(`HTML documentation generation failed: ${errorMessage}`)
+        throw error
+      }
+    } else {
+      log.info('No changes to OpenAPI specification, skipping HTML generation')
+    }
+  } catch (error: unknown) {
+    // Git operations failed, but this is not critical
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    log.warn(`Could not check for OpenAPI changes: ${errorMessage}`)
+  }
 }

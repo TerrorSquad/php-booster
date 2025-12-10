@@ -29,10 +29,6 @@ import {
 // Configure zx
 $.verbose = process.env.GIT_HOOKS_VERBOSE === '1' || process.env.GIT_HOOKS_VERBOSE === 'true'
 
-// Fix locale issues that can occur in VS Code
-process.env.LC_ALL = 'C'
-process.env.LANG = 'C'
-
 /**
  * Branch validation configuration interface
  */
