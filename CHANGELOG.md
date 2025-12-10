@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.11.0](https://github.com/TerrorSquad/php-booster/compare/v1.10.0...v1.11.0) (2025-12-10)
+
+
+### Features
+
+* **hooks:** refactor husky hooks to improve deptrac image generation and API documentation handling ([46f4346](https://github.com/TerrorSquad/php-booster/commit/46f43462ee52828b4bb6c6c34f1c8b3764b93970))
+
+
+### Bug Fixes
+
+* **deptrac:** enhance checks for Deptrac configuration in pre-commit and pre-push hooks ([dbb838e](https://github.com/TerrorSquad/php-booster/commit/dbb838e2d5a50fb3028771371fdeff9371fe47d7))
+
 ## [1.10.0](https://github.com/TerrorSquad/php-booster/compare/v1.9.3...v1.10.0) (2025-12-10)
 
 
