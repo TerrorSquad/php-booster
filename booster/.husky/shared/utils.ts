@@ -367,9 +367,16 @@ export async function checkPhpSyntax(files: string[]): Promise<boolean> {
   }
 
   return await runTool('PHP Syntax Check', 'Checking PHP syntax...', async () => {
-    // Run syntax checks in parallel
-    const promises = files.map(file => runWithRunner(['php', '-l', file], { quiet: true }))
-    await Promise.all(promises)
+    // Run syntax checks in parallel with concurrency limit to avoid spawning too many processes
+    const concurrency = 10
+    const chunks = []
+    for (let i = 0; i < files.length; i += concurrency) {
+      chunks.push(files.slice(i, i + concurrency))
+    }
+
+    for (const chunk of chunks) {
+      await Promise.all(chunk.map((file) => runWithRunner(['php', '-l', file], { quiet: true })))
+    }
   })
 }
 
@@ -378,7 +385,8 @@ export async function checkPhpSyntax(files: string[]): Promise<boolean> {
  */
 export async function generateDeptracImage(): Promise<void> {
   try {
-    await runVendorBin('deptrac', ['--formatter=graphviz', '--output=deptrac.png'])
+    // Use graphviz-image formatter to generate PNG directly
+    await runVendorBin('deptrac', ['--formatter=graphviz-image', '--output=deptrac.png'])
     if (await fs.pathExists('./deptrac.png')) {
       await runWithRunner(['git', 'add', 'deptrac.png'], { quiet: true })
       log.info('Added deptrac.png to staging area')
