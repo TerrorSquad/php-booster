@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.12.0](https://github.com/TerrorSquad/php-booster/compare/v1.11.0...v1.12.0) (2025-12-11)
+
+
+### Features
+
+* **integrate_booster:** add fallback for jq command and include deptrac as a critical package ([ad595ec](https://github.com/TerrorSquad/php-booster/commit/ad595ec7b627784545818b478454249c357011e9))
+
+
+### Bug Fixes
+
+* **check_php_syntax:** implement concurrency limit for PHP syntax checks and update deptrac image generation formatter ([309060d](https://github.com/TerrorSquad/php-booster/commit/309060d481c02a67b471983af4097b0dcc8c2200))
+
 ## [1.11.0](https://github.com/TerrorSquad/php-booster/compare/v1.10.0...v1.11.0) (2025-12-10)
 
 
