@@ -138,8 +138,7 @@ function warn() {
 function error() {
     echo -e "${RED}[ERROR] $1${NC}" >&2
 
-    # Clean up before exiting on error
-    cleanup_silent
+    # Cleanup handled by trap
     exit 1
 }
 
@@ -599,13 +598,43 @@ function update_ddev_config() {
 function copy_files() {
     log "Copying common files (excluding internal test helpers)..."
 
-    # Copy simple top-level directories wholesale
+    # Copy simple top-level directories/files safely
     local top_level=(".github" ".vscode" ".phpstorm" ".editorconfig")
     for item in "${top_level[@]}"; do
         local src_path="${BOOSTER_INTERNAL_PATH}/${item}"
         if [ -e "$src_path" ]; then
-            log "  Copying '$src_path' -> '$item'"
-            cp -R "$src_path" . || warn "Failed to copy '$src_path'."
+            if [ -d "$src_path" ]; then
+                # It's a directory
+                if [ ! -d "$item" ]; then
+                    cp -R "$src_path" .
+                    log "  Copied directory '$item'."
+                else
+                    log "  Directory '$item' exists. Merging contents safely..."
+                    # Iterate over files in src to copy missing ones
+                    find "$src_path" -type f | while read -r file; do
+                        local rel_path="${file#$src_path/}"
+                        local dest_path="$item/$rel_path"
+                        local dest_dir=$(dirname "$dest_path")
+
+                        mkdir -p "$dest_dir"
+
+                        if [ ! -f "$dest_path" ]; then
+                            cp "$file" "$dest_path"
+                            log "    Copied '$rel_path'."
+                        else
+                            log "    '$rel_path' already exists. Skipping."
+                        fi
+                    done
+                fi
+            else
+                # It's a file
+                if [ ! -f "$item" ]; then
+                    cp "$src_path" .
+                    log "  Copied file '$item'."
+                else
+                    log "  File '$item' already exists. Skipping."
+                fi
+            fi
         else
             log "  Missing optional item '$item', skipping."
         fi
@@ -794,9 +823,21 @@ function update_tool_paths() {
     # --- Copy Documentation Directory ---
     local booster_doc_path="${BOOSTER_INTERNAL_PATH}/documentation"
     if [ -d "$booster_doc_path" ]; then
-        log "  Copying '$booster_doc_path' to 'documentation'..."
-        # Use standard recursive copy -R
-        cp -R "$booster_doc_path/." "documentation" || warn "Failed to copy documentation directory."
+        if [ ! -d "documentation" ]; then
+            log "  Copying '$booster_doc_path' to 'documentation'..."
+            cp -R "$booster_doc_path" "documentation" || warn "Failed to copy documentation directory."
+        else
+            log "  'documentation' directory exists. Copying missing files..."
+            for doc_file in "$booster_doc_path"/*; do
+                local filename=$(basename "$doc_file")
+                if [ ! -e "documentation/$filename" ]; then
+                    cp -R "$doc_file" "documentation/"
+                    log "    Copied '$filename'."
+                else
+                    log "    '$filename' already exists. Skipping to preserve customizations."
+                fi
+            done
+        fi
     else
         log "  Booster documentation directory not found. Skipping."
     fi
@@ -806,13 +847,18 @@ function update_tool_paths() {
     for file in "${cq_files[@]}"; do
         local src_path="${BOOSTER_INTERNAL_PATH}/${file}"
         if [ -f "$src_path" ]; then
-            cp "$src_path" . || warn "Failed to copy '$src_path'."
+            if [ ! -f "$file" ]; then
+                cp "$src_path" . || warn "Failed to copy '$src_path'."
+                log "  Copied '$file'."
+            else
+                log "  '$file' already exists. Skipping copy to preserve customizations."
+            fi
         else
             log "  Booster config '$file' not found. Skipping."
         fi
     done
 
-    success "Code quality tool configs and documentation copied."
+    success "Code quality tool configs and documentation processed."
 
     log "Dynamically updating paths in tool configuration files using temp files and sed..."
     local php_dirs_file="php_dirs.txt"
@@ -824,7 +870,7 @@ function update_tool_paths() {
         -name "*.php" \
         -not -path "./vendor/*" \
         -not -path "./node_modules/*" \
-        -not -path "./php-booster/*" \
+        -not -path "./${BOOSTER_TARGET_DIR}/*" \
         -not -path "./.ddev/*" \
         -exec dirname {} \; | sort -u | grep -v ^.$ | cut -d '/' -f2 | sort -u >"$php_dirs_file" || {
         warn "find command failed or produced unexpected output while searching for PHP directories."
@@ -1429,13 +1475,6 @@ function main() {
     if [ "$INTERACTIVE_MODE" = true ]; then
         show_post_installation_summary
     fi
-
-    # Final cleanup
-    if [ "$NO_CLEANUP" = true ]; then
-        log "Skipping cleanup as per user request."
-    else
-        cleanup
-    fi
 }
 
 # --- Script Entry Point ---
@@ -1446,6 +1485,14 @@ set -e
 # Ensure pipe failures are caught
 set -o pipefail
 
+# Trap signals for cleanup
+function on_exit() {
+    if [ "$NO_CLEANUP" = true ]; then
+        return
+    fi
+    cleanup_silent
+}
+trap on_exit EXIT INT TERM
 
 # Run main function, passing all arguments
 main "$@"
