@@ -1,5 +1,13 @@
 #!/usr/bin/env zx
 
+/**
+ * Pre-push hook - ZX TypeScript implementation
+ *
+ * Runs checks before pushing:
+ * - Deptrac (Architecture check)
+ * - PHPUnit (Tests)
+ * - API Documentation generation
+ */
 import { $, fs } from 'zx'
 import { generateApiDocs, GitHook, log, runHook, runWithRunner } from './shared/index.ts'
 

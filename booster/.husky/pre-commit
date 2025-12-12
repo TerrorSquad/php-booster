@@ -3,7 +3,9 @@
 # Git hook wrapper for ZX implementation
 
 # Get the directory of this script
-HOOK_DIR="$(dirname "$0")"
+CWD="$(dirname "$0")"
+HOOK_DIR="$(cd "$CWD" && pwd)"
+cd "$HOOK_DIR"
 
 # Use the generic runner script to execute the TypeScript hook
-exec "$HOOK_DIR/shared/runner.sh" pnpm zx ".husky/pre-commit.ts" "$@"
+exec shared/runner.sh pnpm zx pre-commit.ts "$@"
