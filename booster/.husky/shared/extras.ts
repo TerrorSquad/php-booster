@@ -1,40 +1,29 @@
 import { fs } from 'zx'
 import { log, runWithRunner } from './core.ts'
-import { runVendorBin } from './workflow.ts'
-
-/**
- * Check if a Composer package is installed
- * @param packageName Name of the package (e.g., 'phpunit/phpunit')
- */
-export async function hasComposerPackage(packageName: string): Promise<boolean> {
-  try {
-    const composerLockPath = './composer.lock'
-    if (!(await fs.pathExists(composerLockPath))) {
-      return false
-    }
-
-    const lockContent = await fs.readFile(composerLockPath, 'utf8')
-    const lockData = JSON.parse(lockContent)
-
-    // Check in both packages and packages-dev arrays
-    const allPackages = [...(lockData.packages || []), ...(lockData['packages-dev'] || [])]
-
-    return allPackages.some((pkg: any) => pkg.name === packageName)
-  } catch (error: unknown) {
-    return false
-  }
-}
 
 /**
  * Generate Deptrac image and add to git
  */
 export async function generateDeptracImage(): Promise<void> {
+  // Check if deptrac is installed
+  if (!(await fs.pathExists('./vendor/bin/deptrac'))) {
+    return
+  }
+
   try {
     // Use graphviz-image formatter to generate PNG directly
-    await runVendorBin('deptrac', ['--formatter=graphviz-image', '--output=deptrac.png'])
+    await runWithRunner(['./vendor/bin/deptrac', '--formatter=graphviz-image', '--output=deptrac.png'])
     if (await fs.pathExists('./deptrac.png')) {
       await runWithRunner(['git', 'add', 'deptrac.png'], { quiet: true })
-      log.info('Added deptrac.png to staging area')
+
+      // Check if there are staged changes for the image
+      try {
+        await runWithRunner(['git', 'diff', '--cached', '--quiet', 'deptrac.png'], { quiet: true })
+      } catch {
+        // Changes detected, commit them
+        await runWithRunner(['git', 'commit', '-m', 'chore: update deptrac image'])
+        log.success('Deptrac image updated and committed')
+      }
     }
   } catch (error: unknown) {
     // Image generation is optional, don't fail if it doesn't work
@@ -49,7 +38,9 @@ export async function generateDeptracImage(): Promise<void> {
 export async function generateApiDocs(): Promise<void> {
   log.tool('API Documentation', 'Generating OpenAPI specification...')
   try {
-    if (await hasComposerPackage('zircote/swagger-php')) {
+    // Check if swagger-php is installed by looking for the binary
+    // This avoids reading/parsing composer.lock
+    if (await fs.pathExists('./vendor/bin/openapi')) {
       await runWithRunner(['composer', 'generate-api-spec'])
 
       const diffResult = await runWithRunner(['git', 'diff', '--name-only'], { quiet: true })

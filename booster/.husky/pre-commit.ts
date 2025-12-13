@@ -1,21 +1,18 @@
 #!/usr/bin/env zx
 
 /**
- * Pre-commit hook - ZX TypeScript implementation for JS/TS projects
+ * Pre-commit hook - ZX TypeScript implementation
  *
- * Runs JS quality tools on staged files:
- * - ESLint (auto-fixes)
- * - Prettier (auto-fixes)
- * - Stylelint (auto-fixes)
+ * Runs quality tools on staged files:
+ * - PHP: Syntax Check, Rector, ECS, PHPStan, Psalm, Deptrac
+ * - JS/TS: ESLint, Prettier, Stylelint
  *
  * Environment Variables:
  * - SKIP_PRECOMMIT=1: Skip the entire pre-commit hook
  * - GIT_HOOKS_VERBOSE=1: Enable verbose output for debugging
- * - SKIP_ESLINT=1: Skip ESLint
- * - SKIP_PRETTIER=1: Skip Prettier
- * - SKIP_STYLELINT=1: Skip Stylelint
+ * - SKIP_<TOOL_NAME>=1: Skip specific tool (e.g. SKIP_RECTOR, SKIP_ESLINT)
  */
-import { generateDeptracImage, getStagedFiles, GitHook, log, runHook, runQualityTools } from './shared/index.ts'
+import { getStagedFiles, GitHook, log, runHook, runQualityTools } from './shared/index.ts'
 import { TOOLS } from './shared/tools.ts'
 
 await runHook(GitHook.PreCommit, async () => {
@@ -23,15 +20,12 @@ await runHook(GitHook.PreCommit, async () => {
 
   if (files.length === 0) {
     log.info('No files staged for commit. Skipping quality checks.')
-    process.exit(0)
+    return true
   }
 
   log.info(`Found ${files.length} staged file(s): ${files.join(', ')}`)
 
   const success = await runQualityTools(files, TOOLS)
-
-  // Optional: Generate Deptrac image
-  await generateDeptracImage()
 
   return success
 })

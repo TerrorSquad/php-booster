@@ -86,8 +86,7 @@ export async function getStagedFiles(extension?: string): Promise<string[]> {
       if (
         (!extension || file.endsWith(extension)) &&
         !file.startsWith('vendor/') &&
-        !file.startsWith('node_modules/') &&
-        (await fs.pathExists(file))
+        !file.startsWith('node_modules/')
       ) {
         filteredFiles.push(file)
       }

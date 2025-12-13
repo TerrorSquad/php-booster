@@ -12,22 +12,9 @@
  * - SKIP_COMMITMSG=1: Skip the entire commit-msg hook
  * - GIT_HOOKS_VERBOSE=1: Enable verbose output for debugging
  */
-
-import { $, fs } from 'zx'
+import { fs } from 'zx'
 import validateBranchNameConfig from '../validate-branch-name.config.cjs'
-import {
-  formatDuration,
-  getCurrentBranch,
-  hasNodeBin,
-  isSkipped,
-  log,
-  runTool,
-  runWithRunner,
-  shouldSkipDuringMerge,
-} from './shared/index.ts'
-
-// Configure zx
-$.verbose = process.env.GIT_HOOKS_VERBOSE === '1' || process.env.GIT_HOOKS_VERBOSE === 'true'
+import { getCurrentBranch, GitHook, log, runHook, runTool, runWithRunner } from './shared/index.ts'
 
 /**
  * Branch validation configuration interface
@@ -82,17 +69,12 @@ function isBranchSkipped(branchName: string, config: BranchConfig): boolean {
  */
 function processConfig(config: BranchConfig): ProcessedConfig {
   // Use explicit requireTickets flag, but validate that patterns exist if tickets are required
-  const needTicket =
-    config.requireTickets && !!(config.ticketIdPrefix && config.ticketNumberPattern)
+  const needTicket = config.requireTickets && !!(config.ticketIdPrefix && config.ticketNumberPattern)
 
   let footerLabel = String(config.commitFooterLabel || 'Closes').trim()
 
   // Sanitize footer label - must be valid identifier, no special chars
-  if (
-    !/^[A-Za-z][A-Za-z0-9_-]*$/.test(footerLabel) ||
-    footerLabel.includes('=') ||
-    footerLabel.includes('\n')
-  ) {
+  if (!/^[A-Za-z][A-Za-z0-9_-]*$/.test(footerLabel) || footerLabel.includes('=') || footerLabel.includes('\n')) {
     footerLabel = 'Closes'
   }
 
@@ -113,10 +95,7 @@ function extractTicketId(branchName: string, config: BranchConfig): string | nul
 
   try {
     // Create regex pattern: ((?:PREFIX)-PATTERN)
-    const ticketRegex = new RegExp(
-      `((?:${config.ticketIdPrefix})-${config.ticketNumberPattern})`,
-      'i',
-    )
+    const ticketRegex = new RegExp(`((?:${config.ticketIdPrefix})-${config.ticketNumberPattern})`, 'i')
     const match = branchName.match(ticketRegex)
     return match ? match[1] : null
   } catch (error: unknown) {
@@ -127,139 +106,115 @@ function extractTicketId(branchName: string, config: BranchConfig): string | nul
 }
 
 /**
- * Check if node_modules exists and has required binaries
- */
-async function checkDependencies(): Promise<void> {
-  const nodeModulesExists = await fs.pathExists('./node_modules')
-  if (!nodeModulesExists) {
-    log.error('node_modules not found. Run npm/pnpm install.')
-    process.exit(1)
-  }
-
-  const commitlintExists = await hasNodeBin('commitlint')
-  const validateBranchExists = await hasNodeBin('validate-branch-name')
-
-  if (!commitlintExists) {
-    log.error('commitlint not found in node_modules/.bin/')
-    process.exit(1)
-  }
-
-  if (!validateBranchExists) {
-    log.error('validate-branch-name not found in node_modules/.bin/')
-    process.exit(1)
-  }
-}
-
-/**
  * Validate branch name using validate-branch-name tool
  */
 async function validateBranchName(branchName: string): Promise<boolean> {
-  try {
-    // Try quiet validation first
-    await runWithRunner(['./node_modules/.bin/validate-branch-name', '-t', branchName], {
-      quiet: true,
-    })
-    log.success('Branch name validation passed')
-    return true
-  } catch (error: unknown) {
-    // Show detailed error
-    log.error('Branch name validation failed')
-    try {
-      await runWithRunner(['./node_modules/.bin/validate-branch-name', '-t', branchName])
-    } catch (detailedError: unknown) {
-      // Error output will be shown by runWithRunner
-    }
-    log.info('See rules in validate-branch-name.config.cjs')
+  const binPath = './node_modules/.bin/validate-branch-name'
+  if (!(await fs.pathExists(binPath))) {
+    log.error('validate-branch-name not found in node_modules/.bin/')
     return false
   }
+
+  return await runTool('Branch Name', 'Validating branch name...', async () => {
+    try {
+      // Try quiet validation first
+      await runWithRunner([binPath, '-t', branchName], {
+        quiet: true,
+      })
+    } catch {
+      // If failed, run again without quiet to show error
+      log.error('Branch name validation failed')
+      try {
+        await runWithRunner([binPath, '-t', branchName])
+        // eslint-disable-next-line
+      } catch (detailedError: unknown) {
+        // Error output will be shown by runWithRunner
+      }
+      log.info('See rules in validate-branch-name.config.cjs')
+      throw new Error('Branch name validation failed')
+    }
+  })
 }
 
 /**
  * Lint commit message using commitlint
  */
 async function lintCommitMessage(commitFile: string): Promise<boolean> {
+  const binPath = './node_modules/.bin/commitlint'
+  if (!(await fs.pathExists(binPath))) {
+    log.error('commitlint not found in node_modules/.bin/')
+    return false
+  }
+
   return await runTool('Commitlint', 'Validating commit message format...', async () => {
-    await runWithRunner(['./node_modules/.bin/commitlint', '--edit', commitFile])
+    await runWithRunner([binPath, '--edit', commitFile])
   })
 }
 
 /**
  * Append ticket footer to commit message if needed
  */
-async function appendTicketFooter(commitFile: string): Promise<void> {
-  // Load and process configuration
-  const config = loadConfig()
-  const branchName = await getCurrentBranch()
+async function appendTicketFooter(commitFile: string): Promise<boolean> {
+  try {
+    // Load and process configuration
+    const config = loadConfig()
+    const branchName = await getCurrentBranch()
 
-  // Check if current branch is skipped (exempt from all validation)
-  if (isBranchSkipped(branchName, config)) {
-    log.info(`Branch '${branchName}' is skipped - no ticket requirements`)
-    return
+    // Check if current branch is skipped (exempt from all validation)
+    if (isBranchSkipped(branchName, config)) {
+      log.info(`Branch '${branchName}' is skipped - no ticket requirements`)
+      return true
+    }
+
+    const { needTicket, footerLabel } = processConfig(config)
+
+    if (!needTicket) {
+      return true
+    }
+
+    const ticketId = extractTicketId(branchName, config)
+
+    if (!ticketId) {
+      log.error('No ticket ID found in branch name, but ticket is required')
+      return false
+    }
+
+    // Read current commit message
+    const commitContent = await fs.readFile(commitFile, 'utf8')
+    const lines = commitContent.split('\n')
+
+    // Get commit body (everything after first line, excluding comments)
+    const commitBody = lines
+      .slice(1)
+      .filter((line: string) => !line.startsWith('#'))
+      .join('\n')
+
+    // Check if ticket ID is already in the commit body
+    if (commitBody.includes(ticketId)) {
+      log.info(`Ticket ID ${ticketId} already present in commit message`)
+      return true
+    }
+
+    // Append ticket footer
+    const footer = `\n${footerLabel}: ${ticketId}\n`
+    await fs.appendFile(commitFile, footer)
+
+    log.success(`Added ticket footer: ${footerLabel}: ${ticketId}`)
+    return true
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    log.error(`Failed to append ticket footer: ${errorMessage}`)
+    return false
   }
-
-  const { needTicket, footerLabel } = processConfig(config)
-
-  if (!needTicket) {
-    log.info('Ticket footer not required')
-    return
-  }
-
-  const ticketId = extractTicketId(branchName, config)
-
-  if (!ticketId) {
-    log.error('No ticket ID found in branch name, but ticket is required')
-    process.exit(1)
-  }
-
-  // Read current commit message
-  const commitContent = await fs.readFile(commitFile, 'utf8')
-  const lines = commitContent.split('\n')
-
-  // Get commit body (everything after first line, excluding comments)
-  const commitBody = lines
-    .slice(1)
-    .filter((line: string) => !line.startsWith('#'))
-    .join('\n')
-
-  // Check if ticket ID is already in the commit body
-  if (commitBody.includes(ticketId)) {
-    log.info(`Ticket ID ${ticketId} already present in commit message`)
-    return
-  }
-
-  // Append ticket footer
-  const footer = `\n${footerLabel}: ${ticketId}\n`
-  await fs.appendFile(commitFile, footer)
-
-  log.success(`Added ticket footer: ${footerLabel}: ${ticketId}`)
 }
 
-async function main(): Promise<void> {
-  const startTime = Date.now()
-
+await runHook(GitHook.CommitMsg, async () => {
   const [commitFile] = process.argv.slice(3) // Skip node, script, and hook args
 
   if (!commitFile) {
     log.error('No commit file provided')
-    process.exit(1)
+    return false
   }
-
-  log.step('Starting commit-msg validation...')
-
-  // Check if we should skip the entire hook
-  if (isSkipped('commitmsg')) {
-    log.info('Skipping commit-msg validation (SKIP_COMMITMSG environment variable set)')
-    process.exit(0)
-  }
-
-  // Check if we should skip all checks (during merge)
-  if (await shouldSkipDuringMerge()) {
-    log.info('Skipping commit-msg checks during merge')
-    process.exit(0)
-  }
-
-  // Check dependencies
-  await checkDependencies()
 
   // Get current branch for validation
   const branchName = await getCurrentBranch()
@@ -267,27 +222,18 @@ async function main(): Promise<void> {
 
   // 1. Validate branch name
   if (!(await validateBranchName(branchName))) {
-    process.exit(1)
+    return false
   }
 
   // 2. Lint commit message
   if (!(await lintCommitMessage(commitFile))) {
-    process.exit(1)
+    return false
   }
 
   // 3. Append ticket footer if needed
-  await appendTicketFooter(commitFile)
+  if (!(await appendTicketFooter(commitFile))) {
+    return false
+  }
 
-  const totalDuration = Date.now() - startTime
-  const formattedTotalDuration = formatDuration(totalDuration)
-  log.celebrate(`All commit-msg checks passed! (Total time: ${formattedTotalDuration})`)
-}
-
-// Run main function
-try {
-  await main()
-} catch (error: unknown) {
-  const errorMessage = error instanceof Error ? error.message : String(error)
-  log.error(`Unexpected error: ${errorMessage}`)
-  process.exit(1)
-}
+  return true
+})

@@ -10,16 +10,6 @@ const HOOK_ENV_MAPPING: Record<GitHook, string> = {
 }
 
 /**
- * Run a vendor binary with appropriate runner
- * @param toolName Name of the tool
- * @param args Arguments to pass to the tool
- */
-export async function runVendorBin(toolName: string, args: string[] = []): Promise<ProcessOutput> {
-  const command = [`./vendor/bin/${toolName}`, ...args]
-  return await runWithRunner(command)
-}
-
-/**
  * Run a tool with consistent error handling, logging, and performance monitoring
  * @param toolName Name of the tool being run
  * @param action Action being performed (e.g., 'Running static analysis...', 'Running code style fixes...')

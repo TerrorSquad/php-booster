@@ -17,7 +17,7 @@ export const TOOLS: ToolConfig[] = [
   {
     name: 'ESLint',
     command: 'eslint',
-    args: ['--fix'],
+    args: ['--fix', '--cache'],
     type: 'node',
     stagesFilesAfter: true,
     extensions: ['.js', '.jsx', '.ts', '.tsx', '.vue', '.mjs', '.cjs'],
@@ -25,7 +25,7 @@ export const TOOLS: ToolConfig[] = [
   {
     name: 'Prettier',
     command: 'prettier',
-    args: ['--write', '--ignore-unknown'],
+    args: ['--write', '--ignore-unknown', '--cache'],
     type: 'node',
     stagesFilesAfter: true,
     extensions: [
@@ -71,7 +71,7 @@ export const TOOLS: ToolConfig[] = [
     extensions: ['.php'],
   },
   {
-    name: 'EasyCodingStandard',
+    name: 'ECS',
     command: 'ecs',
     args: ['check', '--fix'],
     type: 'php',

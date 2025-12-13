@@ -6,38 +6,30 @@ contribution.
 ## Table of Contents
 
 - [Contributions](#contributions)
-  - [Initial Setup](#initial-setup)
-  - [Contributing](#contributing)
-  - [Branch Naming](#branch-naming)
-  - [Commit Message Format](#commit-message-format)
-  - [Developer Tooling](#developer-tooling)
-  - [Environment Variables](#environment-variables)
-  - [Hook Footers](#hook-footers)
-  - [Configuration Reference](#configuration-reference)
-  - [Common Workflow Examples](#common-workflow-examples)
-  - [Performance Monitoring](#performance-monitoring)
-  - [Troubleshooting](#troubleshooting)
-  - [Tools We Use](#tools-we-use)
-    - [Required Visual Studio Code Extensions](#required-visual-studio-code-extensions)
-    - [Required PHPStorm Extensions](#required-phpstorm-extensions)
-  - [Code Quality with SonarQube](#code-quality-with-sonarqube)
+- [Initial Setup](#initial-setup)
+- [Contributing](#contributing)
+- [Branch Naming](#branch-naming)
+- [Developer Tooling](#developer-tooling)
+- [Environment Variables](#environment-variables)
+- [Hook Footers](#hook-footers)
+- [Commit Messages](#commit-messages)
+- [Tools We Use](#tools-we-use)
+- [Required Visual Studio Code Extensions](#required-visual-studio-code-extensions)
+- [Required PHPStorm Extensions](#required-phpstorm-extensions)
+- [Code Quality with SonarQube](#code-quality-with-sonarqube)
 
 ## Initial setup
 
-1. Clone the repository to your own machine
-2. Check out the `main` branch
-3. Set up the project locally
-4. Install composer and node dependencies
-5. Ensure you can run the project
+Please refer to the [README.md](../README.md#local-development-environment) for instructions on setting up the local development environment.
 
 ## Contributing
 
 1. Pick a ticket from JIRA or Easy Red Mine
 2. Create a new branch from `main` (see below)
 3. Make your changes:
-    1. Code according to our style guidelines (see below).
-    2. Commit your changes: Use conventional commits (see below)
-    3. Create a PR and assign it to someone for code review
+4. Code according to our style guidelines (see below).
+5. Commit your changes: Use conventional commits (see below)
+6. Create a PR and assign it to someone for code review
 
 ## Conventions used
 
@@ -49,27 +41,42 @@ clean and readable.
 Enforced automatically via the `commit-msg` git hook (see `validate-branch-name.config.cjs`).
 
 Format:
+
 ```
 <type>/[<ticket-id>-]<description>
 ```
+
 Where:
-* `type` ∈ `feature|fix|chore|story|task|bug|sub-task`
-* Optional `ticket-id` matches `(PRJ|ERM)-<number>` and when present must be followed by a dash and description parts
-* Description: alphanumeric segments separated by single dashes (no leading/trailing/consecutive dashes)
-* Skipped branches (not validated): `wip`, `main`, `master`, `develop/test`, `develop/host1`, `develop/host2`
+
+- `type` ∈ `feature|fix|chore|story|task|bug|sub-task`
+- Optional `ticket-id` matches `(PRJ|ERM)-<number>` and when present must be followed by a dash and description parts
+- Description: alphanumeric segments separated by single dashes (no leading/trailing/consecutive dashes)
+- Skipped branches (not validated): `wip`, `main`, `master`, `develop/test`, `develop/host1`, `develop/host2`
 
 Examples:
-* `feature/PRJ-1234-add-login-feature`
-* `fix/ERM-5678-correct-auth-bug`
-* `chore/update-dependencies`
+
+- `feature/PRJ-1234-add-login-feature`
+- `fix/ERM-5678-correct-auth-bug`
+- `chore/update-dependencies`
 
 If the ticket pattern is enabled in config and you use a ticket prefix, it must include the number (e.g. `PRJ-123-...`).
 
-### Commit Message Format
+### Commits and commit messages
+
+Commit Size: Aim for small, focused commits that address a single issue or feature
+Commit Messages: Follow the Conventional Commits specification
+
+We use Conventional Commits to maintain a clear and informative commit history. This helps us automate changelog
+generation, versioning, and other project
+management tasks.
+
+### Commit Messages
 
 Follow the [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) specification for clear and consistent commit messages.
 
 Each commit message should adhere to the following format:
+
+#### Format
 
 ```
 <type>[optional scope]: <description>
@@ -79,14 +86,20 @@ Each commit message should adhere to the following format:
 [optional footer(s)]
 ```
 
-Where:
-- **type**: The type of change (e.g., feat, fix, chore, docs)
-- **scope** (optional): The area of the codebase affected
-- **description**: A brief summary of the change
-- **body** (optional): Detailed explanation, if needed
-- **footer(s)** (optional): Additional info like breaking changes or issue references
+- type: The type of change (e.g., feat, fix, chore, docs, etc.).
+- scope (optional): The scope of the change (e.g., the component or module affected).
+- description: A brief description of the change.
+- body (optional): A more detailed explanation of the change, if necessary.
+- footer(s) (optional): Additional information like breaking changes or issue references (e.g., "BREAKING CHANGE: ..."
+  or "Fixes #123").
+- **type**: The type of change (e.g., feat, fix, chore, docs).
+- **scope** (optional): The area of the codebase affected.
+- **description**: A brief summary of the change.
+- **body** (optional): Detailed explanation, if needed.
+- **footer(s)** (optional): Additional info like breaking changes or issue references.
 
-Examples:
+#### Examples
+
 - `feat: add user authentication`
 - `fix(auth): correct password validation error`
 - `chore: update dependencies`
@@ -96,93 +109,72 @@ Commitlint plus the `commit-msg` hook will append the ticket footer automaticall
 
 ### Developer Tooling
 
-Git hooks (TypeScript/ZX-based, see `.husky/`) enforce naming, formatting and static analysis:
-* `commit-msg`: branch validation, commitlint, ticket footer insertion
-* `pre-commit`: PHP lint, Rector, ECS, Deptrac, PHPStan, Psalm (auto-fix where possible)
-* `pre-push`: Deptrac, tests, API spec & HTML doc generation (conditional)
+Git hooks (managed via Husky and `zx`) enforce naming, formatting and static analysis.
 
-### Environment Variables
+**Hooks:**
 
-| Variable | Effect |
-|----------|--------|
-| **Global Hook Control** |  |
-| `SKIP_PRECOMMIT=1` | Skips the entire pre-commit hook (for emergency commits). |
-| `SKIP_PREPUSH=1` | Skips the entire pre-push hook (for emergency commits). |
-| `SKIP_COMMITMSG=1` | Skips the entire commit-msg hook (for emergency commits). |
-| `GIT_HOOKS_VERBOSE=1` | Enable verbose output for all git hooks (debugging). |
-| **Tool-specific Skip Controls (pre-commit)** |  |
-| `SKIP_RECTOR=1` | Skip Rector refactoring. |
-| `SKIP_ECS=1` | Skip ECS code style fixes. |
-| `SKIP_PHPSTAN=1` | Skip PHPStan static analysis. |
-| `SKIP_PSALM=1` | Skip Psalm static analysis. |
-| `SKIP_DEPTRAC=1` | Skip Deptrac architecture analysis. |
-| **Tool-specific Skip Controls (pre-push)** |  |
-| `SKIP_PHPUNIT=1` | Skip PHPUnit tests. |
-| `SKIP_API_DOCS=1` | Skip API documentation generation. |
+- `commit-msg`: Validates branch name and commit message format. Appends ticket ID footer.
+- `pre-commit`: Runs linters and static analysis.
+- **PHP**: Rector, PHPStan, Psalm, EasyCodingStandard.
+- **JS/TS**: ESLint, Prettier, Stylelint.
+- `pre-push`: Runs tests (`Pest`) and generates API documentation.
+
+### Environment Variables (Skipping Checks)
+
+For a complete list of environment variables to skip specific checks (e.g., `SKIP_PRECOMMIT`, `SKIP_PHPSTAN`), please refer to the [Git Hooks Documentation](../.husky/README.md#environment-variables).
 
 ### Hook Footers
 
 If a ticket is required & detected, the hook appends a footer:
+
 ```
 Closes: PRJ-123
 ```
+
 Footer label is configurable via `commitFooterLabel` in `validate-branch-name.config.cjs`. Valid characters: alphanumeric, `_`, `-` (must start with a letter). Default: `Closes`.
 
 ### Configuration Reference (`validate-branch-name.config.cjs`)
 
-| Key | Description |
-|-----|-------------|
-| `types` | Allowed branch type prefixes. |
-| `ticketIdPrefix` | Alternation of allowed ticket prefixes (e.g. `PRJ|ERM`). |
-| `ticketNumberPattern` | Numeric pattern for ticket IDs. |
-| `namePattern` | Pattern for the descriptive part. |
-| `skipped` | Branch names bypassing validation. |
-| `commitFooterLabel` | Footer label appended with ticket ID. |
-
-### Common Workflow Examples
-
-```bash
-# Skip just static analysis for a quick commit
-SKIP_PHPSTAN=1 SKIP_PSALM=1 git commit -m "fix: urgent hotfix"
-
-# Skip specific tools
-SKIP_RECTOR=1 git commit -m "refactor: manual cleanup"
-
-# Emergency commit bypassing all validation
-SKIP_PRECOMMIT=1 SKIP_COMMITMSG=1 git commit -m "hotfix: emergency fix"
-
-# Skip tests and documentation before push
-SKIP_PHPUNIT=1 SKIP_API_DOCS=1 git push
-
-# Verbose output for debugging
-GIT_HOOKS_VERBOSE=1 git commit -m "feat: new feature"
-```
-
-### Performance Monitoring
-
-All git hooks now include built-in performance monitoring:
-
-- **Individual tool timing**: Each tool shows execution time (e.g., "PHPStan completed successfully (2.3s)")
-- **Total execution time**: Hooks display total time taken (e.g., "All pre-commit checks passed! (Total time: 8.7s)")
-- **Failed tool timing**: Even failed tools show how long they ran before failing
-- **Performance insights**: Use `GIT_HOOKS_VERBOSE=1` to see detailed output and identify slow tools
+| Key                   | Description                                       |
+| --------------------- | ------------------------------------------------- | ------ |
+| `types`               | Allowed branch type prefixes.                     |
+| `ticketIdPrefix`      | Alternation of allowed ticket prefixes (e.g. `PRJ | ERM`). |
+| `ticketNumberPattern` | Numeric pattern for ticket IDs.                   |
+| `namePattern`         | Pattern for the descriptive part.                 |
+| `skipped`             | Branch names bypassing validation.                |
+| `commitFooterLabel`   | Footer label appended with ticket ID.             |
 
 ### Troubleshooting
 
-| Issue | Resolution |
-|-------|------------|
-| Branch rejected | Check branch name format against `validate-branch-name.config.cjs` rules. |
-| Missing footer | Ensure branch has valid ticket segment & config has prefixes. |
-| Slow pre-commit | Use `SKIP_PRECOMMIT=1`, or tool-specific skips (e.g., `SKIP_PHPSTAN=1 SKIP_PSALM=1`). Check performance timing to identify slow tools. |
-| Emergency commit needed | Use `SKIP_PRECOMMIT=1` + `SKIP_COMMITMSG=1` for complete bypass. |
-| Performance analysis | Enable `GIT_HOOKS_VERBOSE=1` to see detailed tool execution times and identify bottlenecks. |
+| Issue           | Resolution                                                                    |
+| --------------- | ----------------------------------------------------------------------------- |
+| Branch rejected | Check branch name format against `validate-branch-name.config.cjs` rules.     |
+| Missing footer  | Ensure branch has valid ticket segment & config has prefixes.                 |
+| Slow pre-commit | Use `SKIP_...` variables if necessary (e.g. `SKIP_PHPSTAN=1 git commit ...`). |
 
 ## Tools We Use
 
-- We use [ZX](https://google.github.io/zx/) for TypeScript-based git hooks that enforce code quality and commit message standards.
-- We use [CommitLint](https://commitlint.js.org/) to ensure that all commit messages follow the Conventional Commits specification.
-- We use a pull request template to ensure consistent and informative pull requests.
-- For detailed git hooks documentation, see the project's Git Hooks documentation.
+### Linters & Static Analysis
+
+This project uses the following tools to ensure code quality. Most run automatically via git hooks, but you can run them manually via `ddev`.
+
+- **[Rector](https://getrector.org/)**: PHP refactoring and upgrades.
+- Command: `ddev composer rector`
+- Config: `rector.php`
+- **[PHPStan](https://phpstan.org/)**: PHP static analysis.
+- Command: `ddev composer phpstan`
+- Config: `phpstan.neon.dist`
+- **[Psalm](https://psalm.dev/)**: PHP static analysis.
+- Command: `ddev composer psalm`
+- Config: `psalm.xml`
+- **[EasyCodingStandard (ECS)](https://github.com/easy-coding-standard/easy-coding-standard)**: PHP coding standard enforcement (PSR-12).
+- Command: `ddev composer ecs` (check) or `ddev composer fix-cs` (fix)
+- Config: `ecs.php`
+- **JS/TS Tools**: `ESLint`, `Prettier`, `Stylelint`.
+
+### Git Hooks
+
+We use [Husky](https://typicode.github.io/husky/) to manage Git hooks. For detailed configuration and troubleshooting, see [.husky/README.md](../.husky/README.md).
 
 ### Required Visual Studio Code Extensions
 

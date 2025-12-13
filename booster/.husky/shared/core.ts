@@ -14,7 +14,7 @@ process.env.FORCE_COLOR = '3'
  * Uses chalk for colored output
  */
 export const log = {
-  info: (message: string) => console.log(chalk.blue(`ℹ️ ${message}`)),
+  info: (message: string) => console.log(chalk.blue(`💡 ${message}`)),
   success: (message: string) => console.log(chalk.green(`✅ ${message}`)),
   error: (message: string) => console.log(chalk.red(`❌ ${message}`)),
   warn: (message: string) => console.log(chalk.yellow(`⚠️ ${message}`)),
@@ -111,41 +111,15 @@ export function formatDuration(ms: number): string {
 }
 
 /**
- * Check if a tool should be skipped based on environment variables
- * @param toolName Name of the tool (e.g., 'rector', 'eslint')
+ * Check if a tool or check is explicitly skipped via environment variable
+ * @param name Name of the tool/check (will be converted to SKIP_<NAME>)
  */
-export function isSkipped(toolName: string): boolean {
-  const envVar = `SKIP_${toolName.toUpperCase().replace(/[^A-Z0-9]/g, '')}`
-  return process.env[envVar] === '1' || process.env[envVar] === 'true'
-}
-
-/**
- * Check if a vendor binary exists
- * @param toolName Name of the tool (e.g., 'rector')
- */
-export async function hasVendorBin(toolName: string): Promise<boolean> {
-  return await fs.pathExists(`./vendor/bin/${toolName}`)
-}
-
-/**
- * Check if a Composer package is installed
- * @param packageName Name of the package (e.g., 'phpunit/phpunit')
- */
-export async function hasComposerPackage(packageName: string): Promise<boolean> {
-  try {
-    const composerLockPath = './composer.lock'
-    if (!(await fs.pathExists(composerLockPath))) {
-      return false
-    }
-
-    const lockContent = await fs.readFile(composerLockPath, 'utf8')
-    const lockData = JSON.parse(lockContent)
-
-    // Check in both packages and packages-dev arrays
-    const allPackages = [...(lockData.packages || []), ...(lockData['packages-dev'] || [])]
-
-    return allPackages.some((pkg: any) => pkg.name === packageName)
-  } catch (error: unknown) {
-    return false
-  }
+export function isSkipped(name: string): boolean {
+  // Normalize name -> uppercase, replace non-alphanum with underscore, collapse multiple underscores
+  const normalized = String(name)
+    .toUpperCase()
+    .replace(/[^A-Z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '')
+  const skipEnvVar = `SKIP_${normalized}`
+  return process.env[skipEnvVar] === '1' || process.env[skipEnvVar] === 'true'
 }

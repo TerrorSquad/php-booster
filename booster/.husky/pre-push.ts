@@ -9,46 +9,60 @@
  * - API Documentation generation
  */
 import { $, fs } from 'zx'
-import { generateApiDocs, GitHook, log, runHook, runWithRunner } from './shared/index.ts'
+import { GitHook, isSkipped, log, runHook, runWithRunner, generateApiDocs, generateDeptracImage } from './shared/index.ts'
 
-await runHook(GitHook.PrePush, async () => {
-  // 1. Check vendor directory
-  if (!(await fs.pathExists('vendor/autoload.php'))) {
-    log.error('Vendor directory not found. Please run "composer install".')
-    return false
+const SKIP_COMMIT_MSG = 'chore: update API documentation'
+const SKIP_DEPTRAC_MSG = 'chore: update deptrac image'
+
+async function shouldSkip(): Promise<boolean> {
+  const lastCommitMsg = (await $`git log -1 --pretty=%B`).stdout.trim()
+  if (lastCommitMsg.includes(SKIP_COMMIT_MSG) || lastCommitMsg.includes(SKIP_DEPTRAC_MSG)) {
+    log.info('Skipping pre-push hook for auto-generated commit.')
+    return true
   }
+  return false
+}
 
-  // 2. Run Deptrac (Architecture check) - Optional/Commented out in original
-  // if (await fs.pathExists('vendor/bin/deptrac')) {
-  //   log.tool('Deptrac', 'Running architecture analysis...')
-  //   try {
-  //     await runWithRunner(['composer', 'deptrac'])
-  //     log.success('Deptrac check passed')
-  //   } catch (e) {
-  //     log.error('Deptrac found architectural violations')
-  //     return false
-  //   }
-  // }
-
-  // 3. Run PHPUnit
+async function runTests(): Promise<boolean> {
   if (await fs.pathExists('vendor/bin/pest')) {
     log.tool('PHPUnit', 'Running tests...')
     try {
-      await runWithRunner(['composer', 'test:coverage:pest'])
+      await runWithRunner(['composer', 'test:pest'])
       log.success('Tests passed')
     } catch (e) {
       log.error('Tests failed')
       return false
     }
   }
+  return true
+}
 
-  // 4. Generate API Docs
+async function handleApiDocs(): Promise<boolean> {
+  // Allow skipping API docs generation explicitly via env var
+  if (isSkipped('api_docs')) {
+    log.info('Skipping API docs generation (SKIP_API_DOCS environment variable set)')
+    return true
+  }
+
   try {
     await generateApiDocs()
+    return true
   } catch (e) {
-    // generateApiDocs logs the error
+    log.error('API spec generation failed')
     return false
   }
+}
+
+await runHook(GitHook.PrePush, async () => {
+  if (await shouldSkip()) return true
+
+  // Deptrac check is currently disabled
+
+  if (!(await runTests())) return false
+
+  // Generate artifacts (non-blocking failures)
+  await generateDeptracImage()
+  if (!(await handleApiDocs())) return false
 
   return true
 })
