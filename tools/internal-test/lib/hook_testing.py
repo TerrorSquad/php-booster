@@ -181,6 +181,11 @@ echo "Hello, World!";
             ["git", "add", "test_commit.php"], cwd=self.config.target_dir
         )
 
+        # Wait for Mutagen sync (if active)
+        import time
+        self.log.info("Waiting 5s for Mutagen sync...")
+        time.sleep(5)
+
         # Set environment to skip static analysis for faster testing
         env = os.environ.copy()
         env["SKIP_PHPSTAN"] = "1"
