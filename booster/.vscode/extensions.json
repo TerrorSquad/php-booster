@@ -6,6 +6,7 @@
     "vivaxy.vscode-conventional-commits",
     "devsense.phptools-vscode",
     "IgorSbitnev.error-gutters",
-    "wayou.vscode-todo-highlight"
+    "wayou.vscode-todo-highlight",
+    "getpsalm.psalm-vscode-plugin"
   ]
 }

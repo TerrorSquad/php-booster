@@ -37,6 +37,11 @@ hooks:
           } > .ddev/homeadditions/.gitconfig
         fi
   post-start:
+      # Create a symlink inside the container to map the host project path to /var/www/html
+      # This allows Psalm (running in the container) to understand file paths sent by VS Code
+    - exec-host: .ddev/scripts/setup-psalm-symlink.sh
+    # Generate the local .vscode/settings.json with the correct absolute path for the current user
+    - exec-host: .ddev/scripts/generate-vscode-settings.sh
     - exec: yes | pnpm install
     - exec: composer install --prefer-dist --no-progress --no-interaction
     - exec: python3 .phpstorm/update_xdebug_config.py

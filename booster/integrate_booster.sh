@@ -521,7 +521,7 @@ function update_ddev_files() {
     fi
 
     # Define source -> destination mappings relative to .ddev dirs
-    local ddev_subdirs=("commands" "php" "web-build")
+    local ddev_subdirs=("commands" "php" "web-build" "scripts")
     for subdir in "${ddev_subdirs[@]}"; do
         local src_path="${booster_ddev_path}/${subdir}"
         local dest_path="${project_ddev_path}/${subdir}"
@@ -599,7 +599,7 @@ function copy_files() {
     log "Copying common files (excluding internal test helpers)..."
 
     # Copy simple top-level directories/files safely
-    local top_level=(".github" ".vscode" ".phpstorm" ".editorconfig")
+    local top_level=(".github" ".vscode" ".phpstorm" ".editorconfig" "bin")
     for item in "${top_level[@]}"; do
         local src_path="${BOOSTER_INTERNAL_PATH}/${item}"
         if [ -e "$src_path" ]; then

@@ -1,7 +1,0 @@
-{
-  "sonarlint.connectedMode.project": {
-    "connectionId": "myConnectionId",
-    "projectKey": "myProjectKey"
-  },
-  "php.version": "8.4.0"
-}
