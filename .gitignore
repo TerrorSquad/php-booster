@@ -7,3 +7,4 @@ __pycache__/
 # Test artifacts
 tests/*/
 !tests/.gitignore
+node_modules
