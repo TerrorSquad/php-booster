@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.14.0](https://github.com/TerrorSquad/php-booster/compare/v1.13.2...v1.14.0) (2025-12-16)
+
+
+### Features
+
+* **psalm:** add Psalm integration scripts and update VS Code settings ([bda2ac4](https://github.com/TerrorSquad/php-booster/commit/bda2ac43b4266214aaf2b489a4a61bd21226777b))
+
+
+### Bug Fixes
+
+* **tests:** add wait for Mutagen sync before setting environment for faster testing ([7bbf77c](https://github.com/TerrorSquad/php-booster/commit/7bbf77c7f817a85e9041ec18249f6f2429efe4cd))
+
 ## [1.13.2](https://github.com/TerrorSquad/php-booster/compare/v1.13.1...v1.13.2) (2025-12-16)
 
 
