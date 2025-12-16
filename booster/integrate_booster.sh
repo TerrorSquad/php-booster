@@ -775,14 +775,21 @@ function merge_scripts() {
             merged_script_json="$booster_script_json"
         else
             # Script exists in both project and booster, merge based on type
+            # Define lifecycle events that should be merged (arrays)
+            local lifecycle_events=" pre-install-cmd post-install-cmd pre-update-cmd post-update-cmd post-status-cmd pre-archive-cmd post-archive-cmd pre-autoload-dump post-autoload-dump post-root-package-install post-create-project-cmd "
+
             if [ "$proj_type" == "string" ] && [ "$booster_type" == "string" ]; then
                 if [ "$proj_script_json" == "$booster_script_json" ]; then
                     log "    Scripts are identical strings, keeping project version."
                     merged_script_json="$proj_script_json"
                 else
-                    log "    Scripts are different strings, merging into unique array."
-                    # Ensure output is valid JSON array
-                    merged_script_json=$(jq -n --argjson p "$proj_script_json" --argjson b "$booster_script_json" '[$p, $b] | unique')
+                    if [[ "$lifecycle_events" == *" $key "* ]]; then
+                        log "    Lifecycle event '$key': merging different strings into unique array."
+                        merged_script_json=$(jq -n --argjson p "$proj_script_json" --argjson b "$booster_script_json" '[$p, $b] | unique')
+                    else
+                        log "    Tool script '$key': overwriting with booster version."
+                        merged_script_json="$booster_script_json"
+                    fi
                 fi
             elif [ "$proj_type" == "array" ] && [ "$booster_type" == "array" ]; then
                 log "    Both scripts are arrays, merging uniquely."
@@ -791,8 +798,13 @@ function merge_scripts() {
                 log "    Project is string, booster is array. Merging uniquely."
                 merged_script_json=$(jq -n --argjson p "$proj_script_json" --argjson b "$booster_script_json" '([$p] + $b) | unique')
             elif [ "$proj_type" == "array" ] && [ "$booster_type" == "string" ]; then
-                log "    Project is array, booster is string. Merging uniquely."
-                merged_script_json=$(jq -n --argjson p "$proj_script_json" --argjson b "$booster_script_json" '($p + [$b]) | unique')
+                if [[ "$lifecycle_events" == *" $key "* ]]; then
+                    log "    Lifecycle event '$key': merging array and string uniquely."
+                    merged_script_json=$(jq -n --argjson p "$proj_script_json" --argjson b "$booster_script_json" '($p + [$b]) | unique')
+                else
+                    log "    Tool script '$key': overwriting array with booster string."
+                    merged_script_json="$booster_script_json"
+                fi
             else
                 # Handle other mismatches (e.g., object vs string) - prefer booster? Or keep project? Let's prefer booster.
                 log "    Type mismatch ($proj_type vs $booster_type). Using booster version."
