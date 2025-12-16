@@ -58,7 +58,7 @@ fi
 run_in_ddev_container() {
     # Try to use docker exec -t for better color support
     # Get project name from .ddev/config.yaml to construct container name
-    project_name=$(grep "^name:" "$DDEV_CONFIG_FILE" | sed 's/name: *//' | tr -d '"')
+    project_name=$(grep '^name:' "$DDEV_CONFIG_FILE" | awk '{print $2}' | tr -d '"' | tr -d "'")
     container_name="ddev-${project_name}-web"
 
     # Check if container is running

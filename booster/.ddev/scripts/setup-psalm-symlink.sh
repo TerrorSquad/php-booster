@@ -1,12 +1,8 @@
 #!/bin/bash
 
-# Determine the project root on the host dynamically
-# This script is in .ddev/scripts/, so we need to go up two levels to get to the project root
-HOST_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-
-# Extract project name; handle potential quotes in config.yaml
-PROJECT_NAME=$(grep '^name:' "$HOST_ROOT/.ddev/config.yaml" | awk '{print $2}' | tr -d '"' | tr -d "'")
-CONTAINER_NAME="ddev-${PROJECT_NAME}-web"
+# Source the shared environment script to get HOST_ROOT, PROJECT_NAME, and CONTAINER_NAME
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/ddev-env.sh"
 
 echo "Setting up Psalm symlink for $PROJECT_NAME..."
 echo "Host Root: $HOST_ROOT"

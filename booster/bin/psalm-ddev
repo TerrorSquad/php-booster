@@ -3,9 +3,14 @@
 # Determine the project root on the host dynamically
 HOST_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
-# Extract project name; handle potential quotes in config.yaml
-PROJECT_NAME=$(grep '^name:' "$HOST_ROOT/.ddev/config.yaml" | awk '{print $2}' | tr -d '"' | tr -d "'")
-CONTAINER_NAME="ddev-${PROJECT_NAME}-web"
+# Source the shared environment script to get PROJECT_NAME and CONTAINER_NAME
+# We expect ddev-env.sh to be in .ddev/scripts/ relative to the project root
+if [ -f "$HOST_ROOT/.ddev/scripts/ddev-env.sh" ]; then
+    source "$HOST_ROOT/.ddev/scripts/ddev-env.sh"
+else
+    echo "Error: Could not find .ddev/scripts/ddev-env.sh" >&2
+    exit 1
+fi
 
 # Initialize an array for the new arguments
 NEW_ARGS=()
@@ -25,4 +30,4 @@ done
 # -i: keeps STDIN open (critical for Language Server Protocol)
 # -w: sets the working dir to the HOST path (which is symlinked in the container)
 # exec: replaces the bash process with docker so signals (like SIGTERM) are passed through
-exec docker exec -i -w "$HOST_ROOT" "$CONTAINER_NAME" ./vendor/bin/psalm.phar "${NEW_ARGS[@]}"
+exec docker exec -i -w "$HOST_ROOT" "$CONTAINER_NAME" ./vendor/bin/psalm "${NEW_ARGS[@]}"
