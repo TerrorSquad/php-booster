@@ -19,10 +19,10 @@ export default defineConfig([
     files: ["booster/**/*.{ts,mts,cts}"],
   })),
   {
+    ...json.configs.recommended,
     files: ["booster/**/*.json"],
     plugins: { json },
     language: "json/json",
-    ...json.configs.recommended,
   },
   ...markdown.configs.recommended.map((config) => ({
     ...config,
