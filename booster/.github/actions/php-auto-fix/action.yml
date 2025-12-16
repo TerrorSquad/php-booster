@@ -1,49 +1,49 @@
-name: "PHP Auto-Fix with Rector and ECS"
-description: "Automatically fix PHP code style and apply modernizations using Rector and ECS"
-author: "PHP Booster"
+name: 'PHP Auto-Fix with Rector and ECS'
+description: 'Automatically fix PHP code style and apply modernizations using Rector and ECS'
+author: 'PHP Booster'
 
 inputs:
   php-version:
-    description: "PHP version to use"
+    description: 'PHP version to use'
     required: false
-    default: "8.3"
+    default: '8.3'
 
   skip-rector:
-    description: "Skip Rector processing"
+    description: 'Skip Rector processing'
     required: false
-    default: "false"
+    default: 'false'
 
   skip-ecs:
-    description: "Skip ECS processing"
+    description: 'Skip ECS processing'
     required: false
-    default: "false"
+    default: 'false'
 
   commit-message:
-    description: "Custom commit message for auto-fixes"
+    description: 'Custom commit message for auto-fixes'
     required: false
-    default: "style: auto-fix code with Rector and ECS"
+    default: 'style: auto-fix code with Rector and ECS'
 
   file-pattern:
-    description: "File pattern to match (default: *.php)"
+    description: 'File pattern to match (default: *.php)'
     required: false
-    default: "*.php"
+    default: '*.php'
 
   max-lines:
-    description: "Maximum lines of code to process (default: 500)"
+    description: 'Maximum lines of code to process (default: 500)'
     required: false
-    default: "500"
+    default: '500'
 
 outputs:
   changes-made:
-    description: "Whether any changes were made"
+    description: 'Whether any changes were made'
     value: ${{ steps.check-changes.outputs.changes }}
 
   files-processed:
-    description: "List of files that were processed"
+    description: 'List of files that were processed'
     value: ${{ steps.get-files.outputs.files }}
 
 runs:
-  using: "composite"
+  using: 'composite'
   steps:
     - name: Setup PHP
       uses: shivammathur/setup-php@v2
@@ -227,5 +227,5 @@ runs:
         echo "✅ Auto-fix commit created"
 
 branding:
-  icon: "code"
-  color: "blue"
+  icon: 'code'
+  color: 'blue'

@@ -12,7 +12,11 @@ export async function generateDeptracImage(): Promise<void> {
 
   try {
     // Use graphviz-image formatter to generate PNG directly
-    await runWithRunner(['./vendor/bin/deptrac', '--formatter=graphviz-image', '--output=deptrac.png'])
+    await runWithRunner([
+      './vendor/bin/deptrac',
+      '--formatter=graphviz-image',
+      '--output=deptrac.png',
+    ])
     if (await fs.pathExists('./deptrac.png')) {
       await runWithRunner(['git', 'add', 'deptrac.png'], { quiet: true })
 

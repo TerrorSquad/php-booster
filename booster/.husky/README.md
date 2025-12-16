@@ -55,25 +55,32 @@ To add a new tool, simply add a `ToolConfig` object to the `TOOLS` array.
 ## Hook Specifics
 
 ### `pre-commit`
+
 Runs quality tools (linters, static analysis) on staged files.
+
 - **Caching**: ESLint and Prettier use caching to speed up repeated runs.
 - **Auto-fix**: Tools like ESLint, Prettier, Rector, and ECS will automatically fix issues and re-stage the changes.
 
 ### `commit-msg`
+
 Enforces commit message standards and branch naming.
+
 - **Ticket IDs**: Automatically appends the ticket ID (e.g., `Closes: PRJ-123`) to the commit message body if found in the branch name.
 - **Validation**: Ensures the commit message follows Conventional Commits.
 
 ### `pre-push`
+
 Ensures the codebase is ready for deployment.
+
 - **Tests**: Runs the fast test suite (`composer test:pest`).
 - **API Documentation**: Checks if `documentation/openapi.yml` matches the code.
-    - If outdated, it **regenerates** the docs and **auto-commits** them.
-    - **Important**: If an auto-commit occurs, the hook will warn you to **push again** to include the new commit.
+  - If outdated, it **regenerates** the docs and **auto-commits** them.
+  - **Important**: If an auto-commit occurs, the hook will warn you to **push again** to include the new commit.
 
 ## DDEV Integration
 
 The hooks are designed to work seamlessly with DDEV.
+
 - The `shared/runner.sh` script automatically detects if the project is running in DDEV.
 - If DDEV is active, all tools (PHP, Composer, Node) are executed **inside the container**.
 - If the DDEV container is not running, the hooks will fail with a helpful message.
@@ -84,22 +91,22 @@ You can control the behavior of the hooks using environment variables. These can
 
 Note: tool-specific skip variables are normalized to uppercase and non-alphanumeric characters are replaced with underscores. For example, a tool named `PHP Syntax Check` becomes `SKIP_PHP_SYNTAX_CHECK` and `api docs` becomes `SKIP_API_DOCS`.
 
-| Variable            | Description                                                                  |
-| ------------------- | ---------------------------------------------------------------------------- |
-| `GIT_HOOKS_VERBOSE` | Set to `1` or `true` to enable verbose logging (shows executed commands).    |
-| `SKIP_PRECOMMIT`    | Set to `1` to skip the entire pre-commit hook.                               |
-| `SKIP_PREPUSH`      | Set to `1` to skip the entire pre-push hook.                                 |
-| `SKIP_COMMITMSG`    | Set to `1` to skip commit message validation and ticket appending.           |
-| `SKIP_PHPUNIT`      | Set to `1` to skip tests in the pre-push hook.                               |
-| `SKIP_API_DOCS`     | Set to `1` to skip API documentation generation in the pre-push hook.        |
-| `SKIP_ESLINT`       | Set to `1` to skip ESLint.                                                   |
-| `SKIP_PRETTIER`     | Set to `1` to skip Prettier.                                                 |
-| `SKIP_STYLELINT`    | Set to `1` to skip Stylelint.                                                |
-| `SKIP_RECTOR`       | Set to `1` to skip Rector.                                                   |
-| `SKIP_ECS`          | Set to `1` to skip EasyCodingStandard.                                       |
-| `SKIP_PHPSTAN`      | Set to `1` to skip PHPStan.                                                  |
-| `SKIP_PSALM`        | Set to `1` to skip Psalm.                                                    |
-| `SKIP_DEPTRAC`      | Set to `1` to skip Deptrac (if enabled).                                     |
+| Variable            | Description                                                               |
+| ------------------- | ------------------------------------------------------------------------- |
+| `GIT_HOOKS_VERBOSE` | Set to `1` or `true` to enable verbose logging (shows executed commands). |
+| `SKIP_PRECOMMIT`    | Set to `1` to skip the entire pre-commit hook.                            |
+| `SKIP_PREPUSH`      | Set to `1` to skip the entire pre-push hook.                              |
+| `SKIP_COMMITMSG`    | Set to `1` to skip commit message validation and ticket appending.        |
+| `SKIP_PHPUNIT`      | Set to `1` to skip tests in the pre-push hook.                            |
+| `SKIP_API_DOCS`     | Set to `1` to skip API documentation generation in the pre-push hook.     |
+| `SKIP_ESLINT`       | Set to `1` to skip ESLint.                                                |
+| `SKIP_PRETTIER`     | Set to `1` to skip Prettier.                                              |
+| `SKIP_STYLELINT`    | Set to `1` to skip Stylelint.                                             |
+| `SKIP_RECTOR`       | Set to `1` to skip Rector.                                                |
+| `SKIP_ECS`          | Set to `1` to skip EasyCodingStandard.                                    |
+| `SKIP_PHPSTAN`      | Set to `1` to skip PHPStan.                                               |
+| `SKIP_PSALM`        | Set to `1` to skip Psalm.                                                 |
+| `SKIP_DEPTRAC`      | Set to `1` to skip Deptrac (if enabled).                                  |
 
 ## How it Works
 

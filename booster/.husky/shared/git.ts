@@ -18,13 +18,19 @@ export async function getCurrentBranch(): Promise<string> {
     const cleanBranchName = lines[lines.length - 1].trim()
 
     // Additional validation to ensure we have a valid branch name
-    if (!cleanBranchName || cleanBranchName.includes('warning:') || cleanBranchName.includes('error:')) {
+    if (
+      !cleanBranchName ||
+      cleanBranchName.includes('warning:') ||
+      cleanBranchName.includes('error:')
+    ) {
       throw new Error(`Invalid branch name detected: "${cleanBranchName}"`)
     }
 
     return cleanBranchName
   } catch (error: unknown) {
-    throw new Error(`Failed to get current branch: ${error instanceof Error ? error.message : String(error)}`)
+    throw new Error(
+      `Failed to get current branch: ${error instanceof Error ? error.message : String(error)}`,
+    )
   }
 }
 
@@ -39,7 +45,9 @@ export async function stageFiles(files: string[]): Promise<void> {
     // Run git add inside DDEV container for consistency with tool execution
     await runWithRunner(['git', 'add', ...files], { quiet: true })
   } catch (error: unknown) {
-    log.warn(`Failed to stage some files: ${error instanceof Error ? error.message : String(error)}`)
+    log.warn(
+      `Failed to stage some files: ${error instanceof Error ? error.message : String(error)}`,
+    )
   }
 }
 
@@ -56,8 +64,7 @@ export async function shouldSkipDuringMerge(): Promise<boolean> {
     if (await fs.pathExists(mergeHead)) {
       return true
     }
-    // eslint-disable-next-line
-  } catch (error) {
+  } catch {
     // Not in a git repository or other git error
   }
 
@@ -75,9 +82,12 @@ export async function shouldSkipDuringMerge(): Promise<boolean> {
  */
 export async function getStagedFiles(extension?: string): Promise<string[]> {
   try {
-    const result = await runWithRunner(['git', 'diff', '--cached', '--name-only', '--diff-filter=ACMR'], {
-      quiet: true,
-    })
+    const result = await runWithRunner(
+      ['git', 'diff', '--cached', '--name-only', '--diff-filter=ACMR'],
+      {
+        quiet: true,
+      },
+    )
     const allFiles = result.toString().trim().split('\n').filter(Boolean)
 
     // Filter for files that actually exist and match extension
@@ -94,7 +104,9 @@ export async function getStagedFiles(extension?: string): Promise<string[]> {
 
     return filteredFiles
   } catch (error: unknown) {
-    log.error(`Failed to get staged files: ${error instanceof Error ? error.message : String(error)}`)
+    log.error(
+      `Failed to get staged files: ${error instanceof Error ? error.message : String(error)}`,
+    )
     return []
   }
 }

@@ -10,7 +10,7 @@ contribution.
 - [Contributing](#contributing)
 - [Branch Naming](#branch-naming)
 - [Developer Tooling](#developer-tooling)
-- [Environment Variables](#environment-variables)
+- [Environment Variables](#environment-variables-skipping-checks)
 - [Hook Footers](#hook-footers)
 - [Commit Messages](#commit-messages)
 - [Tools We Use](#tools-we-use)
@@ -42,7 +42,7 @@ Enforced automatically via the `commit-msg` git hook (see `validate-branch-name.
 
 Format:
 
-```
+```text
 <type>/[<ticket-id>-]<description>
 ```
 
@@ -78,7 +78,7 @@ Each commit message should adhere to the following format:
 
 #### Format
 
-```
+```text
 <type>[optional scope]: <description>
 
 [optional body]
@@ -127,7 +127,7 @@ For a complete list of environment variables to skip specific checks (e.g., `SKI
 
 If a ticket is required & detected, the hook appends a footer:
 
-```
+```text
 Closes: PRJ-123
 ```
 

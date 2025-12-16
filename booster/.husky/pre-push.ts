@@ -9,7 +9,15 @@
  * - API Documentation generation
  */
 import { $, fs } from 'zx'
-import { GitHook, isSkipped, log, runHook, runWithRunner, generateApiDocs, generateDeptracImage } from './shared/index.ts'
+import {
+  GitHook,
+  isSkipped,
+  log,
+  runHook,
+  runWithRunner,
+  generateApiDocs,
+  generateDeptracImage,
+} from './shared/index.ts'
 
 const SKIP_COMMIT_MSG = 'chore: update API documentation'
 const SKIP_DEPTRAC_MSG = 'chore: update deptrac image'
@@ -29,7 +37,7 @@ async function runTests(): Promise<boolean> {
     try {
       await runWithRunner(['composer', 'test:pest'])
       log.success('Tests passed')
-    } catch (e) {
+    } catch {
       log.error('Tests failed')
       return false
     }
@@ -47,7 +55,7 @@ async function handleApiDocs(): Promise<boolean> {
   try {
     await generateApiDocs()
     return true
-  } catch (e) {
+  } catch {
     log.error('API spec generation failed')
     return false
   }

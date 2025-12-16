@@ -69,12 +69,17 @@ function isBranchSkipped(branchName: string, config: BranchConfig): boolean {
  */
 function processConfig(config: BranchConfig): ProcessedConfig {
   // Use explicit requireTickets flag, but validate that patterns exist if tickets are required
-  const needTicket = config.requireTickets && !!(config.ticketIdPrefix && config.ticketNumberPattern)
+  const needTicket =
+    config.requireTickets && !!(config.ticketIdPrefix && config.ticketNumberPattern)
 
   let footerLabel = String(config.commitFooterLabel || 'Closes').trim()
 
   // Sanitize footer label - must be valid identifier, no special chars
-  if (!/^[A-Za-z][A-Za-z0-9_-]*$/.test(footerLabel) || footerLabel.includes('=') || footerLabel.includes('\n')) {
+  if (
+    !/^[A-Za-z][A-Za-z0-9_-]*$/.test(footerLabel) ||
+    footerLabel.includes('=') ||
+    footerLabel.includes('\n')
+  ) {
     footerLabel = 'Closes'
   }
 
@@ -95,7 +100,10 @@ function extractTicketId(branchName: string, config: BranchConfig): string | nul
 
   try {
     // Create regex pattern: ((?:PREFIX)-PATTERN)
-    const ticketRegex = new RegExp(`((?:${config.ticketIdPrefix})-${config.ticketNumberPattern})`, 'i')
+    const ticketRegex = new RegExp(
+      `((?:${config.ticketIdPrefix})-${config.ticketNumberPattern})`,
+      'i',
+    )
     const match = branchName.match(ticketRegex)
     return match ? match[1] : null
   } catch (error: unknown) {
@@ -126,8 +134,7 @@ async function validateBranchName(branchName: string): Promise<boolean> {
       log.error('Branch name validation failed')
       try {
         await runWithRunner([binPath, '-t', branchName])
-        // eslint-disable-next-line
-      } catch (detailedError: unknown) {
+      } catch {
         // Error output will be shown by runWithRunner
       }
       log.info('See rules in validate-branch-name.config.cjs')

@@ -14,7 +14,9 @@ This booster includes GitHub Actions that automatically apply code style fixes a
 ## Available Workflow
 
 ### PHP Auto-Fix Workflow (`php-auto-fix-simple.yml`)
+
 Streamlined workflow using the reusable action:
+
 - Clean and minimal configuration
 - Uses the reusable action component
 - Easier to customize and maintain
@@ -31,20 +33,22 @@ Streamlined workflow using the reusable action:
 ## Configuration
 
 ### Environment Variables
+
 You can customize behavior using environment variables in your workflow:
 
 ```yaml
 - name: Run PHP Auto-Fix
   uses: ./.github/actions/php-auto-fix
   with:
-    php-version: '8.3'          # PHP version to use
-    skip-rector: 'false'        # Skip Rector processing
-    skip-ecs: 'false'          # Skip ECS processing
-    commit-message: 'style: auto-fix code'  # Custom commit message
-    file-pattern: '*.php'       # File pattern to match
+    php-version: '8.3' # PHP version to use
+    skip-rector: 'false' # Skip Rector processing
+    skip-ecs: 'false' # Skip ECS processing
+    commit-message: 'style: auto-fix code' # Custom commit message
+    file-pattern: '*.php' # File pattern to match
 ```
 
 ### Skip Auto-Fix
+
 To skip auto-fix for specific commits, include `[skip auto-fix]` in your commit message:
 
 ```bash
@@ -52,7 +56,9 @@ git commit -m "feat: add new feature [skip auto-fix]"
 ```
 
 ### Custom Configuration
+
 The actions respect your existing Rector and ECS configuration files:
+
 - `rector.php` - Rector configuration
 - `ecs.php` - ECS configuration
 
@@ -66,12 +72,14 @@ The actions respect your existing Rector and ECS configuration files:
 ## Benefits
 
 ### For Developers
+
 - 🚀 **Faster local development** - no need to run formatters locally
 - 🔄 **Consistent code style** across the entire team
 - 📈 **Automatic modernization** of legacy code patterns
 - 🛡️ **Reduced merge conflicts** from formatting differences
 
 ### For Teams
+
 - 📊 **Enforced standards** without developer overhead
 - 🤝 **Improved code reviews** - focus on logic, not style
 - 🔧 **Automatic maintenance** of code quality
@@ -80,16 +88,19 @@ The actions respect your existing Rector and ECS configuration files:
 ## Troubleshooting
 
 ### Action Not Running
+
 - Check that PHP files were actually changed
 - Verify the workflow triggers match your branch names
 - Ensure `rector.php` and `ecs.php` exist in your project
 
 ### No Changes Applied
+
 - Check that Rector and ECS are installed via Composer
 - Verify your configuration files are valid
 - Look at the action logs for specific error messages
 
 ### Permission Issues
+
 - Ensure the repository has Actions enabled
 - Check that `GITHUB_TOKEN` has write permissions to contents
 - For protected branches, you may need a personal access token
@@ -97,9 +108,11 @@ The actions respect your existing Rector and ECS configuration files:
 ## Example Usage
 
 ### Basic Setup
+
 The actions are automatically integrated when you run the PHP Booster integration script. No additional setup required!
 
 ### Custom Workflow
+
 If you want to customize the workflow, copy one of the provided templates and modify it:
 
 ```yaml
@@ -107,8 +120,8 @@ name: My Custom Auto-Fix
 
 on:
   push:
-    branches: [ main ]
-    paths: [ '**.php' ]
+    branches: [main]
+    paths: ['**.php']
 
 jobs:
   auto-fix:
@@ -124,6 +137,7 @@ jobs:
 ## Integration with Git Hooks
 
 The auto-fix actions work seamlessly with the local git hooks:
+
 - **Local hooks** catch issues during development
 - **CI actions** provide a safety net for anything that slips through
 - **Consistent tooling** ensures the same rules apply everywhere

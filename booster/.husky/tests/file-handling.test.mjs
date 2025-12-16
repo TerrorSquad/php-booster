@@ -1,13 +1,12 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { $, fs, path } from 'zx'
-import { tmpdir } from 'os'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { $ } from 'zx'
 
 // Mock git operations for controlled testing
 vi.mock('zx', async () => {
   const actual = await vi.importActual('zx')
   return {
     ...actual,
-    $: vi.fn()
+    $: vi.fn(),
   }
 })
 
@@ -23,7 +22,7 @@ describe('File Handling Integration', () => {
     const mockOutput = 'src/My Controller.php\nsrc/NormalController.php\n'
 
     mockGit.mockResolvedValueOnce({
-      toString: () => mockOutput
+      toString: () => mockOutput,
     })
 
     // Test that our git diff command works correctly
@@ -41,12 +40,12 @@ describe('File Handling Integration', () => {
       'src/Controller & Service.php',
       'src/Test(1).php',
       'src/File$with_dollar.php',
-      'src/Quote"Test.php'
+      'src/Quote"Test.php',
     ]
 
     const mockOutput = specialFiles.join('\n') + '\n'
     mockGit.mockResolvedValueOnce({
-      toString: () => mockOutput
+      toString: () => mockOutput,
     })
 
     // Test git diff
@@ -69,7 +68,7 @@ describe('File Handling Integration', () => {
 
     // Mock file existence check
     mockGit.mockResolvedValueOnce({
-      toString: () => 'A\t' + problematicFile
+      toString: () => 'A\t' + problematicFile,
     })
 
     const status = await $`git status --porcelain`
@@ -78,15 +77,11 @@ describe('File Handling Integration', () => {
 
   it('should demonstrate array spreading for multiple files', async () => {
     // Create multiple files with challenging names
-    const files = [
-      'src/File One.php',
-      'src/File Two.php',
-      'src/File & Three.php'
-    ]
+    const files = ['src/File One.php', 'src/File Two.php', 'src/File & Three.php']
 
     const mockOutput = files.join('\n') + '\n'
     mockGit.mockResolvedValueOnce({
-      toString: () => mockOutput
+      toString: () => mockOutput,
     })
 
     const result = await $`git diff --cached --name-only --diff-filter=ACMR`

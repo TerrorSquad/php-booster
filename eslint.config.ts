@@ -6,8 +6,26 @@ import markdown from "@eslint/markdown";
 import { defineConfig } from "eslint/config";
 
 export default defineConfig([
-  { files: ["**/*.{js,mjs,cjs,ts,mts,cts}"], plugins: { js }, extends: ["js/recommended"], languageOptions: { globals: globals.node } },
-  tseslint.configs.recommended,
-  { files: ["**/*.json"], plugins: { json }, language: "json/json", extends: ["json/recommended"] },
-  { files: ["**/*.md"], plugins: { markdown }, language: "markdown/gfm", extends: ["markdown/recommended"] },
+  {
+    ignores: ["**/node_modules/**", "**/vendor/**"],
+  },
+  {
+    files: ["booster/**/*.{js,mjs,cjs,ts,mts,cts}"],
+    ...js.configs.recommended,
+    languageOptions: { globals: globals.node },
+  },
+  ...tseslint.configs.recommended.map((config) => ({
+    ...config,
+    files: ["booster/**/*.{ts,mts,cts}"],
+  })),
+  {
+    files: ["booster/**/*.json"],
+    plugins: { json },
+    language: "json/json",
+    ...json.configs.recommended,
+  },
+  ...markdown.configs.recommended.map((config) => ({
+    ...config,
+    files: ["booster/**/*.md"],
+  })),
 ]);

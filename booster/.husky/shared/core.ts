@@ -19,7 +19,8 @@ export const log = {
   error: (message: string) => console.log(chalk.red(`❌ ${message}`)),
   warn: (message: string) => console.log(chalk.yellow(`⚠️ ${message}`)),
   step: (message: string) => console.log(chalk.cyan(`📋 ${message}`)),
-  tool: (tool: string, message: string) => console.log(chalk.yellow(`🔧 Running ${tool}: ${message}`)),
+  tool: (tool: string, message: string) =>
+    console.log(chalk.yellow(`🔧 Running ${tool}: ${message}`)),
   celebrate: (message: string) => console.log(chalk.green(`🎉 ${message}`)),
   skip: (message: string) => console.log(chalk.gray(`🚫 ${message}`)),
 }
@@ -48,7 +49,8 @@ export async function initEnvironment(): Promise<void> {
     if (result.error) throw result.error
 
     // Check for verbose mode after loading env vars
-    const isVerbose = process.env.GIT_HOOKS_VERBOSE === '1' || process.env.GIT_HOOKS_VERBOSE === 'true'
+    const isVerbose =
+      process.env.GIT_HOOKS_VERBOSE === '1' || process.env.GIT_HOOKS_VERBOSE === 'true'
 
     // Show which variables were injected (only in verbose mode)
     if (isVerbose && result.parsed && Object.keys(result.parsed).length > 0) {
@@ -59,7 +61,9 @@ export async function initEnvironment(): Promise<void> {
       })
     }
   } catch (error) {
-    log.warn(`Failed to load environment file ${envFile}: ${error instanceof Error ? error.message : String(error)}`)
+    log.warn(
+      `Failed to load environment file ${envFile}: ${error instanceof Error ? error.message : String(error)}`,
+    )
   }
 }
 
@@ -75,7 +79,10 @@ export interface RunOptions {
  * @param command Array of command parts
  * @param options Execution options
  */
-export async function runWithRunner(command: string[], options: RunOptions = {}): Promise<ProcessOutput> {
+export async function runWithRunner(
+  command: string[],
+  options: RunOptions = {},
+): Promise<ProcessOutput> {
   const { quiet = false } = options
 
   // Log command execution if not quiet

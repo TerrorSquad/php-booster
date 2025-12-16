@@ -1,8 +1,6 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": [
-    "config:base"
-  ],
+  "extends": ["config:base"],
   "packageRules": [
     {
       "matchUpdateTypes": ["minor", "patch"],
@@ -15,7 +13,14 @@
       "schedule": ["every weekend"]
     },
     {
-      "matchPackagePatterns": ["phpunit/", "phpstan/", "psalm/", "symfony/", "doctrine/", "guzzlehttp/"],
+      "matchPackagePatterns": [
+        "phpunit/",
+        "phpstan/",
+        "psalm/",
+        "symfony/",
+        "doctrine/",
+        "guzzlehttp/"
+      ],
       "groupName": "PHP dependencies"
     }
   ],

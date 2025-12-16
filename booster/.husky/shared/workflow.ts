@@ -1,4 +1,4 @@
-import { $, fs, which, type ProcessOutput } from 'zx'
+import { $, fs, which } from 'zx'
 import { formatDuration, initEnvironment, isSkipped, log, runWithRunner } from './core.ts'
 import { shouldSkipDuringMerge, stageFiles } from './git.ts'
 import { GitHook, type ToolConfig } from './types.ts'
@@ -15,7 +15,11 @@ const HOOK_ENV_MAPPING: Record<GitHook, string> = {
  * @param action Action being performed (e.g., 'Running static analysis...', 'Running code style fixes...')
  * @param fn Function that executes the tool
  */
-export async function runTool(toolName: string, action: string, fn: () => Promise<void>): Promise<boolean> {
+export async function runTool(
+  toolName: string,
+  action: string,
+  fn: () => Promise<void>,
+): Promise<boolean> {
   const startTime = Date.now()
 
   try {
@@ -27,8 +31,7 @@ export async function runTool(toolName: string, action: string, fn: () => Promis
     log.success(`${toolName} completed successfully (${formattedDuration})`)
 
     return true
-    // eslint-disable-next-line
-  } catch (error: unknown) {
+  } catch {
     const duration = Date.now() - startTime
     const formattedDuration = formatDuration(duration)
     log.error(`${toolName} failed after ${formattedDuration}`)
@@ -108,7 +111,9 @@ export async function runQualityTools(files: string[], tools: ToolConfig[]): Pro
         }
 
         for (const chunk of chunks) {
-          await Promise.all(chunk.map((file) => runWithRunner([binPath, ...args, file], { quiet: true })))
+          await Promise.all(
+            chunk.map((file) => runWithRunner([binPath, ...args, file], { quiet: true })),
+          )
         }
       } else {
         // Run command once with all files
@@ -174,7 +179,9 @@ export async function runHook(hookName: GitHook, fn: () => Promise<boolean>): Pr
     if (success) {
       log.celebrate(`All ${hookName} checks passed! (Total time: ${formattedTotalDuration})`)
     } else {
-      log.error(`Some ${hookName} checks failed after ${formattedTotalDuration}. Please fix the issues and try again.`)
+      log.error(
+        `Some ${hookName} checks failed after ${formattedTotalDuration}. Please fix the issues and try again.`,
+      )
       process.exit(1)
     }
   } catch (error: unknown) {
