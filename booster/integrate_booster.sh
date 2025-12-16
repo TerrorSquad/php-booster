@@ -1259,6 +1259,30 @@ function update_gitignore() {
     success ".vscode entries removed from project .gitignore (booster provides IDE settings)."
 }
 
+function init_deptrac() {
+    log "Checking Deptrac configuration..."
+    local deptrac_config="deptrac.yaml"
+
+    if [ -f "$deptrac_config" ]; then
+        log "  '$deptrac_config' already exists. Skipping initialization."
+        return
+    fi
+
+    log "  Initializing Deptrac..."
+
+    local cmd_prefix=""
+    if [ $IS_DDEV_PROJECT -eq 1 ]; then
+        cmd_prefix="ddev"
+    fi
+
+    # Run initialization
+    if $cmd_prefix composer deptrac -- init --no-interaction; then
+        success "Deptrac initialized successfully."
+    else
+        warn "Failed to initialize Deptrac. You may need to run 'composer deptrac -- init' manually."
+    fi
+}
+
 function cleanup_silent() {
     rm -rf "$BOOSTER_TARGET_DIR"
     rm -f composer.json.merged.tmp composer.json.merged.tmp.next hooks.yaml.tmp .ddev/config.yaml.tmp package.json.tmp # Clean up temp files
@@ -1461,6 +1485,7 @@ function main() {
     fi
 
     add_code_quality_tools # Merges composer scripts & installs deps
+    init_deptrac
 
     # --- Create Version Stamp ---
     create_version_stamp "$current_version"
