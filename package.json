@@ -3,7 +3,7 @@
 	"scripts": {
 		"lint": "eslint . --fix",
 		"format": "prettier --write .",
-    "prepare": "husky install || true"
+    "prepare": "rm -rf .husky && ln -s booster/.husky .husky || true"
 	},
 	"devDependencies": {
 		"@eslint/js": "^9.39.2",

@@ -1,4 +1,4 @@
-import { $, fs, which } from 'zx'
+import { $, which } from 'zx'
 import { formatDuration, initEnvironment, isSkipped, log, runWithRunner } from './core.ts'
 import { shouldSkipDuringMerge, stageFiles } from './git.ts'
 import { GitHook, type ToolConfig } from './types.ts'
@@ -40,12 +40,6 @@ export async function runTool(
   }
 }
 
-function getBinPath(tool: ToolConfig): string {
-  if (tool.type === 'node') return `./node_modules/.bin/${tool.command}`
-  if (tool.type === 'php') return `./vendor/bin/${tool.command}`
-  return tool.command
-}
-
 /**
  * Run all configured quality tools on the provided files
  *
@@ -77,18 +71,14 @@ export async function runQualityTools(files: string[], tools: ToolConfig[]): Pro
     if (filesToRun.length === 0) continue
 
     // Check binary existence
-    const binPath = getBinPath(tool)
+    const binPath = tool.command
     let exists = false
 
-    if (tool.type === 'system') {
-      try {
-        await which(binPath)
-        exists = true
-      } catch {
-        exists = false
-      }
-    } else {
-      exists = await fs.pathExists(binPath)
+    try {
+      await which(binPath)
+      exists = true
+    } catch {
+      exists = false
     }
 
     if (!exists) {

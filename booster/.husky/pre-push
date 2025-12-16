@@ -12,4 +12,4 @@ cd "$ROOT_DIR"
 HOOK="$CWD/pre-push.ts"
 
 # Use the generic runner script to execute the TypeScript hook
-exec "$CWD/shared/runner.sh" pnpm zx $HOOK "$@"
+exec "$CWD/shared/runner.sh" zx $HOOK "$@"

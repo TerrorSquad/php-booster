@@ -12,7 +12,8 @@
  * - SKIP_COMMITMSG=1: Skip the entire commit-msg hook
  * - GIT_HOOKS_VERBOSE=1: Enable verbose output for debugging
  */
-import { fs } from 'zx'
+import { fs, path } from 'zx'
+import { fileURLToPath } from 'url'
 import validateBranchNameConfig from '../validate-branch-name.config.cjs'
 import { getCurrentBranch, GitHook, log, runHook, runTool, runWithRunner } from './shared/index.ts'
 
@@ -117,11 +118,7 @@ function extractTicketId(branchName: string, config: BranchConfig): string | nul
  * Validate branch name using validate-branch-name tool
  */
 async function validateBranchName(branchName: string): Promise<boolean> {
-  const binPath = './node_modules/.bin/validate-branch-name'
-  if (!(await fs.pathExists(binPath))) {
-    log.error('validate-branch-name not found in node_modules/.bin/')
-    return false
-  }
+  const binPath = 'validate-branch-name'
 
   return await runTool('Branch Name', 'Validating branch name...', async () => {
     try {
@@ -147,14 +144,14 @@ async function validateBranchName(branchName: string): Promise<boolean> {
  * Lint commit message using commitlint
  */
 async function lintCommitMessage(commitFile: string): Promise<boolean> {
-  const binPath = './node_modules/.bin/commitlint'
-  if (!(await fs.pathExists(binPath))) {
-    log.error('commitlint not found in node_modules/.bin/')
-    return false
-  }
+  const binPath = 'commitlint'
+
+  const __filename = fileURLToPath(import.meta.url)
+  const scriptDir = path.dirname(__filename)
+  const configPath = path.resolve(scriptDir, '../commitlint.config.ts')
 
   return await runTool('Commitlint', 'Validating commit message format...', async () => {
-    await runWithRunner([binPath, '--edit', commitFile])
+    await runWithRunner([binPath, '--config', configPath, '--edit', commitFile])
   })
 }
 
@@ -214,7 +211,6 @@ async function appendTicketFooter(commitFile: string): Promise<boolean> {
     return false
   }
 }
-
 await runHook(GitHook.CommitMsg, async () => {
   const [commitFile] = process.argv.slice(3) // Skip node, script, and hook args
 
