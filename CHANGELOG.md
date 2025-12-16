@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.13.1](https://github.com/TerrorSquad/php-booster/compare/v1.13.0...v1.13.1) (2025-12-16)
+
+
+### Bug Fixes
+
+* **hooks:** update prepare script to link husky directory correctly ([45c8578](https://github.com/TerrorSquad/php-booster/commit/45c8578c14f79365abf23311063109527bdc0208))
+* skip Deptrac checks in hook testing environment ([1ebb86d](https://github.com/TerrorSquad/php-booster/commit/1ebb86d3b79c9de3169f6c63e6364bfb773ec5bb))
+
 ## [1.13.0](https://github.com/TerrorSquad/php-booster/compare/v1.12.0...v1.13.0) (2025-12-16)
 
 
