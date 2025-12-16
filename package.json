@@ -2,7 +2,8 @@
 	"type": "module",
 	"scripts": {
 		"lint": "eslint . --fix",
-		"format": "prettier --write ."
+		"format": "prettier --write .",
+    "prepare": "husky install || true"
 	},
 	"devDependencies": {
 		"@eslint/js": "^9.39.2",
@@ -10,6 +11,7 @@
 		"@eslint/markdown": "^7.5.1",
 		"eslint": "^9.39.2",
 		"globals": "^16.5.0",
+		"husky": "^9.1.7",
 		"jiti": "^2.6.1",
 		"prettier": "3.7.4",
 		"typescript-eslint": "^8.50.0"
