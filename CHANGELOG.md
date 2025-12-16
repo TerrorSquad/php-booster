@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.13.0](https://github.com/TerrorSquad/php-booster/compare/v1.12.0...v1.13.0) (2025-12-16)
+
+
+### Features
+
+* refactor husky hooks and shared utilities ([78ed5cb](https://github.com/TerrorSquad/php-booster/commit/78ed5cb1d6e77abd1b0c07e13a6c07b10034c0af))
+
+
+### Performance Improvements
+
+* **hooks:** optimize git hooks ([7dee6b3](https://github.com/TerrorSquad/php-booster/commit/7dee6b3a83dd1bcd23b356af2dd85325ab581278))
+
 ## [1.12.0](https://github.com/TerrorSquad/php-booster/compare/v1.11.0...v1.12.0) (2025-12-11)
 
 
