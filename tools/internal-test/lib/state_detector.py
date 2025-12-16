@@ -70,7 +70,7 @@ class StateDetector:
 
         # Fallback check: essential booster files (updated for TypeScript architecture)
         return (
-            self.config.target_dir / ".husky/shared/utils.ts"
+            self.config.target_dir / ".husky/shared/index.ts"
         ).exists() and (
             self.config.target_dir / ".husky/commit-msg.ts"
         ).exists()

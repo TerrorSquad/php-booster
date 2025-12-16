@@ -50,7 +50,7 @@ class IntegrationVerifier:
             ".husky/commit-msg.ts",
             ".husky/pre-commit.ts",
             ".husky/pre-push.ts",
-            ".husky/shared/utils.ts",
+            ".husky/shared/index.ts",
             "validate-branch-name.config.cjs",
             "package.json",
             "renovate.json",

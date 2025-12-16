@@ -66,7 +66,7 @@ The interactive mode tests verify:
    - .booster-version
    - documentation/openapi.yml
    - .husky/commit-msg
-   - .husky/shared/utils.ts
+   - .husky/shared/index.ts
 3. That the branch validation config contains the correct ticket prefix ("PRJ")
 
 ## Automated Test Input

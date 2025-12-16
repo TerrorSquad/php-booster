@@ -91,7 +91,7 @@ class TestOrchestrator:
         ".booster-version",
         "documentation/openapi.yml",
         ".husky/commit-msg",
-        ".husky/shared/utils.ts",
+        ".husky/shared/index.ts",
     ]
 
     def _verify_expected_files(self, test_dir: Path) -> List[str]:
