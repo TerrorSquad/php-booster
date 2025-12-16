@@ -91,16 +91,8 @@ export async function runWithRunner(
     log.info(`Executing: ${commandStr}`)
   }
 
-  // Set clean environment to avoid locale warnings
-  const cleanEnv = {
-    ...process.env,
-    LC_ALL: 'C',
-    LANG: 'C',
-  }
-
   return await $({
     stdio: quiet ? 'pipe' : 'inherit',
-    env: cleanEnv,
   })`${command}`
 }
 

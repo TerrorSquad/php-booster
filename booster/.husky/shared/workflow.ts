@@ -71,18 +71,12 @@ export async function runQualityTools(files: string[], tools: ToolConfig[]): Pro
     if (filesToRun.length === 0) continue
 
     // Check binary existence
-    const binPath = tool.command
-    let exists = false
-
-    try {
-      await which(binPath)
-      exists = true
-    } catch {
-      exists = false
-    }
+    const exists = await which(tool.command)
+      .then(() => true)
+      .catch(() => false)
 
     if (!exists) {
-      log.skip(`${tool.name} not found at ${binPath}. Skipping...`)
+      log.skip(`${tool.name} not found at ${tool.command}. Skipping...`)
       continue
     }
 
@@ -102,7 +96,7 @@ export async function runQualityTools(files: string[], tools: ToolConfig[]): Pro
 
         for (const chunk of chunks) {
           await Promise.all(
-            chunk.map((file) => runWithRunner([binPath, ...args, file], { quiet: true })),
+            chunk.map((file) => runWithRunner([tool.command, ...args, file], { quiet: true })),
           )
         }
       } else {
@@ -110,7 +104,7 @@ export async function runQualityTools(files: string[], tools: ToolConfig[]): Pro
         if (tool.passFiles !== false) {
           args.push(...filesToRun)
         }
-        await runWithRunner([binPath, ...args])
+        await runWithRunner([tool.command, ...args])
       }
     })
 

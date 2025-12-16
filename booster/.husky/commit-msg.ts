@@ -122,18 +122,15 @@ async function validateBranchName(branchName: string): Promise<boolean> {
 
   return await runTool('Branch Name', 'Validating branch name...', async () => {
     try {
-      // Try quiet validation first
       await runWithRunner([binPath, '-t', branchName], {
         quiet: true,
       })
-    } catch {
-      // If failed, run again without quiet to show error
+    } catch (error: unknown) {
       log.error('Branch name validation failed')
-      try {
-        await runWithRunner([binPath, '-t', branchName])
-      } catch {
-        // Error output will be shown by runWithRunner
-      }
+      if (typeof error === 'object' && error !== null && 'stdout' in error)
+        console.log(error.stdout)
+      if (typeof error === 'object' && error !== null && 'stderr' in error)
+        console.error(error.stderr)
       log.info('See rules in validate-branch-name.config.cjs')
       throw new Error('Branch name validation failed')
     }
