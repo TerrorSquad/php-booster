@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.15.0](https://github.com/TerrorSquad/php-booster/compare/v1.14.0...v1.15.0) (2025-12-16)
+
+
+### Features
+
+* **integrate-booster:** add Deptrac initialization function to enhance code quality checks ([78ef532](https://github.com/TerrorSquad/php-booster/commit/78ef532c1bd89834734b71fa1ea8ca0b322d3ce3))
+
+
+### Bug Fixes
+
+* **eslint-config:** correct json config placement in ESLint configuration ([1741d41](https://github.com/TerrorSquad/php-booster/commit/1741d41c9e9bc47b09cb5d34324995daa3dd3fb2))
+
 ## [1.14.0](https://github.com/TerrorSquad/php-booster/compare/v1.13.2...v1.14.0) (2025-12-16)
 
 
