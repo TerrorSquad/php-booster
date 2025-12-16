@@ -92,7 +92,6 @@ export const TOOLS: ToolConfig[] = [
     extensions: ['.php'],
   },
   {
-
     name: 'Deptrac',
     command: 'deptrac',
     args: ['analyse', '--no-cache'],
