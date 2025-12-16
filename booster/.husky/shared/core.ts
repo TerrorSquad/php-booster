@@ -1,4 +1,3 @@
-import { config as dotenvConfig } from 'dotenv'
 import type { ProcessOutput } from 'zx'
 import { $, chalk, fs } from 'zx'
 
@@ -45,20 +44,14 @@ export async function initEnvironment(): Promise<void> {
   try {
     log.info(`Loading environment variables from: ${envFile}`)
 
-    const result = dotenvConfig({ path: envFile })
-    if (result.error) throw result.error
+    process.loadEnvFile(envFile)
 
     // Check for verbose mode after loading env vars
     const isVerbose =
       process.env.GIT_HOOKS_VERBOSE === '1' || process.env.GIT_HOOKS_VERBOSE === 'true'
 
-    // Show which variables were injected (only in verbose mode)
-    if (isVerbose && result.parsed && Object.keys(result.parsed).length > 0) {
-      const injectedVars = Object.keys(result.parsed)
-      log.success(`Injected environment variables: ${injectedVars.join(', ')}`)
-      injectedVars.forEach((key) => {
-        console.log(`  ${key}=${result.parsed![key]}`)
-      })
+    if (isVerbose) {
+      log.success(`Successfully loaded environment variables from ${envFile}`)
     }
   } catch (error) {
     log.warn(

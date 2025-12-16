@@ -20,14 +20,11 @@ importers:
         specifier: ^20.2.0
         version: 20.2.0
       '@redocly/cli':
-        specifier: ^2.12.6
+        specifier: ^2.12.7
         version: 2.12.7(@opentelemetry/api@1.9.0)(ajv@8.17.1)(core-js@3.47.0)
       '@types/node':
-        specifier: ^25.0.0
+        specifier: ^25.0.2
         version: 25.0.2
-      dotenv:
-        specifier: ^17.2.3
-        version: 17.2.3
       husky:
         specifier: ^9.1.7
         version: 9.1.7
@@ -985,13 +982,6 @@ packages:
     resolution:
       {
         integrity: sha512-47qPchRCykZC03FhkYAhrvwU4xDBFIj1QPqaarj6mdM/hgUzfPHcpkHJOn3mJAufFeeAxAzeGsr5X0M4k6fLZQ==,
-      }
-    engines: { node: '>=12' }
-
-  dotenv@17.2.3:
-    resolution:
-      {
-        integrity: sha512-JVUnt+DUIzu87TABbhPmNfVdBDt18BLOWjMUFJMSi/Qqg7NTYtabbvSNJGOJ7afbRuv9D/lngizHtP7QyLQ+9w==,
       }
     engines: { node: '>=12' }
 
@@ -3207,8 +3197,6 @@ snapshots:
 
   dotenv@16.4.7: {}
 
-  dotenv@17.2.3: {}
-
   dunder-proto@1.0.1:
     dependencies:
       call-bind-apply-helpers: 1.0.2
@@ -3594,7 +3582,7 @@ snapshots:
       oas-kit-common: 1.0.8
       reftools: 1.1.9
       yaml: 1.10.2
-      yargs: 17.0.1
+      yargs: 17.7.2
 
   oas-schema-walker@1.1.5: {}
 
@@ -3927,7 +3915,7 @@ snapshots:
       oas-validator: 5.0.8
       reftools: 1.1.9
       yaml: 1.10.2
-      yargs: 17.0.1
+      yargs: 17.7.2
     transitivePeerDependencies:
       - encoding
 
