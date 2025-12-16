@@ -87,7 +87,7 @@ export const TOOLS: ToolConfig[] = [
   },
   {
     name: 'Psalm',
-    command: 'psalm',
+    command: 'psalm.phar',
     type: 'php',
     extensions: ['.php'],
   },
