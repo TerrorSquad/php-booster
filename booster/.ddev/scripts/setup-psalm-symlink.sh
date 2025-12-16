@@ -1,28 +1,28 @@
 #!/bin/bash
 
 # Determine the project root on the host dynamically
-HOST_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# This script is in .ddev/scripts/, so we need to go up two levels to get to the project root
+HOST_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 
 # Extract project name; handle potential quotes in config.yaml
 PROJECT_NAME=$(grep '^name:' "$HOST_ROOT/.ddev/config.yaml" | awk '{print $2}' | tr -d '"' | tr -d "'")
 CONTAINER_NAME="ddev-${PROJECT_NAME}-web"
 
-# Initialize an array for the new arguments
-NEW_ARGS=()
+echo "Setting up Psalm symlink for $PROJECT_NAME..."
+echo "Host Root: $HOST_ROOT"
+echo "Container Name: $CONTAINER_NAME"
 
-for arg in "$@"; do
-  # Skip arguments that would confuse the Psalm Phar inside the container
-  [[ "$arg" == *"psalm.phar" ]] && continue
-  [[ "$arg" == *"vendor/bin/psalm" ]] && continue
-  [[ "$arg" == -d* ]] && continue
-  [[ "$arg" == -f* ]] && continue
-  [[ "$arg" == "--" ]] && continue
+# Create the directory structure for the symlink inside the container
+# We need to create the parent directory of the host root path
+PARENT_DIR=$(dirname "$HOST_ROOT")
 
-  NEW_ARGS+=("$arg")
-done
+# Create parent directory inside container
+docker exec -u root "$CONTAINER_NAME" mkdir -p "$PARENT_DIR"
 
-# Execute Psalm
-# -i: keeps STDIN open (critical for Language Server Protocol)
-# -w: sets the working dir to the HOST path (which is symlinked in the container)
-# exec: replaces the bash process with docker so signals (like SIGTERM) are passed through
-exec docker exec -i -w "$HOST_ROOT" "$CONTAINER_NAME" ./vendor/bin/psalm.phar "${NEW_ARGS[@]}"
+# Create the symlink: HOST_ROOT -> /var/www/html
+# -s: symbolic link
+# -f: force (remove existing destination file)
+# -n: no dereference (treat destination as normal file if it is a symlink to a directory)
+docker exec -u root "$CONTAINER_NAME" ln -sfn /var/www/html "$HOST_ROOT"
+
+echo "Symlink created: $HOST_ROOT -> /var/www/html inside $CONTAINER_NAME"
