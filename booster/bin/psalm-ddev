@@ -3,44 +3,26 @@
 # Determine the project root on the host dynamically
 HOST_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
-# Extract project name from .ddev/config.yaml to determine container name dynamically
-PROJECT_NAME=$(grep '^name:' "$HOST_ROOT/.ddev/config.yaml" | awk '{print $2}')
+# Extract project name; handle potential quotes in config.yaml
+PROJECT_NAME=$(grep '^name:' "$HOST_ROOT/.ddev/config.yaml" | awk '{print $2}' | tr -d '"' | tr -d "'")
 CONTAINER_NAME="ddev-${PROJECT_NAME}-web"
-
-# Define the project root in the container
-CONTAINER_ROOT="/var/www/html"
 
 # Initialize an array for the new arguments
 NEW_ARGS=()
 
-# Loop through all arguments passed to the script
 for arg in "$@"; do
-  # Skip if the argument is the psalm script itself
-  if [[ "$arg" == *"psalm.phar" ]] || [[ "$arg" == *"vendor/bin/psalm" ]]; then
-      continue
-  fi
+  # Skip arguments that would confuse the Psalm Phar inside the container
+  [[ "$arg" == *"psalm.phar" ]] && continue
+  [[ "$arg" == *"vendor/bin/psalm" ]] && continue
+  [[ "$arg" == -d* ]] && continue
+  [[ "$arg" == -f* ]] && continue
+  [[ "$arg" == "--" ]] && continue
 
-  # Skip PHP arguments passed by the extension (starting with -d or -f)
-  if [[ "$arg" == -d* ]] || [[ "$arg" == -f* ]]; then
-      continue
-  fi
-
-  # Skip the double dash separator often used to separate options
-  if [[ "$arg" == "--" ]]; then
-      continue
-  fi
-
-  # Check if the argument contains the host root path
-  # if [[ "$arg" == *"$HOST_ROOT"* ]]; then
-    # Replace the host root path with the container root path
-    # NEW_ARGS+=("${arg//$HOST_ROOT/$CONTAINER_ROOT}")
-  # else
-    # Keep the argument as is
-    NEW_ARGS+=("$arg")
-  # fi
+  NEW_ARGS+=("$arg")
 done
 
-# Execute Psalm inside the DDEV container with the modified arguments
-# Use docker exec for better performance than ddev exec
-# -i is required to keep STDIN open for the Language Server protocol
-docker exec -i -w /var/www/html "$CONTAINER_NAME" ./vendor/bin/psalm.phar "${NEW_ARGS[@]}"
+# Execute Psalm
+# -i: keeps STDIN open (critical for Language Server Protocol)
+# -w: sets the working dir to the HOST path (which is symlinked in the container)
+# exec: replaces the bash process with docker so signals (like SIGTERM) are passed through
+exec docker exec -i -w "$HOST_ROOT" "$CONTAINER_NAME" ./vendor/bin/psalm.phar "${NEW_ARGS[@]}"
