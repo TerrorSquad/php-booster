@@ -101,6 +101,7 @@ class HookTester:
         env = os.environ.copy()
         env["SKIP_PHPSTAN"] = "1"
         env["SKIP_PSALM"] = "1"
+        env["SKIP_DEPTRAC"] = "1"
 
         try:
             self.cmd.run_command(
@@ -184,6 +185,7 @@ echo "Hello, World!";
         env = os.environ.copy()
         env["SKIP_PHPSTAN"] = "1"
         env["SKIP_PSALM"] = "1"
+        env["SKIP_DEPTRAC"] = "1"
 
         try:
             self.cmd.run_command(
@@ -257,6 +259,7 @@ echo "Another test";
         env = os.environ.copy()
         env["SKIP_PHPSTAN"] = "1"
         env["SKIP_PSALM"] = "1"
+        env["SKIP_DEPTRAC"] = "1"
 
         # This should fail due to invalid branch name
         self.log.info("Attempting commit on invalid branch (should fail)...")
