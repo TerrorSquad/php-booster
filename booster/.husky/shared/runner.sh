@@ -12,9 +12,11 @@ REAL_SCRIPT_DIR="$(dirname "$REAL_SCRIPT_PATH")"
 BOOSTER_ROOT="$(cd "$REAL_SCRIPT_DIR/../.." && pwd)"
 
 # If running via symlink (PROJECT_ROOT != BOOSTER_ROOT), add booster dependencies to PATH
+RELATIVE_BOOSTER_PATH=""
 if [ "$PROJECT_ROOT" != "$BOOSTER_ROOT" ]; then
     export PATH="$BOOSTER_ROOT/node_modules/.bin:$BOOSTER_ROOT/vendor/bin:$PATH"
     export NODE_PATH="$BOOSTER_ROOT/node_modules:$NODE_PATH"
+    RELATIVE_BOOSTER_PATH=$(realpath --relative-to="$PROJECT_ROOT" "$BOOSTER_ROOT")
 fi
 
 # Change to project root to ensure context is correct
@@ -63,39 +65,33 @@ run_in_ddev_container() {
     if [ -n "$project_name" ]; then
         # Use docker exec -t for TTY support and colors
         # Forward a conservative whitelist of environment variables from the host
-        # into the container so ZX hooks and wrappers can honour skip flags and
-        # verbosity settings without exposing unrelated host environment values.
-        # Whitelist derived from hook/utility usage and documented in hook comments:
         whitelist=(
-            "SKIP_PRECOMMIT"
-            "SKIP_PREPUSH"
-            "SKIP_COMMITMSG"
-            "SKIP_ESLINT"
-            "SKIP_PRETTIER"
-            "SKIP_STYLELINT"
-            "SKIP_RECTOR"
-            "SKIP_ECS"
-            "SKIP_PHPSTAN"
-            "SKIP_PSALM"
-            "SKIP_DEPTRAC"
-            "SKIP_PHPUNIT"
-            "SKIP_API_DOCS"
-            "GIT_HOOKS_VERBOSE"
+            "SKIP_PRECOMMIT" "SKIP_PREPUSH" "SKIP_COMMITMSG"
+            "SKIP_ESLINT" "SKIP_PRETTIER" "SKIP_STYLELINT"
+            "SKIP_RECTOR" "SKIP_ECS" "SKIP_PHPSTAN" "SKIP_PSALM" "SKIP_DEPTRAC"
+            "SKIP_PHPUNIT" "SKIP_API_DOCS" "GIT_HOOKS_VERBOSE"
         )
 
         env_flags=()
         for var in "${whitelist[@]}"; do
-            # Only forward if variable is set in the host environment
             if [ -n "${!var+x}" ]; then
                 env_flags+=("-e" "${var}=${!var}")
             fi
         done
 
-        if [ ${#env_flags[@]} -gt 0 ]; then
-            exec docker exec -t "${env_flags[@]}" "$container_name" "$@"
-        else
-            exec docker exec -t "$container_name" "$@"
+        # Construct PATH to include project binaries
+        # We need both node_modules/.bin (for zx, commitlint) and vendor/bin (for PHP tools)
+        # These are located at the project root (/var/www/html) in the container
+        local container_path="/var/www/html/node_modules/.bin:/var/www/html/vendor/bin"
+
+        # If running from a subdirectory (e.g. dev mode), add those paths too
+        if [ -n "$RELATIVE_BOOSTER_PATH" ]; then
+            container_path="/var/www/html/$RELATIVE_BOOSTER_PATH/node_modules/.bin:/var/www/html/$RELATIVE_BOOSTER_PATH/vendor/bin:$container_path"
         fi
+
+        # Execute command in container with updated PATH
+        exec docker exec -t "${env_flags[@]}" "$container_name" \
+            sh -c "export PATH=$container_path:\$PATH; exec \"\$@\"" -- "$@"
     fi
 }
 
