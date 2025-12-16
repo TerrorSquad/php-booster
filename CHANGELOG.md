@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.13.2](https://github.com/TerrorSquad/php-booster/compare/v1.13.1...v1.13.2) (2025-12-16)
+
+
+### Bug Fixes
+
+* **hooks:** improve error handling and logging in branch name validation ([be43b37](https://github.com/TerrorSquad/php-booster/commit/be43b37b6a5f433d017a077077005a02b47e77a3))
+* **hooks:** use psalm.phar instead of psalm ([07109de](https://github.com/TerrorSquad/php-booster/commit/07109de5608dd03ffa7b16144dee82355ceae01a))
+* **runner:** enhance Docker command execution with improved PATH handling ([25898b4](https://github.com/TerrorSquad/php-booster/commit/25898b4f5416219b153cc8ace4c8f63c7f5b62f7))
+* **tools:** add Psalm tool configuration with separate entry for psalm.phar ([ec97cc0](https://github.com/TerrorSquad/php-booster/commit/ec97cc02e70b5298ee135dbccd600d78ed5966d3))
+
 ## [1.13.1](https://github.com/TerrorSquad/php-booster/compare/v1.13.0...v1.13.1) (2025-12-16)
 
 
