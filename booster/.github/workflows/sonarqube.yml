@@ -57,7 +57,7 @@ jobs:
         run: composer phpstan:sonar || true
 
       - name: Run Psalm
-        run: composer psalm-phar:sonar || composer psalm:sonar || true
+        run: composer psalm:sonar || true
 
       - name: Run Pest tests
         run: composer test:coverage:pest || true

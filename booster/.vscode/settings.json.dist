@@ -31,5 +31,5 @@
   "phpstan.tmpDir": "",
   "phpstan.checkValidity": false,
   "psalm.phpExecutablePath": "{{PROJECT_ROOT}}/bin/psalm-ddev",
-  "psalm.psalmScriptPath": "vendor/bin/psalm.phar"
+  "psalm.psalmScriptPath": "vendor/bin/psalm"
 }

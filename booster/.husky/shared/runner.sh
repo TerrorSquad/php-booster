@@ -22,6 +22,12 @@ fi
 # Change to project root to ensure context is correct
 cd "$PROJECT_ROOT" || exit 1
 
+# Ensure psalm symlink exists if psalm.phar is present but psalm is not
+# This allows using 'psalm' command consistently even if only psalm.phar is installed
+if [ -f "vendor/bin/psalm.phar" ] && [ ! -f "vendor/bin/psalm" ]; then
+    ln -s psalm.phar "vendor/bin/psalm"
+fi
+
 # Load mise if available to ensure pnpm is found
 if command -v mise &> /dev/null; then
   eval "$(mise activate bash)"

@@ -92,12 +92,7 @@ export const TOOLS: ToolConfig[] = [
     extensions: ['.php'],
   },
   {
-    name: 'Psalm (Phar)',
-    command: 'psalm.phar',
-    type: 'php',
-    extensions: ['.php'],
-  },
-  {
+
     name: 'Deptrac',
     command: 'deptrac',
     args: ['analyse', '--no-cache'],
