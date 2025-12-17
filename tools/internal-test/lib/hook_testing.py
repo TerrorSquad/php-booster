@@ -26,6 +26,20 @@ class HookTester:
         self.state = state_detector
         self.log = logger
 
+    def _trust_mise_config(self):
+        """Trust the mise configuration file if it exists."""
+        mise_config = os.path.join(self.config.target_dir, "mise.toml")
+        if os.path.exists(mise_config):
+            self.log.info("Trusting mise configuration...")
+            try:
+                self.cmd.run_command(
+                    ["mise", "trust"],
+                    cwd=self.config.target_dir,
+                    check=False
+                )
+            except Exception as e:
+                self.log.warn(f"Failed to trust mise config: {e}")
+
     def test_branch_validation(self) -> None:
         """
         Test git hooks and branch validation.
@@ -41,6 +55,9 @@ class HookTester:
             sys.exit(1)
 
         self.log.section("🔒 Testing Branch Validation")
+
+        # Trust mise config before running git commands
+        self._trust_mise_config()
 
         # Return to main branch and create final commit
         main_branch = self._switch_to_default_branch()

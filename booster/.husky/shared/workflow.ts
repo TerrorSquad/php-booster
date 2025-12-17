@@ -1,5 +1,13 @@
 import { $, which } from 'zx'
-import { formatDuration, initEnvironment, isSkipped, log, runWithRunner } from './core.ts'
+import {
+  formatDuration,
+  getExecCommand,
+  initEnvironment,
+  isDdevProject,
+  isSkipped,
+  log,
+  runWithRunner,
+} from './core.ts'
 import { shouldSkipDuringMerge, stageFiles } from './git.ts'
 import { GitHook, type ToolConfig } from './types.ts'
 
@@ -71,9 +79,14 @@ export async function runQualityTools(files: string[], tools: ToolConfig[]): Pro
     if (filesToRun.length === 0) continue
 
     // Check binary existence
-    const exists = await which(tool.command)
-      .then(() => true)
-      .catch(() => false)
+    let exists = false
+    if (tool.type === 'php' && (await isDdevProject())) {
+      exists = true
+    } else {
+      exists = await which(tool.command)
+        .then(() => true)
+        .catch(() => false)
+    }
 
     if (!exists) {
       log.skip(`${tool.name} not found at ${tool.command}. Skipping...`)
@@ -96,15 +109,20 @@ export async function runQualityTools(files: string[], tools: ToolConfig[]): Pro
 
         for (const chunk of chunks) {
           await Promise.all(
-            chunk.map((file) => runWithRunner([tool.command, ...args, file], { quiet: true })),
+            chunk.map(async (file) => {
+              const cmd = await getExecCommand([tool.command, ...args, file], tool.type)
+              return runWithRunner(cmd, { quiet: true })
+            }),
           )
         }
       } else {
         // Run command once with all files
+        const cmdArgs = [...args]
         if (tool.passFiles !== false) {
-          args.push(...filesToRun)
+          cmdArgs.push(...filesToRun)
         }
-        await runWithRunner([tool.command, ...args])
+        const cmd = await getExecCommand([tool.command, ...cmdArgs], tool.type)
+        await runWithRunner(cmd)
       }
     })
 

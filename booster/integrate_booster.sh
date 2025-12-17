@@ -668,6 +668,19 @@ function copy_files() {
         log "  renovate.json not found in booster. Skipping (optional)."
     fi
 
+    # Copy mise config (for local tool version management)
+    local mise_cfg="${BOOSTER_INTERNAL_PATH}/mise.toml"
+    if [ -f "$mise_cfg" ]; then
+        if [ ! -f "mise.toml" ]; then
+            cp "$mise_cfg" . || warn "Failed to copy mise.toml"
+            log "  Copied mise.toml for local tool version management"
+        else
+            log "  mise.toml already exists. Skipping."
+        fi
+    else
+        log "  mise.toml not found in booster. Skipping."
+    fi
+
     success "Common files copied (tools filtered to runtime essentials)."
 }
 
@@ -695,9 +708,7 @@ function update_package_json() {
             .[0] as $proj | .[1] as $booster |
             $proj * {
                 scripts: (($proj.scripts // {}) + ($booster.scripts // {})),
-                devDependencies: (($proj.devDependencies // {}) + ($booster.devDependencies // {})),
-                husky: (($proj.husky // {}) + ($booster.husky // {})),
-                packageManager: $booster.packageManager
+                devDependencies: (($proj.devDependencies // {}) + ($booster.devDependencies // {}))
             }
             ' "$project_pkg" "$booster_pkg" >"$tmp_pkg" || error "Failed to merge package.json using jq."
 
