@@ -40,6 +40,50 @@ class HookTester:
             except Exception as e:
                 self.log.warn(f"Failed to trust mise config: {e}")
 
+    def _commit_integration_changes(self) -> None:
+        """Commit the changes made by the booster integration script."""
+        self.log.info("Committing booster integration changes...")
+
+        # Add all booster files
+        self.cmd.run_command(
+            ["git", "add", "-A"],
+            cwd=self.config.target_dir,
+        )
+
+        # Set environment to skip analysis for the integration commit
+        env = os.environ.copy()
+        env["SKIP_PHPSTAN"] = "1"
+        env["SKIP_PSALM"] = "1"
+        env["SKIP_DEPTRAC"] = "1"
+
+        # Check if there are changes to commit
+        status = self.cmd.run_command(
+            ["git", "status", "--porcelain"],
+            cwd=self.config.target_dir,
+            capture_output=True,
+            check=False
+        )
+
+        if not status.stdout.strip():
+            self.log.info("Nothing to commit.")
+            return
+
+        try:
+            self.cmd.run_command(
+                [
+                    "git",
+                    "commit",
+                    "-m",
+                    "feat: integrate PHP Booster\n\nIntegrates the PHP Environment Blueprint booster with validated configuration.",
+                ],
+                cwd=self.config.target_dir,
+                env=env,
+            )
+            self.log.success("Successfully committed booster integration")
+        except Exception as e:
+            self.log.error(f"Failed to commit booster integration: {e}")
+            sys.exit(1)
+
     def test_branch_validation(self) -> None:
         """
         Test git hooks and branch validation.
@@ -58,6 +102,9 @@ class HookTester:
 
         # Trust mise config before running git commands
         self._trust_mise_config()
+
+        # Commit integration changes first so we have a clean state
+        self._commit_integration_changes()
 
         # Return to main branch and create final commit
         main_branch = self._switch_to_default_branch()
@@ -103,39 +150,10 @@ class HookTester:
                 pass
 
         self.log.info("")
-        self.log.info("Creating final integration commit...")
+        self.log.info("Final integration state verified.")
         self.log.info("================================")
         self.log.info(f"Target branch: {main_branch}")
         self.log.info("")
-
-        # Add all booster files
-        self.cmd.run_command(
-            ["git", "add", "-A"],
-            cwd=self.config.target_dir,
-        )
-
-        # Set environment to skip analysis for the integration commit
-        env = os.environ.copy()
-        env["SKIP_PHPSTAN"] = "1"
-        env["SKIP_PSALM"] = "1"
-        env["SKIP_DEPTRAC"] = "1"
-
-        try:
-            self.cmd.run_command(
-                [
-                    "git",
-                    "commit",
-                    "-m",
-                    "feat: integrate PHP Booster\n\nIntegrates the PHP Environment Blueprint booster with validated configuration.",
-                ],
-                cwd=self.config.target_dir,
-                env=env,
-            )
-            self.log.success("Successfully committed booster integration")
-        except subprocess.CalledProcessError as e:
-            self.log.error("Failed to commit booster integration")
-            self.log.error(f"Error: {e}")
-            sys.exit(1)
 
     def _switch_to_default_branch(self) -> str:
         """
@@ -151,16 +169,24 @@ class HookTester:
         if result.returncode == 0:
             return "master"
 
-        result = self.cmd.run_command(
+        result_main = self.cmd.run_command(
             ["git", "checkout", "main"],
             cwd=self.config.target_dir,
             check=False,
             capture_output=True,
         )
-        if result.returncode == 0:
+        if result_main.returncode == 0:
             return "main"
 
         self.log.error("Could not checkout master or main branch")
+        if result.stderr:
+            stderr_str = result.stderr.decode().strip() if isinstance(result.stderr, bytes) else result.stderr.strip()
+            self.log.error(f"git checkout master error: {stderr_str}")
+        if result_main.stderr:
+            stderr_str = result_main.stderr.decode().strip() if isinstance(result_main.stderr, bytes) else result_main.stderr.strip()
+            self.log.error(f"git checkout main error: {stderr_str}")
+        self.cmd.run_command(["git", "status"], cwd=self.config.target_dir, check=False)
+
         sys.exit(1)
 
     def _test_valid_branch(self):
@@ -217,7 +243,6 @@ echo "Hello, World!";
             )
 
             self.log.success("Valid branch + commit message accepted")
-            self.log.info("")
 
             self.log.info("Checking commit details...")
             # Check commit log

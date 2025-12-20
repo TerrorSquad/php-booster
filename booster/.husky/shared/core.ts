@@ -176,6 +176,7 @@ export async function getExecCommand(command: string[], type: string): Promise<s
       return [
         'docker',
         'exec',
+        '-t',
         '-u',
         `${uid}:${gid}`,
         '-w',
@@ -189,4 +190,19 @@ export async function getExecCommand(command: string[], type: string): Promise<s
   }
 
   return command
+}
+
+/**
+ * Ensure Mutagen sync is complete if enabled
+ */
+export async function ensureMutagenSync(): Promise<void> {
+  if (await isDdevProject()) {
+    try {
+      // Attempt to sync mutagen. This will fail if mutagen is not enabled, which is fine.
+      // We use 'ddev mutagen sync' which forces a sync.
+      await runWithRunner(['ddev', 'mutagen', 'sync'], { quiet: true })
+    } catch {
+      // Ignore errors (e.g. mutagen not enabled)
+    }
+  }
 }

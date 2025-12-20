@@ -1,5 +1,6 @@
 import { $, which } from 'zx'
 import {
+  ensureMutagenSync,
   formatDuration,
   getExecCommand,
   initEnvironment,
@@ -127,6 +128,8 @@ export async function runQualityTools(files: string[], tools: ToolConfig[]): Pro
     })
 
     if (success && tool.stagesFilesAfter && tool.passFiles !== false) {
+      // Ensure any changes made in the container are synced back to host before staging
+      await ensureMutagenSync()
       await stageFiles(filesToRun)
     }
 
