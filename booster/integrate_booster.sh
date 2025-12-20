@@ -722,6 +722,17 @@ function update_package_json() {
     else
         warn "Booster 'pnpm-workspace.yaml' not found. Skipping copy."
     fi
+
+    # Copy pnpm-lock.yaml if it exists (to ensure deterministic installs)
+    local booster_pnpm_lock="${BOOSTER_INTERNAL_PATH}/pnpm-lock.yaml"
+    if [ -f "$booster_pnpm_lock" ]; then
+        if [ ! -f "pnpm-lock.yaml" ]; then
+            cp "$booster_pnpm_lock" . || warn "Failed to copy pnpm-lock.yaml."
+            success "pnpm-lock.yaml copied."
+        else
+            log "pnpm-lock.yaml already exists. Skipping copy."
+        fi
+    fi
 }
 
 # --- Updated merge_scripts Function ---
@@ -1296,6 +1307,25 @@ function init_deptrac() {
     fi
 }
 
+function install_node_dependencies() {
+    log "Installing Node.js dependencies..."
+
+    # Check if pnpm is available
+    if ! command -v pnpm >/dev/null 2>&1; then
+        warn "pnpm not found. Skipping Node.js dependency installation."
+        warn "Please install pnpm and run 'pnpm install' manually to enable git hooks."
+        return
+    fi
+
+    # Install dependencies
+    log "Running 'pnpm install'..."
+    if pnpm install; then
+        success "Node.js dependencies installed."
+    else
+        warn "Failed to install Node.js dependencies. Please run 'pnpm install' manually."
+    fi
+}
+
 function cleanup_silent() {
     rm -rf "$BOOSTER_TARGET_DIR"
     rm -f composer.json.merged.tmp composer.json.merged.tmp.next hooks.yaml.tmp .ddev/config.yaml.tmp package.json.tmp # Clean up temp files
@@ -1499,6 +1529,7 @@ function main() {
 
     add_code_quality_tools # Merges composer scripts & installs deps
     init_deptrac
+    install_node_dependencies
 
     # --- Create Version Stamp ---
     create_version_stamp "$current_version"
