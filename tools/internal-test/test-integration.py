@@ -82,6 +82,13 @@ relative to the repository root unless --target-dir is specified.
         help="Run in automated mode (no manual input required). Only applies to interactive tests.",
     )
 
+    parser.add_argument(
+        "--verbose",
+        "-v",
+        action="store_true",
+        help="Enable verbose output",
+    )
+
     args = parser.parse_args()
 
     # Use fixed project name
@@ -106,6 +113,7 @@ relative to the repository root unless --target-dir is specified.
         root_dir=root_dir,
         use_colors=os.getenv("NO_COLOR") is None,
         automated=args.automated,
+        verbose=args.verbose,
     )
 
 

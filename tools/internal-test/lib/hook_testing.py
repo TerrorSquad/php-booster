@@ -35,7 +35,8 @@ class HookTester:
                 self.cmd.run_command(
                     ["mise", "trust"],
                     cwd=self.config.target_dir,
-                    check=False
+                    check=False,
+                    capture_output=not self.config.verbose,
                 )
             except Exception as e:
                 self.log.warn(f"Failed to trust mise config: {e}")
@@ -78,6 +79,7 @@ class HookTester:
                 ],
                 cwd=self.config.target_dir,
                 env=env,
+                capture_output=not self.config.verbose,
             )
             self.log.success("Successfully committed booster integration")
         except Exception as e:
@@ -113,7 +115,8 @@ class HookTester:
             self.log.error("Could not determine main branch name")
             sys.exit(1)
 
-        self.log.info(f"Switched back to {main_branch} branch")
+        if self.config.verbose:
+            self.log.info(f"Switched back to {main_branch} branch")
 
         # Test valid branch
         self._test_valid_branch()
@@ -131,11 +134,14 @@ class HookTester:
             self.log.error("Could not determine main branch name")
             sys.exit(1)
 
-        self.log.info(f"Switched back to {main_branch} branch")
-        self.log.info("")
-        self.log.info("All branch validation tests passed")
-        self.log.info("==========================")
-        self.log.info("")
+        if self.config.verbose:
+            self.log.info(f"Switched back to {main_branch} branch")
+            self.log.info("")
+            self.log.info("All branch validation tests passed")
+            self.log.info("==========================")
+            self.log.info("")
+        else:
+            self.log.success("All branch validation tests passed")
 
         # Clean up test branches before final commit
         for branch in ["feature/PRJ-123-test-feature", "invalid-branch-format"]:
@@ -144,8 +150,10 @@ class HookTester:
                     ["git", "branch", "-D", branch],
                     cwd=self.config.target_dir,
                     check=False,
+                    capture_output=not self.config.verbose,
                 )
-                self.log.info(f"Cleaned up test branch: {branch}")
+                if self.config.verbose:
+                    self.log.info(f"Cleaned up test branch: {branch}")
             except:
                 pass
 
@@ -193,14 +201,16 @@ class HookTester:
         """Test valid branch and commit"""
         print("")
         self.log.info("Testing valid branch format...")
-        print("┌──────────────────────────────────────────────────────────────┐")
-        self.log.info("Branch: feature/PRJ-123-test-feature")
-        print("└──────────────────────────────────────────────────────────────┘")
-        print("")
+        if self.config.verbose:
+            print("┌──────────────────────────────────────────────────────────────┐")
+            self.log.info("Branch: feature/PRJ-123-test-feature")
+            print("└──────────────────────────────────────────────────────────────┘")
+            print("")
 
         self.cmd.run_command(
             ["git", "checkout", "-b", "feature/PRJ-123-test-feature"],
             cwd=self.config.target_dir,
+            capture_output=not self.config.verbose,
         )
 
         # Create test PHP file
@@ -212,21 +222,24 @@ echo "Hello, World!";
 """
         )
 
-        print("")
-        self.log.info(f"Created test file: {test_file}")
-        print("─────────────────────────")
-        print(test_file.read_text())
-        print("─────────────────────────")
-        print("")
+        if self.config.verbose:
+            print("")
+            self.log.info(f"Created test file: {test_file}")
+            print("─────────────────────────")
+            print(test_file.read_text())
+            print("─────────────────────────")
+            print("")
 
-        self.log.info("Adding test file to git...")
+            self.log.info("Adding test file to git...")
+
         self.cmd.run_command(
             ["git", "add", "test_commit.php"], cwd=self.config.target_dir
         )
 
         # Wait for Mutagen sync (if active)
         import time
-        self.log.info("Waiting 5s for Mutagen sync...")
+        if self.config.verbose:
+            self.log.info("Waiting 5s for Mutagen sync...")
         time.sleep(5)
 
         # Set environment to skip static analysis for faster testing
@@ -240,18 +253,22 @@ echo "Hello, World!";
                 ["git", "commit", "-m", "feat: add test feature"],
                 cwd=self.config.target_dir,
                 env=env,
+                capture_output=not self.config.verbose,
             )
 
             self.log.success("Valid branch + commit message accepted")
 
-            self.log.info("Checking commit details...")
+            if self.config.verbose:
+                self.log.info("Checking commit details...")
+
             # Check commit log
             result = self.cmd.run_command(
                 ["git", "log", "-1", "--pretty=format:%h %s"],
                 cwd=self.config.target_dir,
                 capture_output=True,
             )
-            self.log.info(f"Commit: {result.stdout}")
+            if self.config.verbose:
+                self.log.info(f"Commit: {result.stdout}")
 
             # Check if ticket footer was appended
             result = self.cmd.run_command(
@@ -274,14 +291,16 @@ echo "Hello, World!";
         """Test invalid branch rejection"""
         print("")
         self.log.info("Testing invalid branch format...")
-        print("┌──────────────────────────────────────────────────────────────┐")
-        self.log.warn("Branch: invalid-branch-format (should be rejected)")
-        print("└──────────────────────────────────────────────────────────────┘")
-        print("")
+        if self.config.verbose:
+            print("┌──────────────────────────────────────────────────────────────┐")
+            self.log.warn("Branch: invalid-branch-format (should be rejected)")
+            print("└──────────────────────────────────────────────────────────────┘")
+            print("")
 
         self.cmd.run_command(
             ["git", "checkout", "-b", "invalid-branch-format"],
             cwd=self.config.target_dir,
+            capture_output=not self.config.verbose,
         )
 
         # Create another test file
@@ -293,11 +312,13 @@ echo "Another test";
 """
         )
 
-        self.log.info(f"Created test file: {test_file}")
-        self.log.info("File contents:")
-        print(test_file.read_text())
+        if self.config.verbose:
+            self.log.info(f"Created test file: {test_file}")
+            self.log.info("File contents:")
+            print(test_file.read_text())
 
-        self.log.info("Adding test file to git...")
+            self.log.info("Adding test file to git...")
+
         self.cmd.run_command(
             ["git", "add", "test_commit2.php"], cwd=self.config.target_dir
         )
@@ -309,7 +330,9 @@ echo "Another test";
         env["SKIP_DEPTRAC"] = "1"
 
         # This should fail due to invalid branch name
-        self.log.info("Attempting commit on invalid branch (should fail)...")
+        if self.config.verbose:
+            self.log.info("Attempting commit on invalid branch (should fail)...")
+
         result = self.cmd.run_command(
             ["git", "commit", "-m", "add another test"],
             cwd=self.config.target_dir,
@@ -327,18 +350,22 @@ echo "Another test";
             print("")
             sys.exit(1)
         else:
-            print("")
-            print("┌──────────────────────────────────────────────────────────────┐")
+            if self.config.verbose:
+                print("")
+                print("┌──────────────────────────────────────────────────────────────┐")
+
             self.log.success("✓ Invalid branch correctly rejected")
-            print("└──────────────────────────────────────────────────────────────┘")
-            print("")
-            print("Expected error output from git:")
-            print("═══════════════════════════════════")
-            if isinstance(result.stderr, bytes):
-                print(result.stderr.decode())
-            else:
-                print(result.stderr)
-            print("═══════════════════════════════════")
+
+            if self.config.verbose:
+                print("└──────────────────────────────────────────────────────────────┘")
+                print("")
+                print("Expected error output from git:")
+                print("═══════════════════════════════════")
+                if isinstance(result.stderr, bytes):
+                    print(result.stderr.decode())
+                else:
+                    print(result.stderr)
+                print("═══════════════════════════════════")
 
             # Unstage the test file first
             self.cmd.run_command(
@@ -352,5 +379,8 @@ echo "Another test";
             test_file = self.config.target_dir / "test_commit2.php"
             if test_file.exists():
                 test_file.unlink()
-                self.log.info("Cleaned up test file")
-            print("")
+                if self.config.verbose:
+                    self.log.info("Cleaned up test file")
+
+            if self.config.verbose:
+                print("")

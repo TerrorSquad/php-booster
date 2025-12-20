@@ -17,6 +17,7 @@ class Config:
     root_dir: Path
     use_colors: bool
     automated: bool = False
+    verbose: bool = False
 
 
 class Colors:

@@ -45,11 +45,7 @@ module.exports = {
   config,
   pattern: `${skippedRegex}|${allowedRegex}`,
   errorMsg: [
-    '============================================================',
     '🚫 Branch name validation failed!',
-    '============================================================',
-    '',
-    'Your branch name does not match the required pattern.',
     '',
     'Allowed formats:',
     `  • <type>/${config.ticketIdPrefix ? '<optional-ticket-id>' : ''}<name>`,
@@ -57,23 +53,9 @@ module.exports = {
     config.ticketIdPrefix
       ? `    - <optional-ticket-id>: ${config.ticketIdPrefix.split('|').join(' or ')}-<number> (optional)`
       : '',
-    `    - <name>: must match ${config.namePattern}`,
-    '      (letters and numbers separated by single dashes, no consecutive or trailing dashes)',
+    `    - <name>: ${config.namePattern}`,
     '',
-    `🔹 Skipped branches (not validated): ${config.skipped.join(', ')}`,
-    '',
-    'Examples of valid branch names:',
-    `  • feature/${config.ticketIdPrefix ? 'PRJ-123-' : ''}My-Feature`,
-    `  • fix/${config.ticketIdPrefix ? 'ERM-456-' : ''}bug-fix`,
-    '  • chore/Update-Docs',
-    '',
-    'Examples of invalid branch names:',
-    '  • feature/--bad--name',
-    '  • fix/invalid-',
-    '  • bug/-startdash',
-    '  • story/endswith-',
-    '',
-    '============================================================',
+    `🔹 Skipped branches: ${config.skipped.join(', ')}`,
   ]
     .filter(Boolean)
     .join('\n'),

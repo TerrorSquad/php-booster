@@ -3,6 +3,7 @@
 Verification utilities for the PHP Booster integration tests
 """
 
+import os
 import sys
 from typing import List
 
@@ -68,37 +69,50 @@ class IntegrationVerifier:
             )
             sys.exit(1)
 
-        # Check composer tools
-        self.log.info("Checking composer packages and tools...")
-        result = self.cmd.run_command(
-            ["ddev", "composer", "show"],
-            cwd=self.config.target_dir,
-            capture_output=True,
-        )
-        package_lines = result.stdout.strip().split("\n")[:10]
-        for line in package_lines:
-            print(f"  {line}")
-        self.log.info("... (showing first 10 packages)")
 
         # Test ECS
         try:
+            # Use docker exec for performance
+            env = os.environ.copy()
+            env["TERM"] = "xterm-256color"
+
             self.cmd.run_command(
-                ["ddev", "composer", "ecs", "--version"],
+                [
+                    "docker",
+                    "exec",
+                    "-t",
+                    f"ddev-{self.config.project_name}-web",
+                    "vendor/bin/ecs",
+                    "--version",
+                ],
                 cwd=self.config.target_dir,
                 capture_output=True,
+                env=env,  # Ensure colors are preserved
             )
             self.log.success("ECS is working through DDEV")
-        except:
-            self.log.error("ECS command not working through DDEV")
+        except Exception as e:
+            self.log.error(f"ECS command not working through DDEV: {e}")
             sys.exit(1)
 
         # Check PHP version
+        env = os.environ.copy()
+        env["TERM"] = "xterm-256color"
+
         result = self.cmd.run_command(
-            ["ddev", "exec", "php", "-v"],
+            [
+                "docker",
+                "exec",
+                "-t",
+                f"ddev-{self.config.project_name}-web",
+                "php",
+                "-v",
+            ],
             cwd=self.config.target_dir,
             capture_output=True,
+            env=env,  # Ensure colors are preserved
         )
-        php_version = result.stdout.strip().split("\n")[0]
+        # Clean up output to remove potential carriage returns from docker exec
+        php_version = result.stdout.strip().split("\n")[0].replace("\r", "")
         self.log.info(f"PHP version in DDEV: {php_version}")
 
         self.log.success("Integration verification passed!")
