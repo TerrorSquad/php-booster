@@ -447,8 +447,10 @@ function check_dependencies() {
         command -v ddev >/dev/null 2>&1 || missing_deps+=("ddev")
     else
         command -v composer >/dev/null 2>&1 || missing_deps+=("composer")
-        command -v pnpm >/dev/null 2>&1 || missing_deps+=("pnpm")
     fi
+
+    # pnpm is required on the host for both DDEV and non-DDEV projects (for git hooks)
+    command -v pnpm >/dev/null 2>&1 || missing_deps+=("pnpm")
 
     if [ ${#missing_deps[@]} -ne 0 ]; then
         error "Missing dependencies: ${missing_deps[*]}. Please install them."
@@ -578,18 +580,6 @@ function update_ddev_config() {
     log "  Ensuring 'xdebug_enabled = true' using yq..."
     if ! yq eval '.xdebug_enabled = true' -i "$project_config"; then
         warn "Failed to set 'xdebug_enabled = true' using yq. Check '$project_config'."
-    fi
-
-    # 4. Copy nodejs_version key from booster config
-    log "  Copying 'nodejs_version' from booster config..."
-    nodejs_version=$(yq eval '.nodejs_version' "$booster_config")
-    if ! yq eval ".nodejs_version = \"$nodejs_version\"" -i "$project_config"; then
-        warn "Failed to copy 'nodejs_version' from booster config. Check '$project_config'."
-    fi
-
-    # 5. Ensure corepack_enable is true
-    if ! yq eval '.corepack_enable = true' -i "$project_config"; then
-        warn "Failed to set 'corepack_enable = true' using yq. Check '$project_config'."
     fi
 
     success "ddev config updated. Ensure the paths in the config are correct."
