@@ -88,18 +88,14 @@ jobs:
             ${{ runner.os }}-pnpm-store-
 
       - name: Install DDEV
-        run: |
-          # Install DDEV
-          curl -fsSL https://apt.fury.io/drud/gpg.key | gpg --dearmor | sudo tee /etc/apt/trusted.gpg.d/ddev.gpg > /dev/null
-          echo "deb [signed-by=/etc/apt/trusted.gpg.d/ddev.gpg] https://apt.fury.io/drud/ * *" | sudo tee /etc/apt/sources.list.d/ddev.list
-          sudo apt-get update
-          sudo apt-get install -y ddev
+        uses: ddev/github-action-setup-ddev@v1
+        with:
+          autostart: false
 
-          # Configure DDEV
+      - name: Configure DDEV
+        run: |
           ddev config global --instrumentation-opt-in=false
           ddev config global --omit-containers=ddev-ssh-agent
-
-          # Start DDEV
           ddev version
 
       - name: Check requirements
@@ -195,18 +191,14 @@ jobs:
             ${{ runner.os }}-pnpm-store-
 
       - name: Install DDEV
-        run: |
-          # Install DDEV
-          curl -fsSL https://apt.fury.io/drud/gpg.key | gpg --dearmor | sudo tee /etc/apt/trusted.gpg.d/ddev.gpg > /dev/null
-          echo "deb [signed-by=/etc/apt/trusted.gpg.d/ddev.gpg] https://apt.fury.io/drud/ * *" | sudo tee /etc/apt/sources.list.d/ddev.list
-          sudo apt-get update
-          sudo apt-get install -y ddev
+        uses: ddev/github-action-setup-ddev@v1
+        with:
+          autostart: false
 
-          # Configure DDEV
+      - name: Configure DDEV
+        run: |
           ddev config global --instrumentation-opt-in=false
           ddev config global --omit-containers=ddev-ssh-agent
-
-          # Start DDEV
           ddev version
 
       - name: Check requirements
