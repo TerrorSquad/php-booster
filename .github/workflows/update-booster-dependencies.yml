@@ -20,10 +20,16 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Read Node.js version from mise.toml
+        id: mise-node-version
+        run: |
+          NODE_VERSION=$(grep 'node = ' booster/mise.toml | sed 's/node = "\(.*\)"/\1/')
+          echo "version=$NODE_VERSION" >> $GITHUB_OUTPUT
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '24'
+          node-version: ${{ steps.mise-node-version.outputs.version }}
 
       - name: Get latest Node.js version
         id: node-version
