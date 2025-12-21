@@ -1,5 +1,24 @@
 # Changelog
 
+## [1.16.0](https://github.com/TerrorSquad/php-booster/compare/v1.15.0...v1.16.0) (2025-12-21)
+
+
+### Features
+
+* add DDEV_PHP environment variable to control PHP tool execution on host ([d848500](https://github.com/TerrorSquad/php-booster/commit/d848500f28f63d2bacab4d3a0eacba45ab41bd07))
+* add verbose flag to enhance output control in integration tests and related utilities ([0e15d38](https://github.com/TerrorSquad/php-booster/commit/0e15d38e964bf6a422bee9656a92ef7bdc9bd6f4))
+* integrate mise for dependency management in tests and scripts ([e4fcbd4](https://github.com/TerrorSquad/php-booster/commit/e4fcbd4b595acc01e9230a73663e1f8bb1cd3343))
+
+
+### Bug Fixes
+
+* implement ensureMutagenSync and commit integration changes in hook testing ([4855607](https://github.com/TerrorSquad/php-booster/commit/485560754fc928130b288ad4d7220021f8ad9d3d))
+* read node version from mise.toml in update workflow ([5a71ce4](https://github.com/TerrorSquad/php-booster/commit/5a71ce491102ccc6ea13ca1cffca13bcf414a7c4))
+* update booster dependencies workflow to use mise.toml ([90f0d3d](https://github.com/TerrorSquad/php-booster/commit/90f0d3d91e9e87aeabf092ec8935df185336150b))
+* update dependency checks for pnpm and remove unnecessary ddev config updates ([3a45fe4](https://github.com/TerrorSquad/php-booster/commit/3a45fe416310a2bae93716f68c6ee90e60632bd9))
+* update git hooks to use pnpm for dependency management and add pnpm-lock.yaml handling ([752e95b](https://github.com/TerrorSquad/php-booster/commit/752e95bae029fc03cecc0d63adeba90375b9db97))
+* use --no-frozen-lockfile for pnpm install in tests ([2ab6d22](https://github.com/TerrorSquad/php-booster/commit/2ab6d22e01c6607a4c560b3db8bf6843157c1c55))
+
 ## [1.15.0](https://github.com/TerrorSquad/php-booster/compare/v1.14.0...v1.15.0) (2025-12-16)
 
 
