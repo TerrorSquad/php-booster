@@ -449,9 +449,6 @@ function check_dependencies() {
         command -v composer >/dev/null 2>&1 || missing_deps+=("composer")
     fi
 
-    # pnpm is required on the host for both DDEV and non-DDEV projects (for git hooks)
-    command -v pnpm >/dev/null 2>&1 || missing_deps+=("pnpm")
-
     if [ ${#missing_deps[@]} -ne 0 ]; then
         error "Missing dependencies: ${missing_deps[*]}. Please install them."
     fi
