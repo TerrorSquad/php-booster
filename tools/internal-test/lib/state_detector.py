@@ -87,11 +87,19 @@ class StateDetector:
 
     def has_git_hooks(self) -> bool:
         """Check if git hooks are installed"""
-        hooks_dir = self.config.target_dir / ".git" / "hooks"
+        # Check .husky directory first (primary method for this booster)
+        husky_dir = self.config.target_dir / ".husky"
+
+        if husky_dir.exists():
+            hooks_dir = husky_dir
+        else:
+            # Fallback to .git/hooks
+            hooks_dir = self.config.target_dir / ".git" / "hooks"
+
         if not hooks_dir.exists():
             return False
 
-        # Check for the main hooks (both shell and TypeScript versions)
+        # Check for the main hooks
         expected_hooks = ["commit-msg", "pre-commit", "pre-push"]
 
         for hook in expected_hooks:
