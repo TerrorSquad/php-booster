@@ -100,7 +100,7 @@ class TestOrchestrator:
 
             # Install pnpm dependencies
             self.log.info("Running 'pnpm install'...")
-            self.cmd.run_command(["mise", "exec", "--", "pnpm", "install"], cwd=self.config.target_dir)
+            self.cmd.run_command(["mise", "exec", "--", "pnpm", "install", "--no-frozen-lockfile"], cwd=self.config.target_dir)
 
             self.log.success("Dependencies installed via mise.")
         except Exception as e:
