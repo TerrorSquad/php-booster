@@ -3,6 +3,7 @@
 Project setup utilities for the PHP Booster integration tests
 """
 
+import os
 import sys
 
 from .command_utils import CommandExecutor
@@ -73,6 +74,8 @@ class ProjectSetup:
         self.cmd.run_command(["ddev", "start"], cwd=self.config.target_dir)
 
         # Create project using DDEV composer
+        # Note: We use ddev composer here because it handles the initial project creation
+        # and volume mounting better than raw docker exec for create-project
         self.cmd.run_command(
             [
                 "ddev",
@@ -87,9 +90,23 @@ class ProjectSetup:
         )
 
         # Add basic Symfony dependencies
+        # Use docker exec for performance
+        env = os.environ.copy()
+        env["TERM"] = "xterm-256color"
+        
         self.cmd.run_command(
-            ["ddev", "composer", "require", "webapp", "--no-interaction"],
+            [
+                "docker",
+                "exec",
+                "-t",
+                f"ddev-{self.config.project_name}-web",
+                "composer",
+                "require",
+                "webapp",
+                "--no-interaction",
+            ],
             cwd=self.config.target_dir,
+            env=env,
         )
 
         # Initialize git repository
@@ -133,6 +150,8 @@ class ProjectSetup:
         self.cmd.run_command(["ddev", "start"], cwd=self.config.target_dir)
 
         # Create project using DDEV composer
+        # Note: We use ddev composer here because it handles the initial project creation
+        # and volume mounting better than raw docker exec for create-project
         self.cmd.run_command(
             [
                 "ddev",

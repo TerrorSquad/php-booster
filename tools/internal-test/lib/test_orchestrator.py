@@ -58,6 +58,9 @@ class TestOrchestrator:
         self.log.section("Booster Integration")
         self.booster_integration.integrate_booster()
 
+        # Install dependencies using mise if available
+        self._install_dependencies_with_mise()
+
         self.log.section("Integration Verification")
         self.verifier.verify_integration()
 
@@ -76,6 +79,32 @@ class TestOrchestrator:
         self.log.info(f"  1. To clean up: {sys.argv[0]} clean")
         self.log.info(f"  2. To stop DDEV: cd {self.config.target_dir} && ddev stop")
         print("")
+
+    def _install_dependencies_with_mise(self) -> None:
+        """Install dependencies using mise if available"""
+        mise_config = self.config.target_dir / "mise.toml"
+        if not mise_config.exists():
+            return
+
+        self.log.info("mise.toml found. Attempting to install dependencies with mise...")
+
+        # Check if mise is available
+        if not self.cmd.check_command_exists("mise"):
+            self.log.warn("mise command not found. Skipping mise installation.")
+            return
+
+        try:
+            # Install tools defined in mise.toml
+            self.log.info("Running 'mise install'...")
+            self.cmd.run_command(["mise", "install"], cwd=self.config.target_dir)
+
+            # Install pnpm dependencies
+            self.log.info("Running 'pnpm install'...")
+            self.cmd.run_command(["mise", "exec", "--", "pnpm", "install", "--no-frozen-lockfile"], cwd=self.config.target_dir)
+
+            self.log.success("Dependencies installed via mise.")
+        except Exception as e:
+            self.log.warn(f"Failed to install dependencies with mise: {e}")
 
     # Define expected files as a class attribute
     EXPECTED_BOOSTER_FILES = [

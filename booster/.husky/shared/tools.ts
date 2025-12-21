@@ -58,7 +58,7 @@ export const TOOLS: ToolConfig[] = [
     name: 'PHP Syntax Check',
     command: 'php',
     args: ['-l', '-d', 'display_errors=0'],
-    type: 'system',
+    type: 'php',
     runForEachFile: true,
     extensions: ['.php'],
   },

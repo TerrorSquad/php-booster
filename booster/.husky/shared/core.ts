@@ -1,5 +1,5 @@
 import type { ProcessOutput } from 'zx'
-import { $, chalk, fs } from 'zx'
+import { $, chalk, fs, which } from 'zx'
 
 // Configure zx behavior
 $.verbose = false
@@ -114,4 +114,100 @@ export function isSkipped(name: string): boolean {
     .replace(/^_+|_+$/g, '')
   const skipEnvVar = `SKIP_${normalized}`
   return process.env[skipEnvVar] === '1' || process.env[skipEnvVar] === 'true'
+}
+
+/**
+ * Check if the current project is a DDEV project
+ */
+export async function isDdevProject(): Promise<boolean> {
+  // Allow explicit disable via env var
+  if (process.env.DDEV_PHP === 'false' || process.env.DDEV_PHP === '0') {
+    return false
+  }
+
+  const hasConfig = await fs.pathExists('.ddev/config.yaml')
+  if (!hasConfig) return false
+
+  try {
+    await which('ddev')
+    return true
+  } catch {
+    return false
+  }
+}
+
+/**
+ * Get the DDEV project name from .ddev/config.yaml
+ */
+async function getDdevProjectName(): Promise<string | null> {
+  try {
+    const configPath = '.ddev/config.yaml'
+    const configContent = await fs.readFile(configPath, 'utf-8')
+    const match = configContent.match(/^name:\s*(.+)$/m)
+    return match ? match[1].trim() : null
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Get the command to execute, wrapping in ddev exec if necessary
+ * @param command The command parts (e.g. ['php', '-v'])
+ * @param type The tool type ('node', 'php', 'system')
+ */
+export async function getExecCommand(command: string[], type: string): Promise<string[]> {
+  if (type !== 'php') {
+    return command
+  }
+
+  if (await isDdevProject()) {
+    const projectName = await getDdevProjectName()
+    if (projectName) {
+      // Use docker exec for performance instead of ddev exec
+      // Run as current user to avoid permission issues with generated files
+      const uid = process.getuid ? process.getuid() : 1000
+      const gid = process.getgid ? process.getgid() : 1000
+      const containerName = `ddev-${projectName}-web`
+
+      // Adjust command path for docker exec
+      // If command is not 'php' or 'composer' and doesn't start with '/', assume it's in vendor/bin
+      let cmd = command[0]
+      if (cmd !== 'php' && cmd !== 'composer' && !cmd.startsWith('/') && !cmd.startsWith('./')) {
+        cmd = `vendor/bin/${cmd}`
+      }
+
+      const newCommand = [cmd, ...command.slice(1)]
+
+      return [
+        'docker',
+        'exec',
+        '-t',
+        '-u',
+        `${uid}:${gid}`,
+        '-w',
+        '/var/www/html',
+        containerName,
+        ...newCommand,
+      ]
+    }
+
+    throw new Error('Could not determine DDEV project name from .ddev/config.yaml')
+  }
+
+  return command
+}
+
+/**
+ * Ensure Mutagen sync is complete if enabled
+ */
+export async function ensureMutagenSync(): Promise<void> {
+  if (await isDdevProject()) {
+    try {
+      // Attempt to sync mutagen. This will fail if mutagen is not enabled, which is fine.
+      // We use 'ddev mutagen sync' which forces a sync.
+      await runWithRunner(['ddev', 'mutagen', 'sync'], { quiet: true })
+    } catch {
+      // Ignore errors (e.g. mutagen not enabled)
+    }
+  }
 }

@@ -447,7 +447,6 @@ function check_dependencies() {
         command -v ddev >/dev/null 2>&1 || missing_deps+=("ddev")
     else
         command -v composer >/dev/null 2>&1 || missing_deps+=("composer")
-        command -v pnpm >/dev/null 2>&1 || missing_deps+=("pnpm")
     fi
 
     if [ ${#missing_deps[@]} -ne 0 ]; then
@@ -580,18 +579,6 @@ function update_ddev_config() {
         warn "Failed to set 'xdebug_enabled = true' using yq. Check '$project_config'."
     fi
 
-    # 4. Copy nodejs_version key from booster config
-    log "  Copying 'nodejs_version' from booster config..."
-    nodejs_version=$(yq eval '.nodejs_version' "$booster_config")
-    if ! yq eval ".nodejs_version = \"$nodejs_version\"" -i "$project_config"; then
-        warn "Failed to copy 'nodejs_version' from booster config. Check '$project_config'."
-    fi
-
-    # 5. Ensure corepack_enable is true
-    if ! yq eval '.corepack_enable = true' -i "$project_config"; then
-        warn "Failed to set 'corepack_enable = true' using yq. Check '$project_config'."
-    fi
-
     success "ddev config updated. Ensure the paths in the config are correct."
 }
 
@@ -668,6 +655,19 @@ function copy_files() {
         log "  renovate.json not found in booster. Skipping (optional)."
     fi
 
+    # Copy mise config (for local tool version management)
+    local mise_cfg="${BOOSTER_INTERNAL_PATH}/mise.toml"
+    if [ -f "$mise_cfg" ]; then
+        if [ ! -f "mise.toml" ]; then
+            cp "$mise_cfg" . || warn "Failed to copy mise.toml"
+            log "  Copied mise.toml for local tool version management"
+        else
+            log "  mise.toml already exists. Skipping."
+        fi
+    else
+        log "  mise.toml not found in booster. Skipping."
+    fi
+
     success "Common files copied (tools filtered to runtime essentials)."
 }
 
@@ -695,9 +695,7 @@ function update_package_json() {
             .[0] as $proj | .[1] as $booster |
             $proj * {
                 scripts: (($proj.scripts // {}) + ($booster.scripts // {})),
-                devDependencies: (($proj.devDependencies // {}) + ($booster.devDependencies // {})),
-                husky: (($proj.husky // {}) + ($booster.husky // {})),
-                packageManager: $booster.packageManager
+                devDependencies: (($proj.devDependencies // {}) + ($booster.devDependencies // {}))
             }
             ' "$project_pkg" "$booster_pkg" >"$tmp_pkg" || error "Failed to merge package.json using jq."
 
@@ -720,6 +718,17 @@ function update_package_json() {
         success "pnpm-workspace.yaml copied."
     else
         warn "Booster 'pnpm-workspace.yaml' not found. Skipping copy."
+    fi
+
+    # Copy pnpm-lock.yaml if it exists (to ensure deterministic installs)
+    local booster_pnpm_lock="${BOOSTER_INTERNAL_PATH}/pnpm-lock.yaml"
+    if [ -f "$booster_pnpm_lock" ]; then
+        if [ ! -f "pnpm-lock.yaml" ]; then
+            cp "$booster_pnpm_lock" . || warn "Failed to copy pnpm-lock.yaml."
+            success "pnpm-lock.yaml copied."
+        else
+            log "pnpm-lock.yaml already exists. Skipping copy."
+        fi
     fi
 }
 
@@ -1295,6 +1304,25 @@ function init_deptrac() {
     fi
 }
 
+function install_node_dependencies() {
+    log "Installing Node.js dependencies..."
+
+    # Check if pnpm is available
+    if ! command -v pnpm >/dev/null 2>&1; then
+        warn "pnpm not found. Skipping Node.js dependency installation."
+        warn "Please install pnpm and run 'pnpm install' manually to enable git hooks."
+        return
+    fi
+
+    # Install dependencies
+    log "Running 'pnpm install'..."
+    if pnpm install; then
+        success "Node.js dependencies installed."
+    else
+        warn "Failed to install Node.js dependencies. Please run 'pnpm install' manually."
+    fi
+}
+
 function cleanup_silent() {
     rm -rf "$BOOSTER_TARGET_DIR"
     rm -f composer.json.merged.tmp composer.json.merged.tmp.next hooks.yaml.tmp .ddev/config.yaml.tmp package.json.tmp # Clean up temp files
@@ -1498,6 +1526,7 @@ function main() {
 
     add_code_quality_tools # Merges composer scripts & installs deps
     init_deptrac
+    install_node_dependencies
 
     # --- Create Version Stamp ---
     create_version_stamp "$current_version"

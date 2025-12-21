@@ -51,27 +51,58 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
+      - name: Install mise
+        uses: jdx/mise-action@v2
         with:
-          python-version: '3.11'
+          cache: true
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+      - name: Create cache directories
+        run: |
+          mkdir -p ~/.composer/cache
+          mkdir -p ~/.cache/composer
+          mkdir -p ~/.ddev/downloads
+
+      - name: Cache Composer packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.composer/cache
+            ~/.cache/composer
+          key: ${{ runner.os }}-composer-${{ matrix.project_type }}-${{ hashFiles('**/composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-composer-${{ matrix.project_type }}-
+            ${{ runner.os }}-composer-
+
+      - name: Cache DDEV downloads
+        uses: actions/cache@v4
+        with:
+          path: ~/.ddev/downloads
+          key: ${{ runner.os }}-ddev-downloads-${{ matrix.project_type }}
+
+      - name: Get pnpm store directory
+        id: pnpm-cache
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_OUTPUT
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ matrix.project_type }}-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-${{ matrix.project_type }}-
+            ${{ runner.os }}-pnpm-store-
 
       - name: Install DDEV
-        run: |
-          # Install DDEV
-          curl -fsSL https://apt.fury.io/drud/gpg.key | gpg --dearmor | sudo tee /etc/apt/trusted.gpg.d/ddev.gpg > /dev/null
-          echo "deb [signed-by=/etc/apt/trusted.gpg.d/ddev.gpg] https://apt.fury.io/drud/ * *" | sudo tee /etc/apt/sources.list.d/ddev.list
-          sudo apt-get update
-          sudo apt-get install -y ddev
+        uses: ddev/github-action-setup-ddev@v1
+        with:
+          autostart: false
 
-          # Configure DDEV
+      - name: Configure DDEV
+        run: |
           ddev config global --instrumentation-opt-in=false
           ddev config global --omit-containers=ddev-ssh-agent
-
-          # Start DDEV
           ddev version
 
       - name: Check requirements
@@ -109,17 +140,7 @@ jobs:
         if: always()
         run: |
           echo "Test completed. Checking status..."
-          make test-status
-
-      - name: Clean up test environment
-        if: always()
-        run: |
-          echo "Cleaning up test environment..."
-          make test-clean
-
-          # Additional cleanup for CI
-          docker system prune -af || true
-          ddev clean --all || true
+          ./tools/internal-test/test-integration.py status ${{ matrix.project_type }}
 
   manual-test:
     name: Manual Test (workflow_dispatch only)
@@ -130,27 +151,58 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
+      - name: Install mise
+        uses: jdx/mise-action@v2
         with:
-          python-version: '3.11'
+          cache: true
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+      - name: Create cache directories
+        run: |
+          mkdir -p ~/.composer/cache
+          mkdir -p ~/.cache/composer
+          mkdir -p ~/.ddev/downloads
+
+      - name: Cache Composer packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.composer/cache
+            ~/.cache/composer
+          key: ${{ runner.os }}-composer-${{ github.event.inputs.project_type }}-${{ hashFiles('**/composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-composer-${{ github.event.inputs.project_type }}-
+            ${{ runner.os }}-composer-
+
+      - name: Cache DDEV downloads
+        uses: actions/cache@v4
+        with:
+          path: ~/.ddev/downloads
+          key: ${{ runner.os }}-ddev-downloads-${{ github.event.inputs.project_type }}
+
+      - name: Get pnpm store directory
+        id: pnpm-cache
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_OUTPUT
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ github.event.inputs.project_type }}-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-${{ github.event.inputs.project_type }}-
+            ${{ runner.os }}-pnpm-store-
 
       - name: Install DDEV
-        run: |
-          # Install DDEV
-          curl -fsSL https://apt.fury.io/drud/gpg.key | gpg --dearmor | sudo tee /etc/apt/trusted.gpg.d/ddev.gpg > /dev/null
-          echo "deb [signed-by=/etc/apt/trusted.gpg.d/ddev.gpg] https://apt.fury.io/drud/ * *" | sudo tee /etc/apt/sources.list.d/ddev.list
-          sudo apt-get update
-          sudo apt-get install -y ddev
+        uses: ddev/github-action-setup-ddev@v1
+        with:
+          autostart: false
 
-          # Configure DDEV
+      - name: Configure DDEV
+        run: |
           ddev config global --instrumentation-opt-in=false
           ddev config global --omit-containers=ddev-ssh-agent
-
-          # Start DDEV
           ddev version
 
       - name: Check requirements
@@ -182,14 +234,4 @@ jobs:
         if: always()
         run: |
           echo "Manual test completed. Checking status..."
-          make test-status
-
-      - name: Clean up test environment
-        if: always()
-        run: |
-          echo "Cleaning up test environment..."
-          make test-clean
-
-          # Additional cleanup for CI
-          docker system prune -af || true
-          ddev clean --all || true
+          ./tools/internal-test/test-integration.py status ${{ github.event.inputs.project_type }}
