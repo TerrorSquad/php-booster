@@ -60,8 +60,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.composer/cache
-          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          key: ${{ runner.os }}-composer-${{ matrix.project_type }}-${{ hashFiles('**/composer.lock') }}
           restore-keys: |
+            ${{ runner.os }}-composer-${{ matrix.project_type }}-
             ${{ runner.os }}-composer-
 
       - name: Cache DDEV downloads
@@ -80,8 +81,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
-          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          key: ${{ runner.os }}-pnpm-store-${{ matrix.project_type }}-${{ hashFiles('**/pnpm-lock.yaml') }}
           restore-keys: |
+            ${{ runner.os }}-pnpm-store-${{ matrix.project_type }}-
             ${{ runner.os }}-pnpm-store-
 
       - name: Install DDEV
@@ -160,8 +162,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.composer/cache
-          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          key: ${{ runner.os }}-composer-${{ github.event.inputs.project_type }}-${{ hashFiles('**/composer.lock') }}
           restore-keys: |
+            ${{ runner.os }}-composer-${{ github.event.inputs.project_type }}-
             ${{ runner.os }}-composer-
 
       - name: Cache DDEV downloads
@@ -180,8 +183,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
-          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          key: ${{ runner.os }}-pnpm-store-${{ github.event.inputs.project_type }}-${{ hashFiles('**/pnpm-lock.yaml') }}
           restore-keys: |
+            ${{ runner.os }}-pnpm-store-${{ github.event.inputs.project_type }}-
             ${{ runner.os }}-pnpm-store-
 
       - name: Install DDEV
