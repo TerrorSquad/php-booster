@@ -25,24 +25,24 @@ jobs:
         with:
           node-version: '24'
 
-      - name: Get latest Node.js LTS version
+      - name: Get latest Node.js version
         id: node-version
         run: |
-          # Get latest Node.js LTS version from nodejs.org API
-          LATEST_LTS=$(curl -s https://nodejs.org/dist/index.json | jq -r '[.[] | select(.lts != false)] | .[0].version' | sed 's/v//')
-          echo "latest=$LATEST_LTS" >> $GITHUB_OUTPUT
-          echo "Latest Node.js LTS: $LATEST_LTS"
+          # Get latest Node.js version from nodejs.org API
+          LATEST_NODE=$(curl -s https://nodejs.org/dist/index.json | jq -r '.[0].version' | sed 's/v//')
+          echo "latest=$LATEST_NODE" >> $GITHUB_OUTPUT
+          echo "Latest Node.js: $LATEST_NODE"
 
-      - name: Update Node.js version in DDEV config
+      - name: Update Node.js version in mise config
         run: |
-          CURRENT_NODE=$(grep 'nodejs_version:' booster/.ddev/config.yaml | sed -n 's/^nodejs_version: "\([^"]*\)".*/\1/p')
+          CURRENT_NODE=$(grep 'node = ' booster/mise.toml | sed 's/node = "\(.*\)"/\1/')
           LATEST_NODE="${{ steps.node-version.outputs.latest }}"
 
           echo "Current Node.js: $CURRENT_NODE"
-          echo "Latest Node.js LTS: $LATEST_NODE"
+          echo "Latest Node.js: $LATEST_NODE"
 
           if [ "$CURRENT_NODE" != "$LATEST_NODE" ]; then
-            sed -i "s/nodejs_version: \"$CURRENT_NODE\"/nodejs_version: \"$LATEST_NODE\"/" booster/.ddev/config.yaml
+            sed -i "s/node = \"$CURRENT_NODE\"/node = \"$LATEST_NODE\"/" booster/mise.toml
             echo "updated=true" >> $GITHUB_ENV
             echo "Updated Node.js from $CURRENT_NODE to $LATEST_NODE"
           else
@@ -56,18 +56,17 @@ jobs:
           echo "latest=$LATEST_PNPM" >> $GITHUB_OUTPUT
           echo "Latest pnpm: $LATEST_PNPM"
 
-      - name: Update pnpm packageManager
+      - name: Update pnpm version in mise config
         working-directory: booster
         run: |
-          CURRENT_PNPM=$(jq -r '.packageManager' package.json | sed 's/pnpm@//')
+          CURRENT_PNPM=$(grep 'pnpm = ' mise.toml | sed 's/pnpm = "\(.*\)"/\1/')
           LATEST_PNPM="${{ steps.pnpm-version.outputs.latest }}"
 
           echo "Current pnpm: $CURRENT_PNPM"
           echo "Latest pnpm: $LATEST_PNPM"
 
           if [ "$CURRENT_PNPM" != "$LATEST_PNPM" ]; then
-            jq ".packageManager = \"pnpm@$LATEST_PNPM\"" package.json > package.json.tmp
-            mv package.json.tmp package.json
+            sed -i "s/pnpm = \"$CURRENT_PNPM\"/pnpm = \"$LATEST_PNPM\"/" mise.toml
             echo "updated=true" >> $GITHUB_ENV
             echo "Updated pnpm from $CURRENT_PNPM to $LATEST_PNPM"
           else
@@ -206,11 +205,11 @@ jobs:
           echo "" >> update-summary.md
 
           # Node.js changes
-          if git diff --quiet HEAD booster/.ddev/config.yaml; then
+          if git diff --quiet HEAD booster/mise.toml; then
             NODE_CHANGED=false
           else
             NODE_CHANGED=true
-            CURRENT_NODE=$(git diff HEAD booster/.ddev/config.yaml | grep "^-nodejs_version" | sed 's/.*"\(.*\)".*/\1/')
+            CURRENT_NODE=$(git diff HEAD booster/mise.toml | grep "^-node =" | sed 's/.*"\(.*\)".*/\1/')
             NEW_NODE="${{ steps.node-version.outputs.latest }}"
             echo "### Node.js" >> update-summary.md
             echo "- Updated from \`$CURRENT_NODE\` to \`$NEW_NODE\`" >> update-summary.md
@@ -220,10 +219,10 @@ jobs:
 
           # pnpm changes
           PNPM_CHANGED=false
-          if ! git diff --quiet HEAD booster/package.json; then
-            # Check if packageManager field changed
-            OLD_PNPM=$(git diff HEAD booster/package.json | grep "^-.*packageManager" | sed 's/.*"pnpm@\([^"]*\)".*/\1/')
-            NEW_PNPM=$(git diff HEAD booster/package.json | grep "^+.*packageManager" | sed 's/.*"pnpm@\([^"]*\)".*/\1/')
+          if ! git diff --quiet HEAD booster/mise.toml; then
+            # Check if pnpm field changed
+            OLD_PNPM=$(git diff HEAD booster/mise.toml | grep "^-pnpm =" | sed 's/.*"\(.*\)".*/\1/')
+            NEW_PNPM=$(git diff HEAD booster/mise.toml | grep "^+pnpm =" | sed 's/.*"\(.*\)".*/\1/')
 
             if [ -n "$OLD_PNPM" ] && [ -n "$NEW_PNPM" ] && [ "$OLD_PNPM" != "$NEW_PNPM" ]; then
               PNPM_CHANGED=true
@@ -272,10 +271,10 @@ jobs:
 
           # Files Changed - only list files that actually changed
           echo "### Files Changed" >> update-summary.md
-          if [ "$NODE_CHANGED" = true ]; then
-            echo "- \`booster/.ddev/config.yaml\` (Node.js version)" >> update-summary.md
+          if [ "$NODE_CHANGED" = true ] || [ "$PNPM_CHANGED" = true ]; then
+            echo "- \`booster/mise.toml\`" >> update-summary.md
           fi
-          if [ "$PNPM_CHANGED" = true ] || [ "$NPM_CHANGED" = true ] || [ "$NODE_CHANGED" = true ]; then
+          if [ "$NPM_CHANGED" = true ] || [ "$NODE_CHANGED" = true ]; then
             echo "- \`booster/package.json\`" >> update-summary.md
           fi
           if [ "${{ steps.php-updates.outputs.has_updates }}" == "true" ]; then
@@ -309,7 +308,7 @@ jobs:
           assignees: ${{ github.repository_owner }}
           draft: false
           add-paths: |
-            booster/.ddev/config.yaml
+            booster/mise.toml
             booster/package.json
             booster/composer.json
 
