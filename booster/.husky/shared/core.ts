@@ -120,6 +120,11 @@ export function isSkipped(name: string): boolean {
  * Check if the current project is a DDEV project
  */
 export async function isDdevProject(): Promise<boolean> {
+  // Allow explicit disable via env var
+  if (process.env.DDEV_PHP === 'false' || process.env.DDEV_PHP === '0') {
+    return false
+  }
+
   const hasConfig = await fs.pathExists('.ddev/config.yaml')
   if (!hasConfig) return false
 

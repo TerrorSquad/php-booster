@@ -94,6 +94,7 @@ Note: tool-specific skip variables are normalized to uppercase and non-alphanume
 | Variable            | Description                                                               |
 | ------------------- | ------------------------------------------------------------------------- |
 | `GIT_HOOKS_VERBOSE` | Set to `1` or `true` to enable verbose logging (shows executed commands). |
+| `DDEV_PHP`          | Set to `false` or `0` to force running PHP tools on the host system even if DDEV is detected. |
 | `SKIP_PRECOMMIT`    | Set to `1` to skip the entire pre-commit hook.                            |
 | `SKIP_PREPUSH`      | Set to `1` to skip the entire pre-push hook.                              |
 | `SKIP_COMMITMSG`    | Set to `1` to skip commit message validation and ticket appending.        |
