@@ -77,7 +77,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.ddev/downloads
-          key: ${{ runner.os }}-ddev-downloads
+          key: ${{ runner.os }}-ddev-downloads-${{ matrix.project_type }}
 
       - name: Get pnpm store directory
         id: pnpm-cache
@@ -177,7 +177,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.ddev/downloads
-          key: ${{ runner.os }}-ddev-downloads
+          key: ${{ runner.os }}-ddev-downloads-${{ github.event.inputs.project_type }}
 
       - name: Get pnpm store directory
         id: pnpm-cache
