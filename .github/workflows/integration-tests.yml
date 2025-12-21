@@ -60,9 +60,9 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Install mise
-        run: |
-          curl https://mise.run | sh
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
+        uses: jdx/mise-action@v2
+        with:
+          cache: true
 
       - name: Install DDEV
         run: |
@@ -144,9 +144,9 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Install mise
-        run: |
-          curl https://mise.run | sh
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
+        uses: jdx/mise-action@v2
+        with:
+          cache: true
 
       - name: Install DDEV
         run: |
