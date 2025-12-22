@@ -465,6 +465,27 @@ function is_ddev_project() {
     fi
 }
 
+function cleanup_silent() {
+    rm -rf "$BOOSTER_TARGET_DIR"
+    rm -f composer.json.merged.tmp composer.json.merged.tmp.next hooks.yaml.tmp .ddev/config.yaml.tmp package.json.tmp # Clean up temp files
+}
+
+function cleanup() {
+    log "Cleaning up temporary files..."
+    rm -rf "$BOOSTER_TARGET_DIR"
+
+    rm -f composer.json.merged.tmp composer.json.merged.tmp.next hooks.yaml.tmp .ddev/config.yaml.tmp package.json.tmp
+    success "Temporary files cleaned up."
+}
+
+# Trap signals for cleanup
+function on_exit() {
+    if [ "$NO_CLEANUP" = true ]; then
+        return
+    fi
+    cleanup_silent
+}
+
 # --- Core Logic Functions ---
 
 
@@ -507,79 +528,6 @@ function download_php_booster() {
         fi
         success "php-booster cloned successfully into '$BOOSTER_TARGET_DIR'."
     fi
-}
-
-function update_ddev_files() {
-    log "Updating ddev files..."
-    local booster_ddev_path="${BOOSTER_INTERNAL_PATH}/.ddev"
-    local project_ddev_path=".ddev"
-
-    if [ ! -d "$booster_ddev_path" ]; then
-        warn "Booster DDEV directory '$booster_ddev_path' not found. Skipping DDEV file update."
-        return
-    fi
-
-    # Define source -> destination mappings relative to .ddev dirs
-    local ddev_subdirs=("commands" "php" "web-build" "scripts")
-    for subdir in "${ddev_subdirs[@]}"; do
-        local src_path="${booster_ddev_path}/${subdir}"
-        local dest_path="${project_ddev_path}/${subdir}"
-        if [ -d "$src_path" ]; then
-            log "  Copying '$src_path' to '$dest_path'..."
-            # Use standard recursive copy -R, ensure destination parent exists
-            mkdir -p "$dest_path"
-            # Copy the source directory *into* the destination directory
-            cp -R $src_path/. "$dest_path" || warn "Failed to copy '$src_path'. Check permissions."
-        else
-            log "  Booster DDEV subdirectory '$subdir' not found at '$src_path'. Skipping."
-        fi
-    done
-    success "ddev files updated."
-}
-
-function update_ddev_config() {
-    log "Updating ddev config using yq..."
-    local project_config=".ddev/config.yaml"
-    local booster_config="${BOOSTER_INTERNAL_PATH}/.ddev/config.yaml"
-    local hooks_tmp="hooks.yaml.tmp"
-    local merged_tmp=".ddev/config.yaml.tmp"
-
-    if [ ! -f "$project_config" ]; then
-        warn "Project DDEV config '$project_config' not found. Skipping update."
-        return
-    fi
-    if [ ! -f "$booster_config" ]; then
-        warn "Booster DDEV config '$booster_config' not found. Skipping update."
-        return
-    fi
-
-    # 1. Extract hooks from booster config (handle potential errors)
-    log "  Extracting hooks from booster config..."
-    if ! yq '.hooks' "$booster_config" >"$hooks_tmp"; then
-        warn "Failed to extract hooks using yq from '$booster_config'. Skipping hook merge."
-        rm -f "$hooks_tmp"
-    else
-        # 2. Merge hooks into project config
-        log "  Merging hooks into project config..."
-        if ! yq eval-all 'select(fileIndex == 0) * {"hooks": select(fileIndex == 1)}' "$project_config" "$hooks_tmp" >"$merged_tmp"; then
-            warn "Failed to merge hooks using yq. Original config preserved."
-            rm -f "$hooks_tmp" "$merged_tmp"
-            return # Stop ddev config update here if merge fails
-        else
-            # Replace project config with merged one if successful
-            mv "$merged_tmp" "$project_config"
-            log "  Hooks merged successfully."
-        fi
-        rm -f "$hooks_tmp"
-    fi
-
-    # 3. Ensure xdebug_enabled is true (operate on the potentially updated project_config)
-    log "  Ensuring 'xdebug_enabled = true' using yq..."
-    if ! yq eval '.xdebug_enabled = true' -i "$project_config"; then
-        warn "Failed to set 'xdebug_enabled = true' using yq. Check '$project_config'."
-    fi
-
-    success "ddev config updated. Ensure the paths in the config are correct."
 }
 
 function copy_files() {
@@ -732,113 +680,91 @@ function update_package_json() {
     fi
 }
 
-# --- Updated merge_scripts Function ---
-function merge_scripts() {
-    local COMPOSER1="composer.json"                          # Project composer.json
-    local COMPOSER2="${BOOSTER_INTERNAL_PATH}/composer.json" # Booster composer.json
-    local OUTPUT="composer.json.merged.tmp"
+function update_readme() {
+    log "Updating README.md..."
+    local project_readme="README.md"
+    local booster_snippet="${BOOSTER_INTERNAL_PATH}/README_SNIPPET.md"
 
-    # Ensure jq is available
-    command -v jq >/dev/null 2>&1 || error "jq is required but not installed."
-
-    # Check if files exist
-    [ ! -f "$COMPOSER1" ] && error "Project composer.json not found at '$COMPOSER1'"
-    [ ! -f "$COMPOSER2" ] && error "Booster composer.json not found at '$COMPOSER2'"
-
-    log "Merging scripts from '$COMPOSER2' into '$COMPOSER1'..."
-
-    # Create a temporary copy to work on
-    cp "$COMPOSER1" "$OUTPUT"
-
-    # Get script keys from booster composer.json, handle null/missing scripts section
-    # Use jq -e to check exit status if .scripts is null or not an object
-    if ! jq -e '(.scripts // {}) | type == "object"' "$COMPOSER2" >/dev/null; then
-        log "No valid 'scripts' object found in booster composer.json. Nothing to merge."
-        rm "$OUTPUT" # Clean up temp file
-        return 0
-    fi
-    local booster_keys
-    booster_keys=$(jq -r '.scripts | keys_unsorted | .[]' "$COMPOSER2")
-
-    # Iterate over each script key from the booster
-    echo "$booster_keys" | while IFS= read -r key; do
-        log "  Processing script key: $key"
-
-        # Get values and types using jq
-    local proj_script_json
-    proj_script_json=$(jq --arg key "$key" '(.scripts // {})[$key]' "$OUTPUT")
-    local booster_script_json
-    booster_script_json=$(jq --arg key "$key" '.scripts[$key]' "$COMPOSER2") # Assumes .scripts exists from check above
-    local proj_type
-    proj_type=$(jq -r 'type' <<<"$proj_script_json")
-    local booster_type
-    booster_type=$(jq -r 'type' <<<"$booster_script_json")
-
-        log "    Project type: $proj_type, Booster type: $booster_type"
-
-        local merged_script_json
-
-        if [ "$proj_type" == "null" ]; then
-            # Script only exists in booster, add it
-            log "    Adding script from booster."
-            merged_script_json="$booster_script_json"
+    if [ -f "$project_readme" ]; then
+        log "'$project_readme' already exists. Skipping creation."
+    else
+        if [ -f "$booster_snippet" ]; then
+            warn "'$project_readme' not found. Creating new README.md from booster snippet..."
+            cp "$booster_snippet" "$project_readme" || error "Failed to copy README snippet."
+            success "New README.md created with content from '$booster_snippet'."
         else
-            # Script exists in both project and booster, merge based on type
-            # Define lifecycle events that should be merged (arrays)
-            local lifecycle_events=" pre-install-cmd post-install-cmd pre-update-cmd post-update-cmd post-status-cmd pre-archive-cmd post-archive-cmd pre-autoload-dump post-autoload-dump post-root-package-install post-create-project-cmd "
+            warn "'$project_readme' not found, and booster snippet '$booster_snippet' also not found. Skipping."
+        fi
+    fi
+}
 
-            if [ "$proj_type" == "string" ] && [ "$booster_type" == "string" ]; then
-                if [ "$proj_script_json" == "$booster_script_json" ]; then
-                    log "    Scripts are identical strings, keeping project version."
-                    merged_script_json="$proj_script_json"
-                else
-                    if [[ "$lifecycle_events" == *" $key "* ]]; then
-                        log "    Lifecycle event '$key': merging different strings into unique array."
-                        merged_script_json=$(jq -n --argjson p "$proj_script_json" --argjson b "$booster_script_json" '[$p, $b] | unique')
-                    else
-                        log "    Tool script '$key': overwriting with booster version."
-                        merged_script_json="$booster_script_json"
-                    fi
-                fi
-            elif [ "$proj_type" == "array" ] && [ "$booster_type" == "array" ]; then
-                log "    Both scripts are arrays, merging uniquely."
-                merged_script_json=$(jq -n --argjson p "$proj_script_json" --argjson b "$booster_script_json" '($p + $b) | unique')
-            elif [ "$proj_type" == "string" ] && [ "$booster_type" == "array" ]; then
-                log "    Project is string, booster is array. Merging uniquely."
-                merged_script_json=$(jq -n --argjson p "$proj_script_json" --argjson b "$booster_script_json" '([$p] + $b) | unique')
-            elif [ "$proj_type" == "array" ] && [ "$booster_type" == "string" ]; then
-                if [[ "$lifecycle_events" == *" $key "* ]]; then
-                    log "    Lifecycle event '$key': merging array and string uniquely."
-                    merged_script_json=$(jq -n --argjson p "$proj_script_json" --argjson b "$booster_script_json" '($p + [$b]) | unique')
-                else
-                    log "    Tool script '$key': overwriting array with booster string."
-                    merged_script_json="$booster_script_json"
-                fi
-            else
-                # Handle other mismatches (e.g., object vs string) - prefer booster? Or keep project? Let's prefer booster.
-                log "    Type mismatch ($proj_type vs $booster_type). Using booster version."
-                merged_script_json="$booster_script_json"
-            fi
+function update_gitignore() {
+    log "Updating .gitignore..."
+    local project_gitignore=".gitignore"
+    local booster_gitignore="${BOOSTER_INTERNAL_PATH}/.gitignore"
+
+    if [ ! -f "$booster_gitignore" ]; then
+        warn "Booster .gitignore '$booster_gitignore' not found. Skipping update."
+        return
+    fi
+
+    touch "$project_gitignore"
+
+    # Remove .vscode entries from project gitignore since booster provides IDE settings
+    log "Removing .vscode entries from project .gitignore..."
+    local temp_gitignore="${project_gitignore}.tmp"
+
+    # Remove lines that ignore .vscode (with or without leading slash, with or without trailing slash)
+    grep -v -E '^[[:space:]]*/?\.vscode/?[[:space:]]*$' "$project_gitignore" > "$temp_gitignore" || true
+    # Also remove commented .vscode entries
+    grep -v -E '^[[:space:]]*#[[:space:]]*/?\.vscode/?[[:space:]]*$' "$temp_gitignore" > "${temp_gitignore}.2" || true
+    mv "${temp_gitignore}.2" "$project_gitignore"
+    rm -f "$temp_gitignore"
+
+    local added_count=0
+
+    while IFS= read -r line || [[ -n "$line" ]]; do
+
+        line=$(echo "$line" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+
+        if [ -z "$line" ]; then
+            continue
         fi
 
-        # Update the temporary composer file with the merged script
-        # Ensure .scripts object exists before assigning
-        local temp_next="$OUTPUT.next"
-        jq --arg key "$key" --argjson value "$merged_script_json" \
-            'if (.scripts | type) != "object" then .scripts = {} else . end | .scripts[$key] = $value' \
-            "$OUTPUT" >"$temp_next" || {
-            error "jq update failed for key '$key'"
-            rm "$temp_next" "$OUTPUT"
-            return 1
-        } # Exit loop on jq error
-        mv "$temp_next" "$OUTPUT"
+        if ! grep -q -x -F "$line" "$project_gitignore" && ! grep -q -x -F "# $line" "$project_gitignore" && ! grep -q -x -F "#$line" "$project_gitignore"; then
 
-    done || error "Failed during script merging loop." # Catch errors from the while loop subshell
+            if [[ "$line" != /* ]] && grep -q -x -F "/$line" "$project_gitignore"; then
+                continue
+            fi
 
-    # Replace the original composer.json with the merged version
-    mv "$OUTPUT" "$COMPOSER1"
-    success "Scripts merged idempotently into $COMPOSER1."
+            if [[ "$line" == /* ]] && grep -q -x -F "${line#/}" "$project_gitignore"; then
+                continue
+            fi
+
+            log "  Adding '$line' to .gitignore"
+
+            if [ $added_count -eq 0 ]; then
+
+                [ -s "$project_gitignore" ] && echo >>"$project_gitignore"
+
+                echo "" >>"$project_gitignore" # Ensure separation
+                echo "# --- Added by php-booster integration ---" >>"$project_gitignore"
+                log "  Added header to .gitignore"
+            fi
+            echo "$line" >>"$project_gitignore"
+            added_count=$((added_count + 1))
+        fi
+    done <"$booster_gitignore"
+
+    if [ $added_count -gt 0 ]; then
+        success ".gitignore updated with $added_count new entries."
+    else
+        log "No new entries needed for .gitignore."
+    fi
+
+    success ".vscode entries removed from project .gitignore (booster provides IDE settings)."
 }
+
 # --- Function to Update Tool Paths Dynamically ---
 function update_tool_paths() {
     # --- Copy Documentation Directory ---
@@ -864,7 +790,7 @@ function update_tool_paths() {
     fi
 
     # --- Copy Config Files ---
-    local cq_files=("rector.php" "phpstan.neon.dist" "ecs.php" "psalm.xml")
+    local cq_files=("rector.php" "phpstan.neon.dist" "ecs.php" "psalm.xml" "deptrac.yaml")
     for file in "${cq_files[@]}"; do
         local src_path="${BOOSTER_INTERNAL_PATH}/${file}"
         if [ -f "$src_path" ]; then
@@ -1021,6 +947,235 @@ function update_tool_paths() {
         warn "Errors occurred while updating tool configuration paths. Check logs."
         return 1
     fi
+}
+
+function update_ddev_files() {
+    log "Updating ddev files..."
+    local booster_ddev_path="${BOOSTER_INTERNAL_PATH}/.ddev"
+    local project_ddev_path=".ddev"
+
+    if [ ! -d "$booster_ddev_path" ]; then
+        warn "Booster DDEV directory '$booster_ddev_path' not found. Skipping DDEV file update."
+        return
+    fi
+
+    # Define source -> destination mappings relative to .ddev dirs
+    local ddev_subdirs=("commands" "php" "web-build" "scripts")
+    for subdir in "${ddev_subdirs[@]}"; do
+        local src_path="${booster_ddev_path}/${subdir}"
+        local dest_path="${project_ddev_path}/${subdir}"
+        if [ -d "$src_path" ]; then
+            log "  Copying '$src_path' to '$dest_path'..."
+            # Use standard recursive copy -R, ensure destination parent exists
+            mkdir -p "$dest_path"
+            # Copy the source directory *into* the destination directory
+            cp -R $src_path/. "$dest_path" || warn "Failed to copy '$src_path'. Check permissions."
+        else
+            log "  Booster DDEV subdirectory '$subdir' not found at '$src_path'. Skipping."
+        fi
+    done
+    success "ddev files updated."
+}
+
+function update_ddev_config() {
+    log "Updating ddev config using yq..."
+    local project_config=".ddev/config.yaml"
+    local booster_config="${BOOSTER_INTERNAL_PATH}/.ddev/config.yaml"
+    local hooks_tmp="hooks.yaml.tmp"
+    local merged_tmp=".ddev/config.yaml.tmp"
+
+    if [ ! -f "$project_config" ]; then
+        warn "Project DDEV config '$project_config' not found. Skipping update."
+        return
+    fi
+    if [ ! -f "$booster_config" ]; then
+        warn "Booster DDEV config '$booster_config' not found. Skipping update."
+        return
+    fi
+
+    # 1. Extract hooks from booster config (handle potential errors)
+    log "  Extracting hooks from booster config..."
+    if ! yq '.hooks' "$booster_config" >"$hooks_tmp"; then
+        warn "Failed to extract hooks using yq from '$booster_config'. Skipping hook merge."
+        rm -f "$hooks_tmp"
+    else
+        # 2. Merge hooks into project config
+        log "  Merging hooks into project config..."
+        if ! yq eval-all 'select(fileIndex == 0) * {"hooks": select(fileIndex == 1)}' "$project_config" "$hooks_tmp" >"$merged_tmp"; then
+            warn "Failed to merge hooks using yq. Original config preserved."
+            rm -f "$hooks_tmp" "$merged_tmp"
+            return # Stop ddev config update here if merge fails
+        else
+            # Replace project config with merged one if successful
+            mv "$merged_tmp" "$project_config"
+            log "  Hooks merged successfully."
+        fi
+        rm -f "$hooks_tmp"
+    fi
+
+    # 3. Ensure xdebug_enabled is true (operate on the potentially updated project_config)
+    log "  Ensuring 'xdebug_enabled = true' using yq..."
+    if ! yq eval '.xdebug_enabled = true' -i "$project_config"; then
+        warn "Failed to set 'xdebug_enabled = true' using yq. Check '$project_config'."
+    fi
+
+    success "ddev config updated. Ensure the paths in the config are correct."
+}
+
+function update_nginx_config() {
+    log "Updating nginx configuration..."
+    local nginx_config=".ddev/nginx_full/nginx-site.conf"
+
+    if [ ! -f "$nginx_config" ]; then
+        log "Nginx config file '$nginx_config' not found. Skipping nginx update."
+        return
+    fi
+
+    log "Found nginx config file, updating..."
+
+    # Remove the DDEV-generated comment to track the file
+    if grep -q "# ddev generated" "$nginx_config"; then
+        log "  Removing DDEV generated comment to track the file..."
+        sed -i.bak '/# ddev generated/d' "$nginx_config" || warn "Failed to remove DDEV generated comment."
+    fi
+
+    # Check if XDEBUG_TRIGGER is already configured
+    if grep -q "fastcgi_param XDEBUG_TRIGGER" "$nginx_config"; then
+        log "  XDEBUG_TRIGGER already configured in nginx config."
+        return
+    fi
+
+    # Add XDEBUG_TRIGGER to the location ~ \.php$ block
+    log "  Adding XDEBUG_TRIGGER environment variable to php location block..."
+
+    # Create temporary content to insert
+    local temp_insert_file="nginx_insert.tmp"
+    cat >"$temp_insert_file" <<'EOF'
+        # Always trigger Xdebug for web requests (CLI remains unaffected due to start_with_request=trigger)
+        fastcgi_param XDEBUG_TRIGGER 1;
+EOF
+
+    # Use sed to add the content after the location ~ \.php$ line (cross-platform compatible)
+    sed -i.bak '/location ~ \\\.php\$ {/r '"$temp_insert_file" "$nginx_config" || warn "Failed to add XDEBUG_TRIGGER to nginx config."
+
+    # Remove #ddev generated comment if it exists
+    sed -i.bak '/# ddev generated/d' "$nginx_config" || warn "Failed to remove DDEV generated comment."
+
+    # Clean up temp file
+    rm -f "$temp_insert_file"
+
+    # Clean up backup file
+    rm -f "$nginx_config.bak"
+
+    success "Nginx configuration updated with XDEBUG_TRIGGER."
+}
+
+# --- Updated merge_scripts Function ---
+function merge_scripts() {
+    local COMPOSER1="composer.json"                          # Project composer.json
+    local COMPOSER2="${BOOSTER_INTERNAL_PATH}/composer.json" # Booster composer.json
+    local OUTPUT="composer.json.merged.tmp"
+
+    # Ensure jq is available
+    command -v jq >/dev/null 2>&1 || error "jq is required but not installed."
+
+    # Check if files exist
+    [ ! -f "$COMPOSER1" ] && error "Project composer.json not found at '$COMPOSER1'"
+    [ ! -f "$COMPOSER2" ] && error "Booster composer.json not found at '$COMPOSER2'"
+
+    log "Merging scripts from '$COMPOSER2' into '$COMPOSER1'..."
+
+    # Create a temporary copy to work on
+    cp "$COMPOSER1" "$OUTPUT"
+
+    # Get script keys from booster composer.json, handle null/missing scripts section
+    # Use jq -e to check exit status if .scripts is null or not an object
+    if ! jq -e '(.scripts // {}) | type == "object"' "$COMPOSER2" >/dev/null; then
+        log "No valid 'scripts' object found in booster composer.json. Nothing to merge."
+        rm "$OUTPUT" # Clean up temp file
+        return 0
+    fi
+    local booster_keys
+    booster_keys=$(jq -r '.scripts | keys_unsorted | .[]' "$COMPOSER2")
+
+    # Iterate over each script key from the booster
+    echo "$booster_keys" | while IFS= read -r key; do
+        log "  Processing script key: $key"
+
+        # Get values and types using jq
+    local proj_script_json
+    proj_script_json=$(jq --arg key "$key" '(.scripts // {})[$key]' "$OUTPUT")
+    local booster_script_json
+    booster_script_json=$(jq --arg key "$key" '.scripts[$key]' "$COMPOSER2") # Assumes .scripts exists from check above
+    local proj_type
+    proj_type=$(jq -r 'type' <<<"$proj_script_json")
+    local booster_type
+    booster_type=$(jq -r 'type' <<<"$booster_script_json")
+
+        log "    Project type: $proj_type, Booster type: $booster_type"
+
+        local merged_script_json
+
+        if [ "$proj_type" == "null" ]; then
+            # Script only exists in booster, add it
+            log "    Adding script from booster."
+            merged_script_json="$booster_script_json"
+        else
+            # Script exists in both project and booster, merge based on type
+            # Define lifecycle events that should be merged (arrays)
+            local lifecycle_events=" pre-install-cmd post-install-cmd pre-update-cmd post-update-cmd post-status-cmd pre-archive-cmd post-archive-cmd pre-autoload-dump post-autoload-dump post-root-package-install post-create-project-cmd "
+
+            if [ "$proj_type" == "string" ] && [ "$booster_type" == "string" ]; then
+                if [ "$proj_script_json" == "$booster_script_json" ]; then
+                    log "    Scripts are identical strings, keeping project version."
+                    merged_script_json="$proj_script_json"
+                else
+                    if [[ "$lifecycle_events" == *" $key "* ]]; then
+                        log "    Lifecycle event '$key': merging different strings into unique array."
+                        merged_script_json=$(jq -n --argjson p "$proj_script_json" --argjson b "$booster_script_json" '[$p, $b] | unique')
+                    else
+                        log "    Tool script '$key': overwriting with booster version."
+                        merged_script_json="$booster_script_json"
+                    fi
+                fi
+            elif [ "$proj_type" == "array" ] && [ "$booster_type" == "array" ]; then
+                log "    Both scripts are arrays, merging uniquely."
+                merged_script_json=$(jq -n --argjson p "$proj_script_json" --argjson b "$booster_script_json" '($p + $b) | unique')
+            elif [ "$proj_type" == "string" ] && [ "$booster_type" == "array" ]; then
+                log "    Project is string, booster is array. Merging uniquely."
+                merged_script_json=$(jq -n --argjson p "$proj_script_json" --argjson b "$booster_script_json" '([$p] + $b) | unique')
+            elif [ "$proj_type" == "array" ] && [ "$booster_type" == "string" ]; then
+                if [[ "$lifecycle_events" == *" $key "* ]]; then
+                    log "    Lifecycle event '$key': merging array and string uniquely."
+                    merged_script_json=$(jq -n --argjson p "$proj_script_json" --argjson b "$booster_script_json" '($p + [$b]) | unique')
+                else
+                    log "    Tool script '$key': overwriting array with booster string."
+                    merged_script_json="$booster_script_json"
+                fi
+            else
+                # Handle other mismatches (e.g., object vs string) - prefer booster? Or keep project? Let's prefer booster.
+                log "    Type mismatch ($proj_type vs $booster_type). Using booster version."
+                merged_script_json="$booster_script_json"
+            fi
+        fi
+
+        # Update the temporary composer file with the merged script
+        # Ensure .scripts object exists before assigning
+        local temp_next="$OUTPUT.next"
+        jq --arg key "$key" --argjson value "$merged_script_json" \
+            'if (.scripts | type) != "object" then .scripts = {} else . end | .scripts[$key] = $value' \
+            "$OUTPUT" >"$temp_next" || {
+            error "jq update failed for key '$key'"
+            rm "$temp_next" "$OUTPUT"
+            return 1
+        } # Exit loop on jq error
+        mv "$temp_next" "$OUTPUT"
+
+    done || error "Failed during script merging loop." # Catch errors from the while loop subshell
+
+    # Replace the original composer.json with the merged version
+    mv "$OUTPUT" "$COMPOSER1"
+    success "Scripts merged idempotently into $COMPOSER1."
 }
 
 function add_code_quality_tools() {
@@ -1195,91 +1350,6 @@ function add_code_quality_tools() {
     success "composer.json updated with merged scripts and new dependencies."
 }
 
-function update_readme() {
-    log "Updating README.md..."
-    local project_readme="README.md"
-    local booster_snippet="${BOOSTER_INTERNAL_PATH}/README_SNIPPET.md"
-
-    if [ -f "$project_readme" ]; then
-        log "'$project_readme' already exists. Skipping creation."
-    else
-        if [ -f "$booster_snippet" ]; then
-            warn "'$project_readme' not found. Creating new README.md from booster snippet..."
-            cp "$booster_snippet" "$project_readme" || error "Failed to copy README snippet."
-            success "New README.md created with content from '$booster_snippet'."
-        else
-            warn "'$project_readme' not found, and booster snippet '$booster_snippet' also not found. Skipping."
-        fi
-    fi
-}
-
-function update_gitignore() {
-    log "Updating .gitignore..."
-    local project_gitignore=".gitignore"
-    local booster_gitignore="${BOOSTER_INTERNAL_PATH}/.gitignore"
-
-    if [ ! -f "$booster_gitignore" ]; then
-        warn "Booster .gitignore '$booster_gitignore' not found. Skipping update."
-        return
-    fi
-
-    touch "$project_gitignore"
-
-    # Remove .vscode entries from project gitignore since booster provides IDE settings
-    log "Removing .vscode entries from project .gitignore..."
-    local temp_gitignore="${project_gitignore}.tmp"
-
-    # Remove lines that ignore .vscode (with or without leading slash, with or without trailing slash)
-    grep -v -E '^[[:space:]]*/?\.vscode/?[[:space:]]*$' "$project_gitignore" > "$temp_gitignore" || true
-    # Also remove commented .vscode entries
-    grep -v -E '^[[:space:]]*#[[:space:]]*/?\.vscode/?[[:space:]]*$' "$temp_gitignore" > "${temp_gitignore}.2" || true
-    mv "${temp_gitignore}.2" "$project_gitignore"
-    rm -f "$temp_gitignore"
-
-    local added_count=0
-
-    while IFS= read -r line || [[ -n "$line" ]]; do
-
-        line=$(echo "$line" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
-
-        if [ -z "$line" ]; then
-            continue
-        fi
-
-        if ! grep -q -x -F "$line" "$project_gitignore" && ! grep -q -x -F "# $line" "$project_gitignore" && ! grep -q -x -F "#$line" "$project_gitignore"; then
-
-            if [[ "$line" != /* ]] && grep -q -x -F "/$line" "$project_gitignore"; then
-                continue
-            fi
-
-            if [[ "$line" == /* ]] && grep -q -x -F "${line#/}" "$project_gitignore"; then
-                continue
-            fi
-
-            log "  Adding '$line' to .gitignore"
-
-            if [ $added_count -eq 0 ]; then
-
-                [ -s "$project_gitignore" ] && echo >>"$project_gitignore"
-
-                echo "" >>"$project_gitignore" # Ensure separation
-                echo "# --- Added by php-booster integration ---" >>"$project_gitignore"
-                log "  Added header to .gitignore"
-            fi
-            echo "$line" >>"$project_gitignore"
-            added_count=$((added_count + 1))
-        fi
-    done <"$booster_gitignore"
-
-    if [ $added_count -gt 0 ]; then
-        success ".gitignore updated with $added_count new entries."
-    else
-        log "No new entries needed for .gitignore."
-    fi
-
-    success ".vscode entries removed from project .gitignore (booster provides IDE settings)."
-}
-
 function init_deptrac() {
     log "Checking Deptrac configuration..."
     local deptrac_config="deptrac.yaml"
@@ -1321,67 +1391,6 @@ function install_node_dependencies() {
     else
         warn "Failed to install Node.js dependencies. Please run 'pnpm install' manually."
     fi
-}
-
-function cleanup_silent() {
-    rm -rf "$BOOSTER_TARGET_DIR"
-    rm -f composer.json.merged.tmp composer.json.merged.tmp.next hooks.yaml.tmp .ddev/config.yaml.tmp package.json.tmp # Clean up temp files
-}
-
-function cleanup() {
-    log "Cleaning up temporary files..."
-    rm -rf "$BOOSTER_TARGET_DIR"
-
-    rm -f composer.json.merged.tmp composer.json.merged.tmp.next hooks.yaml.tmp .ddev/config.yaml.tmp package.json.tmp
-    success "Temporary files cleaned up."
-}
-
-function update_nginx_config() {
-    log "Updating nginx configuration..."
-    local nginx_config=".ddev/nginx_full/nginx-site.conf"
-
-    if [ ! -f "$nginx_config" ]; then
-        log "Nginx config file '$nginx_config' not found. Skipping nginx update."
-        return
-    fi
-
-    log "Found nginx config file, updating..."
-
-    # Remove the DDEV-generated comment to track the file
-    if grep -q "# ddev generated" "$nginx_config"; then
-        log "  Removing DDEV generated comment to track the file..."
-        sed -i.bak '/# ddev generated/d' "$nginx_config" || warn "Failed to remove DDEV generated comment."
-    fi
-
-    # Check if XDEBUG_TRIGGER is already configured
-    if grep -q "fastcgi_param XDEBUG_TRIGGER" "$nginx_config"; then
-        log "  XDEBUG_TRIGGER already configured in nginx config."
-        return
-    fi
-
-    # Add XDEBUG_TRIGGER to the location ~ \.php$ block
-    log "  Adding XDEBUG_TRIGGER environment variable to php location block..."
-
-    # Create temporary content to insert
-    local temp_insert_file="nginx_insert.tmp"
-    cat >"$temp_insert_file" <<'EOF'
-        # Always trigger Xdebug for web requests (CLI remains unaffected due to start_with_request=trigger)
-        fastcgi_param XDEBUG_TRIGGER 1;
-EOF
-
-    # Use sed to add the content after the location ~ \.php$ line (cross-platform compatible)
-    sed -i.bak '/location ~ \\\.php\$ {/r '"$temp_insert_file" "$nginx_config" || warn "Failed to add XDEBUG_TRIGGER to nginx config."
-
-    # Remove #ddev generated comment if it exists
-    sed -i.bak '/# ddev generated/d' "$nginx_config" || warn "Failed to remove DDEV generated comment."
-
-    # Clean up temp file
-    rm -f "$temp_insert_file"
-
-    # Clean up backup file
-    rm -f "$nginx_config.bak"
-
-    success "Nginx configuration updated with XDEBUG_TRIGGER."
 }
 
 # Display help information

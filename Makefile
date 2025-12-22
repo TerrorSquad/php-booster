@@ -1,4 +1,4 @@
-.PHONY: help test test-laravel test-symfony test-hooks test-clean test-env test-status
+.PHONY: help test test-laravel test-symfony test-hooks test-clean test-env test-status build
 
 # Default target - show help
 help:
@@ -7,6 +7,7 @@ help:
 	@echo "Usage: make <target>"
 	@echo ""
 	@echo "Available targets:"
+	@echo "  build             Build the integration script"
 	@echo "  test              Run full integration test (Laravel)"
 	@echo "  test-laravel      Run full Laravel integration test"
 	@echo "  test-symfony      Run full Symfony integration test"
@@ -19,6 +20,10 @@ help:
 	@echo "  make test         # Quick test with Laravel"
 	@echo "  make test-symfony # Test Symfony integration"
 	@echo "  make test-clean   # Clean up after tests"
+
+# Build the integration script
+build:
+	@bash booster/build.sh
 
 # Default test target (Laravel)
 test: test-laravel

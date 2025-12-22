@@ -55,6 +55,7 @@ class IntegrationVerifier:
             "validate-branch-name.config.cjs",
             "package.json",
             "renovate.json",
+            "deptrac.yaml",
         ]
 
         missing_files: List[str] = []
