@@ -2,7 +2,6 @@ import { $, which } from 'zx'
 import {
   ensureMutagenSync,
   formatDuration,
-  getExecCommand,
   initEnvironment,
   isDdevProject,
   isSkipped,
@@ -111,8 +110,10 @@ export async function runQualityTools(files: string[], tools: ToolConfig[]): Pro
         for (const chunk of chunks) {
           await Promise.all(
             chunk.map(async (file) => {
-              const cmd = await getExecCommand([tool.command, ...args, file], tool.type)
-              return runWithRunner(cmd, { quiet: true })
+              return runWithRunner([tool.command, ...args, file], {
+                quiet: true,
+                type: tool.type,
+              })
             }),
           )
         }
@@ -122,8 +123,7 @@ export async function runQualityTools(files: string[], tools: ToolConfig[]): Pro
         if (tool.passFiles !== false) {
           cmdArgs.push(...filesToRun)
         }
-        const cmd = await getExecCommand([tool.command, ...cmdArgs], tool.type)
-        await runWithRunner(cmd)
+        await runWithRunner([tool.command, ...cmdArgs], { type: tool.type })
       }
     })
 

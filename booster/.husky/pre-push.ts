@@ -35,7 +35,7 @@ async function runTests(): Promise<boolean> {
   if (await fs.pathExists('vendor/bin/pest')) {
     log.tool('PHPUnit', 'Running tests...')
     try {
-      await runWithRunner(['composer', 'test:pest'])
+      await runWithRunner(['composer', 'test:pest'], { type: 'php' })
       log.success('Tests passed')
     } catch {
       log.error('Tests failed')

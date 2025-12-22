@@ -65,6 +65,7 @@ export async function initEnvironment(): Promise<void> {
  */
 export interface RunOptions {
   quiet?: boolean
+  type?: 'php' | 'node' | 'system'
 }
 
 /**
@@ -76,17 +77,19 @@ export async function runWithRunner(
   command: string[],
   options: RunOptions = {},
 ): Promise<ProcessOutput> {
-  const { quiet = false } = options
+  const { quiet = false, type = 'system' } = options
+
+  const finalCommand = await getExecCommand(command, type)
 
   // Log command execution if not quiet
   if (!quiet) {
-    const commandStr = command.join(' ')
+    const commandStr = finalCommand.join(' ')
     log.info(`Executing: ${commandStr}`)
   }
 
   return await $({
     stdio: quiet ? 'pipe' : 'inherit',
-  })`${command}`
+  })`${finalCommand}`
 }
 
 /**

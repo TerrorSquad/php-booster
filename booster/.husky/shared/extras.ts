@@ -12,11 +12,10 @@ export async function generateDeptracImage(): Promise<void> {
 
   try {
     // Use graphviz-image formatter to generate PNG directly
-    await runWithRunner([
-      './vendor/bin/deptrac',
-      '--formatter=graphviz-image',
-      '--output=deptrac.png',
-    ])
+    await runWithRunner(
+      ['./vendor/bin/deptrac', '--formatter=graphviz-image', '--output=deptrac.png'],
+      { type: 'php' },
+    )
     if (await fs.pathExists('./deptrac.png')) {
       await runWithRunner(['git', 'add', 'deptrac.png'], { quiet: true })
 
@@ -45,7 +44,7 @@ export async function generateApiDocs(): Promise<void> {
     // Check if swagger-php is installed by looking for the binary
     // This avoids reading/parsing composer.lock
     if (await fs.pathExists('./vendor/bin/openapi')) {
-      await runWithRunner(['composer', 'generate-api-spec'])
+      await runWithRunner(['composer', 'generate-api-spec'], { type: 'php' })
 
       const diffResult = await runWithRunner(['git', 'diff', '--name-only'], { quiet: true })
       const modifiedFiles = diffResult.toString().trim().split('\n')
