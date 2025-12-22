@@ -158,7 +158,7 @@ async function getDdevProjectName(): Promise<string | null> {
  * @param command The command parts (e.g. ['php', '-v'])
  * @param type The tool type ('node', 'php', 'system')
  */
-export async function getExecCommand(command: string[], type: string): Promise<string[]> {
+async function getExecCommand(command: string[], type: string): Promise<string[]> {
   if (type !== 'php') {
     return command
   }
