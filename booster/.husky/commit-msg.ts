@@ -15,7 +15,7 @@
 import { fs, path } from 'zx'
 import { fileURLToPath } from 'url'
 import validateBranchNameConfig from '../validate-branch-name.config.cjs'
-import { getCurrentBranch, GitHook, log, runHook, runTool, runWithRunner } from './shared/index.ts'
+import { getCurrentBranch, GitHook, log, runHook, runStep, exec } from './shared/index.ts'
 
 /**
  * Branch validation configuration interface
@@ -120,9 +120,9 @@ function extractTicketId(branchName: string, config: BranchConfig): string | nul
 async function validateBranchName(branchName: string): Promise<boolean> {
   const binPath = 'validate-branch-name'
 
-  return await runTool('Branch Name', 'Validating branch name...', async () => {
+  return await runStep('Branch Name', 'Validating branch name...', async () => {
     try {
-      await runWithRunner([binPath, '-t', branchName], {
+      await exec([binPath, '-t', branchName], {
         quiet: true,
       })
     } catch (error: unknown) {
@@ -147,8 +147,8 @@ async function lintCommitMessage(commitFile: string): Promise<boolean> {
   const scriptDir = path.dirname(__filename)
   const configPath = path.resolve(scriptDir, '../commitlint.config.ts')
 
-  return await runTool('Commitlint', 'Validating commit message format...', async () => {
-    await runWithRunner([binPath, '--config', configPath, '--edit', commitFile])
+  return await runStep('Commitlint', 'Validating commit message format...', async () => {
+    await exec([binPath, '--config', configPath, '--edit', commitFile])
   })
 }
 

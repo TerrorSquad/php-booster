@@ -14,7 +14,7 @@ import {
   isSkipped,
   log,
   runHook,
-  runWithRunner,
+  exec,
   generateApiDocs,
   generateDeptracImage,
 } from './shared/index.ts'
@@ -35,7 +35,7 @@ async function runTests(): Promise<boolean> {
   if (await fs.pathExists('vendor/bin/pest')) {
     log.tool('PHPUnit', 'Running tests...')
     try {
-      await runWithRunner(['composer', 'test:pest'], { type: 'php' })
+      await exec(['composer', 'test:pest'], { type: 'php' })
       log.success('Tests passed')
     } catch {
       log.error('Tests failed')

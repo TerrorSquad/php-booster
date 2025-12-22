@@ -1,12 +1,12 @@
 import { fs, path } from 'zx'
-import { log, runWithRunner } from './core.ts'
+import { exec, log } from './core.ts'
 
 /**
  * Get current git branch name
  */
 export async function getCurrentBranch(): Promise<string> {
   try {
-    const result = await runWithRunner(['git', 'rev-parse', '--abbrev-ref', 'HEAD'], {
+    const result = await exec(['git', 'rev-parse', '--abbrev-ref', 'HEAD'], {
       quiet: true,
     })
 
@@ -43,7 +43,7 @@ export async function stageFiles(files: string[]): Promise<void> {
 
   try {
     // Run git add inside DDEV container for consistency with tool execution
-    await runWithRunner(['git', 'add', ...files], { quiet: true })
+    await exec(['git', 'add', ...files], { quiet: true })
   } catch (error: unknown) {
     log.warn(
       `Failed to stage some files: ${error instanceof Error ? error.message : String(error)}`,
@@ -56,7 +56,7 @@ export async function stageFiles(files: string[]): Promise<void> {
  */
 export async function shouldSkipDuringMerge(): Promise<boolean> {
   try {
-    const gitDir = await runWithRunner(['git', 'rev-parse', '--git-dir'], {
+    const gitDir = await exec(['git', 'rev-parse', '--git-dir'], {
       quiet: true,
     })
     const mergeHead = path.join(gitDir.toString().trim(), 'MERGE_HEAD')
@@ -82,7 +82,7 @@ export async function shouldSkipDuringMerge(): Promise<boolean> {
  */
 export async function getStagedFiles(extension?: string): Promise<string[]> {
   try {
-    const result = await runWithRunner(
+    const result = await exec(
       ['git', 'diff', '--cached', '--name-only', '--diff-filter=ACMR'],
       {
         quiet: true,

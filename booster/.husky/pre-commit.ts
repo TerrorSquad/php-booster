@@ -12,7 +12,7 @@
  * - GIT_HOOKS_VERBOSE=1: Enable verbose output for debugging
  * - SKIP_<TOOL_NAME>=1: Skip specific tool (e.g. SKIP_RECTOR, SKIP_ESLINT)
  */
-import { getStagedFiles, GitHook, log, runHook, runQualityTools } from './shared/index.ts'
+import { getStagedFiles, GitHook, log, runHook, runQualityChecks } from './shared/index.ts'
 import { TOOLS } from './shared/tools.ts'
 
 await runHook(GitHook.PreCommit, async () => {
@@ -25,7 +25,7 @@ await runHook(GitHook.PreCommit, async () => {
 
   log.info(`Found ${files.length} staged file(s): ${files.join(', ')}`)
 
-  const success = await runQualityTools(files, TOOLS)
+  const success = await runQualityChecks(files, TOOLS)
 
   return success
 })

@@ -73,7 +73,7 @@ export interface RunOptions {
  * @param command Array of command parts
  * @param options Execution options
  */
-export async function runWithRunner(
+export async function exec(
   command: string[],
   options: RunOptions = {},
 ): Promise<ProcessOutput> {
@@ -208,7 +208,7 @@ export async function ensureMutagenSync(): Promise<void> {
     try {
       // Attempt to sync mutagen. This will fail if mutagen is not enabled, which is fine.
       // We use 'ddev mutagen sync' which forces a sync.
-      await runWithRunner(['ddev', 'mutagen', 'sync'], { quiet: true })
+      await exec(['ddev', 'mutagen', 'sync'], { quiet: true })
     } catch {
       // Ignore errors (e.g. mutagen not enabled)
     }

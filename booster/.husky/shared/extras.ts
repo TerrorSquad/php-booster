@@ -1,5 +1,5 @@
 import { fs } from 'zx'
-import { log, runWithRunner } from './core.ts'
+import { exec, log } from './core.ts'
 
 /**
  * Generate Deptrac image and add to git
@@ -12,19 +12,19 @@ export async function generateDeptracImage(): Promise<void> {
 
   try {
     // Use graphviz-image formatter to generate PNG directly
-    await runWithRunner(
+    await exec(
       ['./vendor/bin/deptrac', '--formatter=graphviz-image', '--output=deptrac.png'],
       { type: 'php' },
     )
     if (await fs.pathExists('./deptrac.png')) {
-      await runWithRunner(['git', 'add', 'deptrac.png'], { quiet: true })
+      await exec(['git', 'add', 'deptrac.png'], { quiet: true })
 
       // Check if there are staged changes for the image
       try {
-        await runWithRunner(['git', 'diff', '--cached', '--quiet', 'deptrac.png'], { quiet: true })
+        await exec(['git', 'diff', '--cached', '--quiet', 'deptrac.png'], { quiet: true })
       } catch {
         // Changes detected, commit them
-        await runWithRunner(['git', 'commit', '-m', 'chore: update deptrac image'])
+        await exec(['git', 'commit', '-m', 'chore: update deptrac image'])
         log.success('Deptrac image updated and committed')
       }
     }
@@ -44,32 +44,32 @@ export async function generateApiDocs(): Promise<void> {
     // Check if swagger-php is installed by looking for the binary
     // This avoids reading/parsing composer.lock
     if (await fs.pathExists('./vendor/bin/openapi')) {
-      await runWithRunner(['composer', 'generate-api-spec'], { type: 'php' })
+      await exec(['composer', 'generate-api-spec'], { type: 'php' })
 
-      const diffResult = await runWithRunner(['git', 'diff', '--name-only'], { quiet: true })
+      const diffResult = await exec(['git', 'diff', '--name-only'], { quiet: true })
       const modifiedFiles = diffResult.toString().trim().split('\n')
 
       if (modifiedFiles.includes('documentation/openapi.yml')) {
         log.info('API spec changed, regenerating HTML...')
 
         try {
-          await runWithRunner(['pnpm', 'generate:api-doc:html'])
+          await exec(['pnpm', 'generate:api-doc:html'])
           log.success('HTML documentation generated')
 
           // Stage the generated files
-          await runWithRunner(
+          await exec(
             ['git', 'add', 'documentation/openapi.html', 'documentation/openapi.yml'],
             { quiet: true },
           )
 
           // Check if there are staged changes and commit them
           try {
-            await runWithRunner(['git', 'diff', '--cached', '--quiet'], { quiet: true })
+            await exec(['git', 'diff', '--cached', '--quiet'], { quiet: true })
             // If we get here, there are no staged changes
             log.info('No staged changes for API documentation')
           } catch {
             // There are staged changes, commit them
-            await runWithRunner(['git', 'commit', '-m', 'chore: update API documentation'])
+            await exec(['git', 'commit', '-m', 'chore: update API documentation'])
             log.success('API documentation committed')
           }
         } catch (error: unknown) {

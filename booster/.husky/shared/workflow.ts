@@ -1,12 +1,12 @@
 import { $, which } from 'zx'
 import {
   ensureMutagenSync,
+  exec,
   formatDuration,
   initEnvironment,
   isDdevProject,
   isSkipped,
   log,
-  runWithRunner,
 } from './core.ts'
 import { shouldSkipDuringMerge, stageFiles } from './git.ts'
 import { GitHook, type ToolConfig } from './types.ts'
@@ -23,7 +23,7 @@ const HOOK_ENV_MAPPING: Record<GitHook, string> = {
  * @param action Action being performed (e.g., 'Running static analysis...', 'Running code style fixes...')
  * @param fn Function that executes the tool
  */
-export async function runTool(
+export async function runStep(
   toolName: string,
   action: string,
   fn: () => Promise<void>,
@@ -49,6 +49,52 @@ export async function runTool(
 }
 
 /**
+ * Check if a tool is available to run
+ */
+async function isToolAvailable(tool: ToolConfig): Promise<boolean> {
+  if (tool.type === 'php' && (await isDdevProject())) {
+    return true
+  }
+  return await which(tool.command)
+    .then(() => true)
+    .catch(() => false)
+}
+
+/**
+ * Execute a tool command
+ */
+async function execTool(tool: ToolConfig, files: string[]): Promise<void> {
+  const args = [...(tool.args || [])]
+
+  if (tool.runForEachFile) {
+    // Run command for each file individually with concurrency limit
+    const concurrency = 10
+    const chunks = []
+    for (let i = 0; i < files.length; i += concurrency) {
+      chunks.push(files.slice(i, i + concurrency))
+    }
+
+    for (const chunk of chunks) {
+      await Promise.all(
+        chunk.map((file) =>
+          exec([tool.command, ...args, file], {
+            quiet: true,
+            type: tool.type,
+          }),
+        ),
+      )
+    }
+  } else {
+    // Run command once with all files
+    const cmdArgs = [...args]
+    if (tool.passFiles !== false) {
+      cmdArgs.push(...files)
+    }
+    await exec([tool.command, ...cmdArgs], { type: tool.type })
+  }
+}
+
+/**
  * Run all configured quality tools on the provided files
  *
  * Iterates through the provided tools and:
@@ -61,7 +107,7 @@ export async function runTool(
  * @param tools List of tool configurations to run
  * @returns true if all tools passed, false otherwise
  */
-export async function runQualityTools(files: string[], tools: ToolConfig[]): Promise<boolean> {
+export async function runQualityChecks(files: string[], tools: ToolConfig[]): Promise<boolean> {
   let allSuccessful = true
 
   for (const tool of tools) {
@@ -79,53 +125,14 @@ export async function runQualityTools(files: string[], tools: ToolConfig[]): Pro
     if (filesToRun.length === 0) continue
 
     // Check binary existence
-    let exists = false
-    if (tool.type === 'php' && (await isDdevProject())) {
-      exists = true
-    } else {
-      exists = await which(tool.command)
-        .then(() => true)
-        .catch(() => false)
-    }
-
-    if (!exists) {
+    if (!(await isToolAvailable(tool))) {
       log.skip(`${tool.name} not found at ${tool.command}. Skipping...`)
       continue
     }
 
-    // Prepare arguments
-    const args = [...(tool.args || [])]
-
     const description = tool.description || `Running ${tool.name}...`
 
-    const success = await runTool(tool.name, description, async () => {
-      if (tool.runForEachFile) {
-        // Run command for each file individually with concurrency limit
-        const concurrency = 10
-        const chunks = []
-        for (let i = 0; i < filesToRun.length; i += concurrency) {
-          chunks.push(filesToRun.slice(i, i + concurrency))
-        }
-
-        for (const chunk of chunks) {
-          await Promise.all(
-            chunk.map(async (file) => {
-              return runWithRunner([tool.command, ...args, file], {
-                quiet: true,
-                type: tool.type,
-              })
-            }),
-          )
-        }
-      } else {
-        // Run command once with all files
-        const cmdArgs = [...args]
-        if (tool.passFiles !== false) {
-          cmdArgs.push(...filesToRun)
-        }
-        await runWithRunner([tool.command, ...cmdArgs], { type: tool.type })
-      }
-    })
+    const success = await runStep(tool.name, description, () => execTool(tool, filesToRun))
 
     if (success && tool.stagesFilesAfter && tool.passFiles !== false) {
       // Ensure any changes made in the container are synced back to host before staging
