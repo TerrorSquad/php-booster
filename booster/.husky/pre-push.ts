@@ -33,7 +33,7 @@ async function shouldSkip(): Promise<boolean> {
 
 async function runTests(): Promise<boolean> {
   if (await fs.pathExists('vendor/bin/pest')) {
-    log.tool('PHPUnit', 'Running tests...')
+    log.tool('Pest', 'Running tests...')
     try {
       await exec(['composer', 'test:pest'], { type: 'php' })
       log.success('Tests passed')
