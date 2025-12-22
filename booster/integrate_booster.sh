@@ -465,6 +465,21 @@ function is_ddev_project() {
     fi
 }
 
+function cleanup_silent() {
+    rm -rf "$BOOSTER_TARGET_DIR"
+    rm -f composer.json.merged.tmp composer.json.merged.tmp.next hooks.yaml.tmp .ddev/config.yaml.tmp package.json.tmp # Clean up temp files
+}
+
+function cleanup() {
+    log "Cleaning up temporary files..."
+    rm -rf "$BOOSTER_TARGET_DIR"
+
+    rm -f composer.json.merged.tmp composer.json.merged.tmp.next hooks.yaml.tmp .ddev/config.yaml.tmp package.json.tmp
+    success "Temporary files cleaned up."
+}
+
+
+
 # --- Core Logic Functions ---
 
 
@@ -507,79 +522,6 @@ function download_php_booster() {
         fi
         success "php-booster cloned successfully into '$BOOSTER_TARGET_DIR'."
     fi
-}
-
-function update_ddev_files() {
-    log "Updating ddev files..."
-    local booster_ddev_path="${BOOSTER_INTERNAL_PATH}/.ddev"
-    local project_ddev_path=".ddev"
-
-    if [ ! -d "$booster_ddev_path" ]; then
-        warn "Booster DDEV directory '$booster_ddev_path' not found. Skipping DDEV file update."
-        return
-    fi
-
-    # Define source -> destination mappings relative to .ddev dirs
-    local ddev_subdirs=("commands" "php" "web-build" "scripts")
-    for subdir in "${ddev_subdirs[@]}"; do
-        local src_path="${booster_ddev_path}/${subdir}"
-        local dest_path="${project_ddev_path}/${subdir}"
-        if [ -d "$src_path" ]; then
-            log "  Copying '$src_path' to '$dest_path'..."
-            # Use standard recursive copy -R, ensure destination parent exists
-            mkdir -p "$dest_path"
-            # Copy the source directory *into* the destination directory
-            cp -R $src_path/. "$dest_path" || warn "Failed to copy '$src_path'. Check permissions."
-        else
-            log "  Booster DDEV subdirectory '$subdir' not found at '$src_path'. Skipping."
-        fi
-    done
-    success "ddev files updated."
-}
-
-function update_ddev_config() {
-    log "Updating ddev config using yq..."
-    local project_config=".ddev/config.yaml"
-    local booster_config="${BOOSTER_INTERNAL_PATH}/.ddev/config.yaml"
-    local hooks_tmp="hooks.yaml.tmp"
-    local merged_tmp=".ddev/config.yaml.tmp"
-
-    if [ ! -f "$project_config" ]; then
-        warn "Project DDEV config '$project_config' not found. Skipping update."
-        return
-    fi
-    if [ ! -f "$booster_config" ]; then
-        warn "Booster DDEV config '$booster_config' not found. Skipping update."
-        return
-    fi
-
-    # 1. Extract hooks from booster config (handle potential errors)
-    log "  Extracting hooks from booster config..."
-    if ! yq '.hooks' "$booster_config" >"$hooks_tmp"; then
-        warn "Failed to extract hooks using yq from '$booster_config'. Skipping hook merge."
-        rm -f "$hooks_tmp"
-    else
-        # 2. Merge hooks into project config
-        log "  Merging hooks into project config..."
-        if ! yq eval-all 'select(fileIndex == 0) * {"hooks": select(fileIndex == 1)}' "$project_config" "$hooks_tmp" >"$merged_tmp"; then
-            warn "Failed to merge hooks using yq. Original config preserved."
-            rm -f "$hooks_tmp" "$merged_tmp"
-            return # Stop ddev config update here if merge fails
-        else
-            # Replace project config with merged one if successful
-            mv "$merged_tmp" "$project_config"
-            log "  Hooks merged successfully."
-        fi
-        rm -f "$hooks_tmp"
-    fi
-
-    # 3. Ensure xdebug_enabled is true (operate on the potentially updated project_config)
-    log "  Ensuring 'xdebug_enabled = true' using yq..."
-    if ! yq eval '.xdebug_enabled = true' -i "$project_config"; then
-        warn "Failed to set 'xdebug_enabled = true' using yq. Check '$project_config'."
-    fi
-
-    success "ddev config updated. Ensure the paths in the config are correct."
 }
 
 function copy_files() {
@@ -732,6 +674,402 @@ function update_package_json() {
     fi
 }
 
+function update_readme() {
+    log "Updating README.md..."
+    local project_readme="README.md"
+    local booster_snippet="${BOOSTER_INTERNAL_PATH}/README_SNIPPET.md"
+
+    if [ -f "$project_readme" ]; then
+        log "'$project_readme' already exists. Skipping creation."
+    else
+        if [ -f "$booster_snippet" ]; then
+            warn "'$project_readme' not found. Creating new README.md from booster snippet..."
+            cp "$booster_snippet" "$project_readme" || error "Failed to copy README snippet."
+            success "New README.md created with content from '$booster_snippet'."
+        else
+            warn "'$project_readme' not found, and booster snippet '$booster_snippet' also not found. Skipping."
+        fi
+    fi
+}
+
+function update_gitignore() {
+    log "Updating .gitignore..."
+    local project_gitignore=".gitignore"
+    local booster_gitignore="${BOOSTER_INTERNAL_PATH}/.gitignore"
+
+    if [ ! -f "$booster_gitignore" ]; then
+        warn "Booster .gitignore '$booster_gitignore' not found. Skipping update."
+        return
+    fi
+
+    touch "$project_gitignore"
+
+    # Remove .vscode entries from project gitignore since booster provides IDE settings
+    log "Removing .vscode entries from project .gitignore..."
+    local temp_gitignore="${project_gitignore}.tmp"
+
+    # Remove lines that ignore .vscode (with or without leading slash, with or without trailing slash)
+    grep -v -E '^[[:space:]]*/?\.vscode/?[[:space:]]*$' "$project_gitignore" > "$temp_gitignore" || true
+    # Also remove commented .vscode entries
+    grep -v -E '^[[:space:]]*#[[:space:]]*/?\.vscode/?[[:space:]]*$' "$temp_gitignore" > "${temp_gitignore}.2" || true
+    mv "${temp_gitignore}.2" "$project_gitignore"
+    rm -f "$temp_gitignore"
+
+    local added_count=0
+
+    while IFS= read -r line || [[ -n "$line" ]]; do
+
+        line=$(echo "$line" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+
+        if [ -z "$line" ]; then
+            continue
+        fi
+
+        if ! grep -q -x -F "$line" "$project_gitignore" && ! grep -q -x -F "# $line" "$project_gitignore" && ! grep -q -x -F "#$line" "$project_gitignore"; then
+
+            if [[ "$line" != /* ]] && grep -q -x -F "/$line" "$project_gitignore"; then
+                continue
+            fi
+
+            if [[ "$line" == /* ]] && grep -q -x -F "${line#/}" "$project_gitignore"; then
+                continue
+            fi
+
+            log "  Adding '$line' to .gitignore"
+
+            if [ $added_count -eq 0 ]; then
+
+                [ -s "$project_gitignore" ] && echo >>"$project_gitignore"
+
+                echo "" >>"$project_gitignore" # Ensure separation
+                echo "# --- Added by php-booster integration ---" >>"$project_gitignore"
+                log "  Added header to .gitignore"
+            fi
+            echo "$line" >>"$project_gitignore"
+            added_count=$((added_count + 1))
+        fi
+    done <"$booster_gitignore"
+
+    if [ $added_count -gt 0 ]; then
+        success ".gitignore updated with $added_count new entries."
+    else
+        log "No new entries needed for .gitignore."
+    fi
+
+    success ".vscode entries removed from project .gitignore (booster provides IDE settings)."
+}
+
+# --- Function to Update Tool Paths Dynamically ---
+function update_tool_paths() {
+    # --- Copy Documentation Directory ---
+    local booster_doc_path="${BOOSTER_INTERNAL_PATH}/documentation"
+    if [ -d "$booster_doc_path" ]; then
+        if [ ! -d "documentation" ]; then
+            log "  Copying '$booster_doc_path' to 'documentation'..."
+            cp -R "$booster_doc_path" "documentation" || warn "Failed to copy documentation directory."
+        else
+            log "  'documentation' directory exists. Copying missing files..."
+            for doc_file in "$booster_doc_path"/*; do
+                local filename=$(basename "$doc_file")
+                if [ ! -e "documentation/$filename" ]; then
+                    cp -R "$doc_file" "documentation/"
+                    log "    Copied '$filename'."
+                else
+                    log "    '$filename' already exists. Skipping to preserve customizations."
+                fi
+            done
+        fi
+    else
+        log "  Booster documentation directory not found. Skipping."
+    fi
+
+    # --- Copy Config Files ---
+    local cq_files=("rector.php" "phpstan.neon.dist" "ecs.php" "psalm.xml" "deptrac.yaml")
+    for file in "${cq_files[@]}"; do
+        local src_path="${BOOSTER_INTERNAL_PATH}/${file}"
+        if [ -f "$src_path" ]; then
+            if [ ! -f "$file" ]; then
+                cp "$src_path" . || warn "Failed to copy '$src_path'."
+                log "  Copied '$file'."
+            else
+                log "  '$file' already exists. Skipping copy to preserve customizations."
+            fi
+        else
+            log "  Booster config '$file' not found. Skipping."
+        fi
+    done
+
+    success "Code quality tool configs and documentation processed."
+
+    log "Dynamically updating paths in tool configuration files using temp files and sed..."
+    local php_dirs_file="php_dirs.txt"
+    local return_code=0 # Track overall success/failure
+
+    # 1. Find directories containing .php files and save to php_dirs.txt
+    log "  Searching for directories containing PHP files (excluding vendor, .git, node_modules, etc.)..."
+    find . -type f \
+        -name "*.php" \
+        -not -path "./vendor/*" \
+        -not -path "./node_modules/*" \
+        -not -path "./${BOOSTER_TARGET_DIR}/*" \
+        -not -path "./.ddev/*" \
+        -exec dirname {} \; | sort -u | grep -v ^.$ | cut -d '/' -f2 | sort -u >"$php_dirs_file" || {
+        warn "find command failed or produced unexpected output while searching for PHP directories."
+        # Create empty file if find failed, to avoid errors later
+        touch "$php_dirs_file"
+    }
+
+    if [ ! -s "$php_dirs_file" ]; then
+        warn "No subdirectories containing PHP files found (excluding vendor, hidden dirs, etc.). Placeholders will be removed from tool configurations."
+    else
+        log "  Found PHP directories listed in '$php_dirs_file'."
+    fi
+
+    # --- Define helper for sed replacement ---
+    # Usage: replace_placeholder "config_file" "placeholder_regex" "formatted_dirs_file"
+    function replace_placeholder() {
+        local config_file="$1"
+        local placeholder_regex="$2"
+        local formatted_dirs_file="$3"
+        local tmp_config_file="${config_file}.tmp"
+
+        if [ ! -f "$config_file" ]; then
+            log "    File '$config_file' not found. Skipping."
+            return 0
+        fi
+
+        log "    Processing '$config_file'..."
+        # Use process substitution <(...) if available and preferred, otherwise use temp file
+        # Using temp file for broader compatibility
+
+        # Create the new file by reading the formatted dirs where the placeholder is found
+        # Use -n to suppress default output, p to print non-matching lines, r to read on match
+        # This requires two passes or complex scripting. Let's use the requested r/d approach.
+
+        # Pass 1: Read the formatted dirs file after the placeholder line
+        sed -e "$placeholder_regex r $formatted_dirs_file" "$config_file" >"$tmp_config_file" || {
+            warn "sed 'r' command failed for '$config_file'."
+            rm -f "$tmp_config_file"
+            return 1
+        }
+
+        # Pass 2: Delete the placeholder line from the temp file, overwrite original
+        sed -i.bak -e "$placeholder_regex d" "$tmp_config_file" || {
+            warn "sed 'd' command failed for '$tmp_config_file'."
+            rm -f "$tmp_config_file"
+            # Restore original from backup if it exists
+            [ -f "${config_file}.bak" ] && mv "${config_file}.bak" "$config_file"
+            return 1
+        }
+
+        mv "$tmp_config_file" "$config_file"
+        rm -f $config_file.tmp.bak
+
+        return 0
+    }
+
+    # --- Process Rector PHP file ---
+    local rector_file="rector.php"
+    local rector_dirs_file="rector_dirs.txt"
+    local rector_placeholder_regex="/^[[:space:]]*__DIR__ \. '\/DIRECTORY',[[:space:]]*$/"
+    # Create formatted dirs file
+    rm -f "$rector_dirs_file" && touch "$rector_dirs_file"
+    if [ -s "$php_dirs_file" ]; then # Only loop if dirs were found
+        while IFS= read -r dir; do
+            # Escape backslashes and single quotes for PHP string safety
+            safe_dir="${dir//\\/\\\\}"
+            safe_dir="${safe_dir//\'/\\\'}"
+            printf "        __DIR__ . '/%s',\n" "$safe_dir" >>"$rector_dirs_file"
+        done <"$php_dirs_file"
+    fi
+
+    replace_placeholder "$rector_file" "$rector_placeholder_regex" "$rector_dirs_file" || return_code=1
+    rm -f "$rector_dirs_file" # Clean up
+
+    # --- Process ECS PHP file ---
+    local ecs_file="ecs.php"
+    local ecs_dirs_file="ecs_dirs.txt"
+    local ecs_placeholder_regex="/^[[:space:]]*__DIR__ \. '\/DIRECTORY',[[:space:]]*$/"
+
+    rm -f "$ecs_dirs_file" && touch "$ecs_dirs_file"
+    if [ -s "$php_dirs_file" ]; then
+        while IFS= read -r dir; do
+            # Escape backslashes and single quotes for PHP string safety
+            safe_dir="${dir//\\/\\\\}"
+            safe_dir="${safe_dir//\'/\\\'}"
+            printf "        __DIR__ . '/%s',\n" "$safe_dir" >>"$ecs_dirs_file"
+        done <"$php_dirs_file"
+    fi
+
+    replace_placeholder "$ecs_file" "$ecs_placeholder_regex" "$ecs_dirs_file" || return_code=1
+    rm -f "$ecs_dirs_file" # Clean up
+
+    # --- Process Psalm XML file ---
+    local psalm_file="psalm.xml"
+    local psalm_dirs_file="psalm_dirs.txt"
+    local psalm_placeholder_regex='/^[[:space:]]*<directory name="DIRECTORY" \/>[[:space:]]*$/'
+
+    rm -f "$psalm_dirs_file" && touch "$psalm_dirs_file"
+    if [ -s "$php_dirs_file" ]; then
+        while IFS= read -r dir; do
+            # Basic XML escaping for dir name (only & and < are strictly needed here, but > and " are good practice)
+            local escaped_dir
+            escaped_dir=$(echo "$dir" | sed -e 's/&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g' -e 's/"/\&quot;/g')
+            printf '        <directory name="%s" />\n' "$escaped_dir" >>"$psalm_dirs_file"
+        done <"$php_dirs_file"
+    fi
+
+    replace_placeholder "$psalm_file" "$psalm_placeholder_regex" "$psalm_dirs_file" || return_code=1
+    rm -f "$psalm_dirs_file" # Clean up
+
+    # --- Process PHPStan NEON file ---
+    local phpstan_file="phpstan.neon.dist"
+    local phpstan_dirs_file="phpstan_dirs.txt"
+    local phpstan_placeholder_regex='/^[[:space:]]*-[[:space:]]*DIRECTORY[[:space:]]*$/'
+
+    rm -f "$phpstan_dirs_file" && touch "$phpstan_dirs_file"
+    if [ -s "$php_dirs_file" ]; then
+        while IFS= read -r dir; do
+            printf '    - %s\n' "$dir" >>"$phpstan_dirs_file"
+        done <"$php_dirs_file"
+    fi
+
+    replace_placeholder "$phpstan_file" "$phpstan_placeholder_regex" "$phpstan_dirs_file" || return_code=1
+    rm -f "$phpstan_dirs_file" # Clean up
+
+    # --- Final Cleanup and Status ---
+    rm -f "$php_dirs_file"
+
+    if [ $return_code -eq 0 ]; then
+        success "Tool configuration paths updated dynamically based on found PHP directories."
+        return 0
+    else
+        warn "Errors occurred while updating tool configuration paths. Check logs."
+        return 1
+    fi
+}
+
+function update_ddev_files() {
+    log "Updating ddev files..."
+    local booster_ddev_path="${BOOSTER_INTERNAL_PATH}/.ddev"
+    local project_ddev_path=".ddev"
+
+    if [ ! -d "$booster_ddev_path" ]; then
+        warn "Booster DDEV directory '$booster_ddev_path' not found. Skipping DDEV file update."
+        return
+    fi
+
+    # Define source -> destination mappings relative to .ddev dirs
+    local ddev_subdirs=("commands" "php" "web-build" "scripts")
+    for subdir in "${ddev_subdirs[@]}"; do
+        local src_path="${booster_ddev_path}/${subdir}"
+        local dest_path="${project_ddev_path}/${subdir}"
+        if [ -d "$src_path" ]; then
+            log "  Copying '$src_path' to '$dest_path'..."
+            # Use standard recursive copy -R, ensure destination parent exists
+            mkdir -p "$dest_path"
+            # Copy the source directory *into* the destination directory
+            cp -R $src_path/. "$dest_path" || warn "Failed to copy '$src_path'. Check permissions."
+        else
+            log "  Booster DDEV subdirectory '$subdir' not found at '$src_path'. Skipping."
+        fi
+    done
+    success "ddev files updated."
+}
+
+function update_ddev_config() {
+    log "Updating ddev config using yq..."
+    local project_config=".ddev/config.yaml"
+    local booster_config="${BOOSTER_INTERNAL_PATH}/.ddev/config.yaml"
+    local hooks_tmp="hooks.yaml.tmp"
+    local merged_tmp=".ddev/config.yaml.tmp"
+
+    if [ ! -f "$project_config" ]; then
+        warn "Project DDEV config '$project_config' not found. Skipping update."
+        return
+    fi
+    if [ ! -f "$booster_config" ]; then
+        warn "Booster DDEV config '$booster_config' not found. Skipping update."
+        return
+    fi
+
+    # 1. Extract hooks from booster config (handle potential errors)
+    log "  Extracting hooks from booster config..."
+    if ! yq '.hooks' "$booster_config" >"$hooks_tmp"; then
+        warn "Failed to extract hooks using yq from '$booster_config'. Skipping hook merge."
+        rm -f "$hooks_tmp"
+    else
+        # 2. Merge hooks into project config
+        log "  Merging hooks into project config..."
+        if ! yq eval-all 'select(fileIndex == 0) * {"hooks": select(fileIndex == 1)}' "$project_config" "$hooks_tmp" >"$merged_tmp"; then
+            warn "Failed to merge hooks using yq. Original config preserved."
+            rm -f "$hooks_tmp" "$merged_tmp"
+            return # Stop ddev config update here if merge fails
+        else
+            # Replace project config with merged one if successful
+            mv "$merged_tmp" "$project_config"
+            log "  Hooks merged successfully."
+        fi
+        rm -f "$hooks_tmp"
+    fi
+
+    # 3. Ensure xdebug_enabled is true (operate on the potentially updated project_config)
+    log "  Ensuring 'xdebug_enabled = true' using yq..."
+    if ! yq eval '.xdebug_enabled = true' -i "$project_config"; then
+        warn "Failed to set 'xdebug_enabled = true' using yq. Check '$project_config'."
+    fi
+
+    success "ddev config updated. Ensure the paths in the config are correct."
+}
+
+function update_nginx_config() {
+    log "Updating nginx configuration..."
+    local nginx_config=".ddev/nginx_full/nginx-site.conf"
+
+    if [ ! -f "$nginx_config" ]; then
+        log "Nginx config file '$nginx_config' not found. Skipping nginx update."
+        return
+    fi
+
+    log "Found nginx config file, updating..."
+
+    # Remove the DDEV-generated comment to track the file
+    if grep -q "# ddev generated" "$nginx_config"; then
+        log "  Removing DDEV generated comment to track the file..."
+        sed -i.bak '/# ddev generated/d' "$nginx_config" || warn "Failed to remove DDEV generated comment."
+    fi
+
+    # Check if XDEBUG_TRIGGER is already configured
+    if grep -q "fastcgi_param XDEBUG_TRIGGER" "$nginx_config"; then
+        log "  XDEBUG_TRIGGER already configured in nginx config."
+        return
+    fi
+
+    # Add XDEBUG_TRIGGER to the location ~ \.php$ block
+    log "  Adding XDEBUG_TRIGGER environment variable to php location block..."
+
+    # Create temporary content to insert
+    local temp_insert_file="nginx_insert.tmp"
+    cat >"$temp_insert_file" <<'EOF'
+        # Always trigger Xdebug for web requests (CLI remains unaffected due to start_with_request=trigger)
+        fastcgi_param XDEBUG_TRIGGER 1;
+EOF
+
+    # Use sed to add the content after the location ~ \.php$ line (cross-platform compatible)
+    sed -i.bak '/location ~ \\\.php\$ {/r '"$temp_insert_file" "$nginx_config" || warn "Failed to add XDEBUG_TRIGGER to nginx config."
+
+    # Remove #ddev generated comment if it exists
+    sed -i.bak '/# ddev generated/d' "$nginx_config" || warn "Failed to remove DDEV generated comment."
+
+    # Clean up temp file
+    rm -f "$temp_insert_file"
+
+    # Clean up backup file
+    rm -f "$nginx_config.bak"
+
+    success "Nginx configuration updated with XDEBUG_TRIGGER."
+}
+
 # --- Updated merge_scripts Function ---
 function merge_scripts() {
     local COMPOSER1="composer.json"                          # Project composer.json
@@ -838,189 +1176,6 @@ function merge_scripts() {
     # Replace the original composer.json with the merged version
     mv "$OUTPUT" "$COMPOSER1"
     success "Scripts merged idempotently into $COMPOSER1."
-}
-# --- Function to Update Tool Paths Dynamically ---
-function update_tool_paths() {
-    # --- Copy Documentation Directory ---
-    local booster_doc_path="${BOOSTER_INTERNAL_PATH}/documentation"
-    if [ -d "$booster_doc_path" ]; then
-        if [ ! -d "documentation" ]; then
-            log "  Copying '$booster_doc_path' to 'documentation'..."
-            cp -R "$booster_doc_path" "documentation" || warn "Failed to copy documentation directory."
-        else
-            log "  'documentation' directory exists. Copying missing files..."
-            for doc_file in "$booster_doc_path"/*; do
-                local filename=$(basename "$doc_file")
-                if [ ! -e "documentation/$filename" ]; then
-                    cp -R "$doc_file" "documentation/"
-                    log "    Copied '$filename'."
-                else
-                    log "    '$filename' already exists. Skipping to preserve customizations."
-                fi
-            done
-        fi
-    else
-        log "  Booster documentation directory not found. Skipping."
-    fi
-
-    # --- Copy Config Files ---
-    local cq_files=("rector.php" "phpstan.neon.dist" "ecs.php" "psalm.xml")
-    for file in "${cq_files[@]}"; do
-        local src_path="${BOOSTER_INTERNAL_PATH}/${file}"
-        if [ -f "$src_path" ]; then
-            if [ ! -f "$file" ]; then
-                cp "$src_path" . || warn "Failed to copy '$src_path'."
-                log "  Copied '$file'."
-            else
-                log "  '$file' already exists. Skipping copy to preserve customizations."
-            fi
-        else
-            log "  Booster config '$file' not found. Skipping."
-        fi
-    done
-
-    success "Code quality tool configs and documentation processed."
-
-    log "Dynamically updating paths in tool configuration files using temp files and sed..."
-    local php_dirs_file="php_dirs.txt"
-    local return_code=0 # Track overall success/failure
-
-    # 1. Find directories containing .php files and save to php_dirs.txt
-    log "  Searching for directories containing PHP files (excluding vendor, .git, node_modules, etc.)..."
-    find . -type f \
-        -name "*.php" \
-        -not -path "./vendor/*" \
-        -not -path "./node_modules/*" \
-        -not -path "./${BOOSTER_TARGET_DIR}/*" \
-        -not -path "./.ddev/*" \
-        -exec dirname {} \; | sort -u | grep -v ^.$ | cut -d '/' -f2 | sort -u >"$php_dirs_file" || {
-        warn "find command failed or produced unexpected output while searching for PHP directories."
-        # Create empty file if find failed, to avoid errors later
-        touch "$php_dirs_file"
-    }
-
-    if [ ! -s "$php_dirs_file" ]; then
-        warn "No subdirectories containing PHP files found (excluding vendor, hidden dirs, etc.). Placeholders will be removed from tool configurations."
-    else
-        log "  Found PHP directories listed in '$php_dirs_file'."
-    fi
-
-    # --- Define helper for sed replacement ---
-    # Usage: replace_placeholder "config_file" "placeholder_regex" "formatted_dirs_file"
-    function replace_placeholder() {
-        local config_file="$1"
-        local placeholder_regex="$2"
-        local formatted_dirs_file="$3"
-        local tmp_config_file="${config_file}.tmp"
-
-        if [ ! -f "$config_file" ]; then
-            log "    File '$config_file' not found. Skipping."
-            return 0
-        fi
-
-        log "    Processing '$config_file'..."
-        # Use process substitution <(...) if available and preferred, otherwise use temp file
-        # Using temp file for broader compatibility
-
-        # Create the new file by reading the formatted dirs where the placeholder is found
-        # Use -n to suppress default output, p to print non-matching lines, r to read on match
-        # This requires two passes or complex scripting. Let's use the requested r/d approach.
-
-        # Pass 1: Read the formatted dirs file after the placeholder line
-        sed -e "$placeholder_regex r $formatted_dirs_file" "$config_file" >"$tmp_config_file" || {
-            warn "sed 'r' command failed for '$config_file'."
-            rm -f "$tmp_config_file"
-            return 1
-        }
-
-        # Pass 2: Delete the placeholder line from the temp file, overwrite original
-        sed -i.bak -e "$placeholder_regex d" "$tmp_config_file" || {
-            warn "sed 'd' command failed for '$tmp_config_file'."
-            rm -f "$tmp_config_file"
-            # Restore original from backup if it exists
-            [ -f "${config_file}.bak" ] && mv "${config_file}.bak" "$config_file"
-            return 1
-        }
-
-        mv "$tmp_config_file" "$config_file"
-        rm -f $config_file.tmp.bak
-
-        return 0
-    }
-
-    # --- Process Rector PHP file ---
-    local rector_file="rector.php"
-    local rector_dirs_file="rector_dirs.txt"
-    local rector_placeholder_regex="/^[[:space:]]*__DIR__ \. '\/DIRECTORY',[[:space:]]*$/"
-    # Create formatted dirs file
-    rm -f "$rector_dirs_file" && touch "$rector_dirs_file"
-    if [ -s "$php_dirs_file" ]; then # Only loop if dirs were found
-        while IFS= read -r dir; do
-            printf "        __DIR__ . '/%s',\n" "$dir" >>"$rector_dirs_file"
-        done <"$php_dirs_file"
-    fi
-
-    replace_placeholder "$rector_file" "$rector_placeholder_regex" "$rector_dirs_file" || return_code=1
-    rm -f "$rector_dirs_file" # Clean up
-
-    # --- Process ECS PHP file ---
-    local ecs_file="ecs.php"
-    local ecs_dirs_file="ecs_dirs.txt"
-    local ecs_placeholder_regex="/^[[:space:]]*__DIR__ \. '\/DIRECTORY',[[:space:]]*$/"
-
-    rm -f "$ecs_dirs_file" && touch "$ecs_dirs_file"
-    if [ -s "$php_dirs_file" ]; then
-        while IFS= read -r dir; do
-            printf "        __DIR__ . '/%s',\n" "$dir" >>"$ecs_dirs_file"
-        done <"$php_dirs_file"
-    fi
-
-    replace_placeholder "$ecs_file" "$ecs_placeholder_regex" "$ecs_dirs_file" || return_code=1
-    rm -f "$ecs_dirs_file" # Clean up
-
-    # --- Process Psalm XML file ---
-    local psalm_file="psalm.xml"
-    local psalm_dirs_file="psalm_dirs.txt"
-    local psalm_placeholder_regex='/^[[:space:]]*<directory name="DIRECTORY" \/>[[:space:]]*$/'
-
-    rm -f "$psalm_dirs_file" && touch "$psalm_dirs_file"
-    if [ -s "$php_dirs_file" ]; then
-        while IFS= read -r dir; do
-            # Basic XML escaping for dir name (only & and < are strictly needed here, but > and " are good practice)
-            local escaped_dir
-            escaped_dir=$(echo "$dir" | sed -e 's/&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g' -e 's/"/\&quot;/g')
-            printf '        <directory name="%s" />\n' "$escaped_dir" >>"$psalm_dirs_file"
-        done <"$php_dirs_file"
-    fi
-
-    replace_placeholder "$psalm_file" "$psalm_placeholder_regex" "$psalm_dirs_file" || return_code=1
-    rm -f "$psalm_dirs_file" # Clean up
-
-    # --- Process PHPStan NEON file ---
-    local phpstan_file="phpstan.neon.dist"
-    local phpstan_dirs_file="phpstan_dirs.txt"
-    local phpstan_placeholder_regex='/^[[:space:]]*-[[:space:]]*DIRECTORY[[:space:]]*$/'
-
-    rm -f "$phpstan_dirs_file" && touch "$phpstan_dirs_file"
-    if [ -s "$php_dirs_file" ]; then
-        while IFS= read -r dir; do
-            printf '    - %s\n' "$dir" >>"$phpstan_dirs_file"
-        done <"$php_dirs_file"
-    fi
-
-    replace_placeholder "$phpstan_file" "$phpstan_placeholder_regex" "$phpstan_dirs_file" || return_code=1
-    rm -f "$phpstan_dirs_file" # Clean up
-
-    # --- Final Cleanup and Status ---
-    rm -f "$php_dirs_file"
-
-    if [ $return_code -eq 0 ]; then
-        success "Tool configuration paths updated dynamically based on found PHP directories."
-        return 0
-    else
-        warn "Errors occurred while updating tool configuration paths. Check logs."
-        return 1
-    fi
 }
 
 function add_code_quality_tools() {
@@ -1195,91 +1350,6 @@ function add_code_quality_tools() {
     success "composer.json updated with merged scripts and new dependencies."
 }
 
-function update_readme() {
-    log "Updating README.md..."
-    local project_readme="README.md"
-    local booster_snippet="${BOOSTER_INTERNAL_PATH}/README_SNIPPET.md"
-
-    if [ -f "$project_readme" ]; then
-        log "'$project_readme' already exists. Skipping creation."
-    else
-        if [ -f "$booster_snippet" ]; then
-            warn "'$project_readme' not found. Creating new README.md from booster snippet..."
-            cp "$booster_snippet" "$project_readme" || error "Failed to copy README snippet."
-            success "New README.md created with content from '$booster_snippet'."
-        else
-            warn "'$project_readme' not found, and booster snippet '$booster_snippet' also not found. Skipping."
-        fi
-    fi
-}
-
-function update_gitignore() {
-    log "Updating .gitignore..."
-    local project_gitignore=".gitignore"
-    local booster_gitignore="${BOOSTER_INTERNAL_PATH}/.gitignore"
-
-    if [ ! -f "$booster_gitignore" ]; then
-        warn "Booster .gitignore '$booster_gitignore' not found. Skipping update."
-        return
-    fi
-
-    touch "$project_gitignore"
-
-    # Remove .vscode entries from project gitignore since booster provides IDE settings
-    log "Removing .vscode entries from project .gitignore..."
-    local temp_gitignore="${project_gitignore}.tmp"
-
-    # Remove lines that ignore .vscode (with or without leading slash, with or without trailing slash)
-    grep -v -E '^[[:space:]]*/?\.vscode/?[[:space:]]*$' "$project_gitignore" > "$temp_gitignore" || true
-    # Also remove commented .vscode entries
-    grep -v -E '^[[:space:]]*#[[:space:]]*/?\.vscode/?[[:space:]]*$' "$temp_gitignore" > "${temp_gitignore}.2" || true
-    mv "${temp_gitignore}.2" "$project_gitignore"
-    rm -f "$temp_gitignore"
-
-    local added_count=0
-
-    while IFS= read -r line || [[ -n "$line" ]]; do
-
-        line=$(echo "$line" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
-
-        if [ -z "$line" ]; then
-            continue
-        fi
-
-        if ! grep -q -x -F "$line" "$project_gitignore" && ! grep -q -x -F "# $line" "$project_gitignore" && ! grep -q -x -F "#$line" "$project_gitignore"; then
-
-            if [[ "$line" != /* ]] && grep -q -x -F "/$line" "$project_gitignore"; then
-                continue
-            fi
-
-            if [[ "$line" == /* ]] && grep -q -x -F "${line#/}" "$project_gitignore"; then
-                continue
-            fi
-
-            log "  Adding '$line' to .gitignore"
-
-            if [ $added_count -eq 0 ]; then
-
-                [ -s "$project_gitignore" ] && echo >>"$project_gitignore"
-
-                echo "" >>"$project_gitignore" # Ensure separation
-                echo "# --- Added by php-booster integration ---" >>"$project_gitignore"
-                log "  Added header to .gitignore"
-            fi
-            echo "$line" >>"$project_gitignore"
-            added_count=$((added_count + 1))
-        fi
-    done <"$booster_gitignore"
-
-    if [ $added_count -gt 0 ]; then
-        success ".gitignore updated with $added_count new entries."
-    else
-        log "No new entries needed for .gitignore."
-    fi
-
-    success ".vscode entries removed from project .gitignore (booster provides IDE settings)."
-}
-
 function init_deptrac() {
     log "Checking Deptrac configuration..."
     local deptrac_config="deptrac.yaml"
@@ -1291,13 +1361,13 @@ function init_deptrac() {
 
     log "  Initializing Deptrac..."
 
-    local cmd_prefix=""
+    local cmd_prefix=()
     if [ $IS_DDEV_PROJECT -eq 1 ]; then
-        cmd_prefix="ddev"
+        cmd_prefix=(ddev)
     fi
 
     # Run initialization
-    if $cmd_prefix composer deptrac -- init --no-interaction; then
+    if "${cmd_prefix[@]}" composer deptrac -- init --no-interaction; then
         success "Deptrac initialized successfully."
     else
         warn "Failed to initialize Deptrac. You may need to run 'composer deptrac -- init' manually."
@@ -1321,67 +1391,6 @@ function install_node_dependencies() {
     else
         warn "Failed to install Node.js dependencies. Please run 'pnpm install' manually."
     fi
-}
-
-function cleanup_silent() {
-    rm -rf "$BOOSTER_TARGET_DIR"
-    rm -f composer.json.merged.tmp composer.json.merged.tmp.next hooks.yaml.tmp .ddev/config.yaml.tmp package.json.tmp # Clean up temp files
-}
-
-function cleanup() {
-    log "Cleaning up temporary files..."
-    rm -rf "$BOOSTER_TARGET_DIR"
-
-    rm -f composer.json.merged.tmp composer.json.merged.tmp.next hooks.yaml.tmp .ddev/config.yaml.tmp package.json.tmp
-    success "Temporary files cleaned up."
-}
-
-function update_nginx_config() {
-    log "Updating nginx configuration..."
-    local nginx_config=".ddev/nginx_full/nginx-site.conf"
-
-    if [ ! -f "$nginx_config" ]; then
-        log "Nginx config file '$nginx_config' not found. Skipping nginx update."
-        return
-    fi
-
-    log "Found nginx config file, updating..."
-
-    # Remove the DDEV-generated comment to track the file
-    if grep -q "# ddev generated" "$nginx_config"; then
-        log "  Removing DDEV generated comment to track the file..."
-        sed -i.bak '/# ddev generated/d' "$nginx_config" || warn "Failed to remove DDEV generated comment."
-    fi
-
-    # Check if XDEBUG_TRIGGER is already configured
-    if grep -q "fastcgi_param XDEBUG_TRIGGER" "$nginx_config"; then
-        log "  XDEBUG_TRIGGER already configured in nginx config."
-        return
-    fi
-
-    # Add XDEBUG_TRIGGER to the location ~ \.php$ block
-    log "  Adding XDEBUG_TRIGGER environment variable to php location block..."
-
-    # Create temporary content to insert
-    local temp_insert_file="nginx_insert.tmp"
-    cat >"$temp_insert_file" <<'EOF'
-        # Always trigger Xdebug for web requests (CLI remains unaffected due to start_with_request=trigger)
-        fastcgi_param XDEBUG_TRIGGER 1;
-EOF
-
-    # Use sed to add the content after the location ~ \.php$ line (cross-platform compatible)
-    sed -i.bak '/location ~ \\\.php\$ {/r '"$temp_insert_file" "$nginx_config" || warn "Failed to add XDEBUG_TRIGGER to nginx config."
-
-    # Remove #ddev generated comment if it exists
-    sed -i.bak '/# ddev generated/d' "$nginx_config" || warn "Failed to remove DDEV generated comment."
-
-    # Clean up temp file
-    rm -f "$temp_insert_file"
-
-    # Clean up backup file
-    rm -f "$nginx_config.bak"
-
-    success "Nginx configuration updated with XDEBUG_TRIGGER."
 }
 
 # Display help information

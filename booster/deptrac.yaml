@@ -1,0 +1,32 @@
+deptrac:
+  paths:
+    - ./src
+    - ./app
+  layers:
+    - name: Controller
+      collectors:
+        - type: className
+          regex: .*Controller.*
+    - name: Service
+      collectors:
+        - type: className
+          regex: .*Service.*
+    - name: Repository
+      collectors:
+        - type: className
+          regex: .*Repository.*
+    - name: Model
+      collectors:
+        - type: className
+          regex: .*Model.*
+  ruleset:
+    Controller:
+      - Service
+      - Repository
+      - Model
+    Service:
+      - Repository
+      - Model
+    Repository:
+      - Model
+    Model: []
