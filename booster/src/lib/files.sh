@@ -394,7 +394,10 @@ function update_tool_paths() {
     rm -f "$rector_dirs_file" && touch "$rector_dirs_file"
     if [ -s "$php_dirs_file" ]; then # Only loop if dirs were found
         while IFS= read -r dir; do
-            printf "        __DIR__ . '/%s',\n" "$dir" >>"$rector_dirs_file"
+            # Escape backslashes and single quotes for PHP string safety
+            safe_dir="${dir//\\/\\\\}"
+            safe_dir="${safe_dir//\'/\\\'}"
+            printf "        __DIR__ . '/%s',\n" "$safe_dir" >>"$rector_dirs_file"
         done <"$php_dirs_file"
     fi
 
@@ -409,7 +412,10 @@ function update_tool_paths() {
     rm -f "$ecs_dirs_file" && touch "$ecs_dirs_file"
     if [ -s "$php_dirs_file" ]; then
         while IFS= read -r dir; do
-            printf "        __DIR__ . '/%s',\n" "$dir" >>"$ecs_dirs_file"
+            # Escape backslashes and single quotes for PHP string safety
+            safe_dir="${dir//\\/\\\\}"
+            safe_dir="${safe_dir//\'/\\\'}"
+            printf "        __DIR__ . '/%s',\n" "$safe_dir" >>"$ecs_dirs_file"
         done <"$php_dirs_file"
     fi
 

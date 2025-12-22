@@ -43,10 +43,4 @@ function cleanup() {
     success "Temporary files cleaned up."
 }
 
-# Trap signals for cleanup
-function on_exit() {
-    if [ "$NO_CLEANUP" = true ]; then
-        return
-    fi
-    cleanup_silent
-}
+

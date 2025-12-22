@@ -478,13 +478,7 @@ function cleanup() {
     success "Temporary files cleaned up."
 }
 
-# Trap signals for cleanup
-function on_exit() {
-    if [ "$NO_CLEANUP" = true ]; then
-        return
-    fi
-    cleanup_silent
-}
+
 
 # --- Core Logic Functions ---
 
@@ -882,7 +876,10 @@ function update_tool_paths() {
     rm -f "$rector_dirs_file" && touch "$rector_dirs_file"
     if [ -s "$php_dirs_file" ]; then # Only loop if dirs were found
         while IFS= read -r dir; do
-            printf "        __DIR__ . '/%s',\n" "$dir" >>"$rector_dirs_file"
+            # Escape backslashes and single quotes for PHP string safety
+            safe_dir="${dir//\\/\\\\}"
+            safe_dir="${safe_dir//\'/\\\'}"
+            printf "        __DIR__ . '/%s',\n" "$safe_dir" >>"$rector_dirs_file"
         done <"$php_dirs_file"
     fi
 
@@ -897,7 +894,10 @@ function update_tool_paths() {
     rm -f "$ecs_dirs_file" && touch "$ecs_dirs_file"
     if [ -s "$php_dirs_file" ]; then
         while IFS= read -r dir; do
-            printf "        __DIR__ . '/%s',\n" "$dir" >>"$ecs_dirs_file"
+            # Escape backslashes and single quotes for PHP string safety
+            safe_dir="${dir//\\/\\\\}"
+            safe_dir="${safe_dir//\'/\\\'}"
+            printf "        __DIR__ . '/%s',\n" "$safe_dir" >>"$ecs_dirs_file"
         done <"$php_dirs_file"
     fi
 
@@ -1361,13 +1361,13 @@ function init_deptrac() {
 
     log "  Initializing Deptrac..."
 
-    local cmd_prefix=""
+    local cmd_prefix=()
     if [ $IS_DDEV_PROJECT -eq 1 ]; then
-        cmd_prefix="ddev"
+        cmd_prefix=(ddev)
     fi
 
     # Run initialization
-    if $cmd_prefix composer deptrac -- init --no-interaction; then
+    if "${cmd_prefix[@]}" composer deptrac -- init --no-interaction; then
         success "Deptrac initialized successfully."
     else
         warn "Failed to initialize Deptrac. You may need to run 'composer deptrac -- init' manually."

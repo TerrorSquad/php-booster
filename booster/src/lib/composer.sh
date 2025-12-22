@@ -289,13 +289,13 @@ function init_deptrac() {
 
     log "  Initializing Deptrac..."
 
-    local cmd_prefix=""
+    local cmd_prefix=()
     if [ $IS_DDEV_PROJECT -eq 1 ]; then
-        cmd_prefix="ddev"
+        cmd_prefix=(ddev)
     fi
 
     # Run initialization
-    if $cmd_prefix composer deptrac -- init --no-interaction; then
+    if "${cmd_prefix[@]}" composer deptrac -- init --no-interaction; then
         success "Deptrac initialized successfully."
     else
         warn "Failed to initialize Deptrac. You may need to run 'composer deptrac -- init' manually."

@@ -9,41 +9,47 @@ cd "$DIR"
 SRC_DIR="src"
 OUTPUT_FILE="integrate_booster.sh"
 
+TMP_FILE="${OUTPUT_FILE}.tmp.$$"
+
+# Clean up temporary file on error
+trap 'rm -f "$TMP_FILE"' ERR
+
 echo "Building $OUTPUT_FILE..."
 
-# Ensure output file is empty
-> "$OUTPUT_FILE"
+# Ensure temporary output file is empty
+> "$TMP_FILE"
 
 # Concatenate files in the correct order
-cat "$SRC_DIR/header.sh" >> "$OUTPUT_FILE"
-echo "" >> "$OUTPUT_FILE"
+cat "$SRC_DIR/header.sh" >> "$TMP_FILE"
+echo "" >> "$TMP_FILE"
 
-cat "$SRC_DIR/lib/version.sh" >> "$OUTPUT_FILE"
-echo "" >> "$OUTPUT_FILE"
+cat "$SRC_DIR/lib/version.sh" >> "$TMP_FILE"
+echo "" >> "$TMP_FILE"
 
-cat "$SRC_DIR/lib/logging.sh" >> "$OUTPUT_FILE"
-echo "" >> "$OUTPUT_FILE"
+cat "$SRC_DIR/lib/logging.sh" >> "$TMP_FILE"
+echo "" >> "$TMP_FILE"
 
-cat "$SRC_DIR/lib/interactive.sh" >> "$OUTPUT_FILE"
-echo "" >> "$OUTPUT_FILE"
+cat "$SRC_DIR/lib/interactive.sh" >> "$TMP_FILE"
+echo "" >> "$TMP_FILE"
 
-cat "$SRC_DIR/lib/utils.sh" >> "$OUTPUT_FILE"
-echo "" >> "$OUTPUT_FILE"
+cat "$SRC_DIR/lib/utils.sh" >> "$TMP_FILE"
+echo "" >> "$TMP_FILE"
 
-cat "$SRC_DIR/lib/files.sh" >> "$OUTPUT_FILE"
-echo "" >> "$OUTPUT_FILE"
+cat "$SRC_DIR/lib/files.sh" >> "$TMP_FILE"
+echo "" >> "$TMP_FILE"
 
-cat "$SRC_DIR/lib/ddev.sh" >> "$OUTPUT_FILE"
-echo "" >> "$OUTPUT_FILE"
+cat "$SRC_DIR/lib/ddev.sh" >> "$TMP_FILE"
+echo "" >> "$TMP_FILE"
 
-cat "$SRC_DIR/lib/composer.sh" >> "$OUTPUT_FILE"
-echo "" >> "$OUTPUT_FILE"
+cat "$SRC_DIR/lib/composer.sh" >> "$TMP_FILE"
+echo "" >> "$TMP_FILE"
 
-cat "$SRC_DIR/lib/node.sh" >> "$OUTPUT_FILE"
-echo "" >> "$OUTPUT_FILE"
+cat "$SRC_DIR/lib/node.sh" >> "$TMP_FILE"
+echo "" >> "$TMP_FILE"
 
-cat "$SRC_DIR/main.sh" >> "$OUTPUT_FILE"
+cat "$SRC_DIR/main.sh" >> "$TMP_FILE"
 
-chmod +x "$OUTPUT_FILE"
+chmod +x "$TMP_FILE"
+mv "$TMP_FILE" "$OUTPUT_FILE"
 
 echo "Build complete: $OUTPUT_FILE"
