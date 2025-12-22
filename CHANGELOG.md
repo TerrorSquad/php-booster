@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.17.0](https://github.com/TerrorSquad/php-booster/compare/v1.16.0...v1.17.0) (2025-12-22)
+
+
+### Features
+
+* add PHP auto-fix workflow and enhance Psalm symlink handling ([a823247](https://github.com/TerrorSquad/php-booster/commit/a823247b5fc5319a9c76ef62226bc1c648751fad))
+
+
+### Bug Fixes
+
+* address PR review comments ([a49ccf6](https://github.com/TerrorSquad/php-booster/commit/a49ccf60e8d2d26feb086559c8cb10263c00ca40))
+
 ## [1.16.0](https://github.com/TerrorSquad/php-booster/compare/v1.15.0...v1.16.0) (2025-12-21)
 
 
