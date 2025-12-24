@@ -31,13 +31,13 @@ jobs:
         with:
           node-version: ${{ steps.mise-node-version.outputs.version }}
 
-      - name: Get latest Node.js version
+      - name: Get latest Node.js LTS version
         id: node-version
         run: |
-          # Get latest Node.js version from nodejs.org API
-          LATEST_NODE=$(curl -s https://nodejs.org/dist/index.json | jq -r '.[0].version' | sed 's/v//')
+          # Get latest Node.js LTS version from nodejs.org API
+          LATEST_NODE=$(curl -s https://nodejs.org/dist/index.json | jq -r '[.[] | select(.lts != false)][0].version' | sed 's/v//')
           echo "latest=$LATEST_NODE" >> $GITHUB_OUTPUT
-          echo "Latest Node.js: $LATEST_NODE"
+          echo "Latest Node.js LTS: $LATEST_NODE"
 
       - name: Update Node.js version in mise config
         run: |
@@ -45,7 +45,7 @@ jobs:
           LATEST_NODE="${{ steps.node-version.outputs.latest }}"
 
           echo "Current Node.js: $CURRENT_NODE"
-          echo "Latest Node.js: $LATEST_NODE"
+          echo "Latest Node.js LTS: $LATEST_NODE"
 
           if [ "$CURRENT_NODE" != "$LATEST_NODE" ]; then
             sed -i "s/node = \"$CURRENT_NODE\"/node = \"$LATEST_NODE\"/" booster/mise.toml
