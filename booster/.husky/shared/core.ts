@@ -73,6 +73,7 @@ export interface RunOptions {
  * @param command Array of command parts
  * @param options Execution options
  * @throws Error if command execution fails
+ * @returns The process output
  */
 export async function exec(
   command: string[],
@@ -96,6 +97,7 @@ export async function exec(
 /**
  * Format duration in milliseconds to human-readable string
  * @param ms Duration in milliseconds
+ * @returns Formatted string (e.g. "1.5s" or "500ms")
  */
 export function formatDuration(ms: number): string {
   if (ms < 1000) {
@@ -109,6 +111,7 @@ export function formatDuration(ms: number): string {
 /**
  * Check if a tool or check is explicitly skipped via environment variable
  * @param name Name of the tool/check (will be converted to SKIP_<NAME>)
+ * @returns True if the tool should be skipped
  */
 export function isSkipped(name: string): boolean {
   // Normalize name -> uppercase, replace non-alphanum with underscore, collapse multiple underscores
@@ -122,6 +125,7 @@ export function isSkipped(name: string): boolean {
 
 /**
  * Check if the current project is a DDEV project
+ * @returns True if .ddev/config.yaml exists and ddev binary is available
  */
 export async function isDdevProject(): Promise<boolean> {
   // Allow explicit disable via env var
@@ -142,6 +146,7 @@ export async function isDdevProject(): Promise<boolean> {
 
 /**
  * Get the DDEV project name from .ddev/config.yaml
+ * @returns The project name or null if not found
  */
 async function getDdevProjectName(): Promise<string | null> {
   try {
@@ -159,6 +164,7 @@ async function getDdevProjectName(): Promise<string | null> {
  * @param command The command parts (e.g. ['php', '-v'])
  * @param type The tool type ('node', 'php', 'system')
  * @throws Error if DDEV project name cannot be determined
+ * @returns The modified command array ready for execution
  */
 async function getExecCommand(command: string[], type: string): Promise<string[]> {
   if (type !== 'php') {
