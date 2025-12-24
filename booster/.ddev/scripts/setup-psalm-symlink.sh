@@ -15,6 +15,17 @@ PARENT_DIR=$(dirname "$HOST_ROOT")
 # Create parent directory inside container
 docker exec -u root "$CONTAINER_NAME" mkdir -p "$PARENT_DIR"
 
+# Safely remove the destination if it exists to ensure symlink creation works.
+# We use 'rmdir' for directories to ensure we NEVER delete a non-empty directory
+# (which could happen if the path was accidentally mounted).
+docker exec -u root "$CONTAINER_NAME" sh -c "
+    if [ -L \"$HOST_ROOT\" ] || [ -f \"$HOST_ROOT\" ]; then
+        rm -f \"$HOST_ROOT\"
+    elif [ -d \"$HOST_ROOT\" ]; then
+        rmdir \"$HOST_ROOT\" || (echo 'Error: $HOST_ROOT is a non-empty directory inside the container. Aborting to prevent data loss.' && exit 1)
+    fi
+"
+
 # Create the symlink: HOST_ROOT -> /var/www/html
 # This "Symlink Hack" allows Psalm running inside the container to use the same absolute paths
 # as the host machine. This enables VS Code to map errors back to the correct files without
