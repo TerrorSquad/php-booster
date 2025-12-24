@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.17.1](https://github.com/TerrorSquad/php-booster/compare/v1.17.0...v1.17.1) (2025-12-24)
+
+
+### Bug Fixes
+
+* enhance symlink setup to handle non-empty directories safely ([bc2b9fc](https://github.com/TerrorSquad/php-booster/commit/bc2b9fcb5e207b28ef0c22f183e8d99afe4bdc3c))
+
 ## [1.17.0](https://github.com/TerrorSquad/php-booster/compare/v1.16.0...v1.17.0) (2025-12-22)
 
 
