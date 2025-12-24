@@ -72,6 +72,7 @@ export interface RunOptions {
  * Execute command directly with ZX
  * @param command Array of command parts
  * @param options Execution options
+ * @throws Error if command execution fails
  */
 export async function exec(
   command: string[],
@@ -157,47 +158,48 @@ async function getDdevProjectName(): Promise<string | null> {
  * Get the command to execute, wrapping in ddev exec if necessary
  * @param command The command parts (e.g. ['php', '-v'])
  * @param type The tool type ('node', 'php', 'system')
+ * @throws Error if DDEV project name cannot be determined
  */
 async function getExecCommand(command: string[], type: string): Promise<string[]> {
   if (type !== 'php') {
     return command
   }
 
-  if (await isDdevProject()) {
-    const projectName = await getDdevProjectName()
-    if (projectName) {
-      // Use docker exec for performance instead of ddev exec
-      // Run as current user to avoid permission issues with generated files
-      const uid = process.getuid ? process.getuid() : 1000
-      const gid = process.getgid ? process.getgid() : 1000
-      const containerName = `ddev-${projectName}-web`
+  if (!(await isDdevProject())) {
+    return command
+  }
 
-      // Adjust command path for docker exec
-      // If command is not 'php' or 'composer' and doesn't start with '/', assume it's in vendor/bin
-      let cmd = command[0]
-      if (cmd !== 'php' && cmd !== 'composer' && !cmd.startsWith('/') && !cmd.startsWith('./')) {
-        cmd = `vendor/bin/${cmd}`
-      }
-
-      const newCommand = [cmd, ...command.slice(1)]
-
-      return [
-        'docker',
-        'exec',
-        '-t',
-        '-u',
-        `${uid}:${gid}`,
-        '-w',
-        '/var/www/html',
-        containerName,
-        ...newCommand,
-      ]
-    }
-
+  const projectName = await getDdevProjectName()
+  if (!projectName) {
     throw new Error('Could not determine DDEV project name from .ddev/config.yaml')
   }
 
-  return command
+  // Use docker exec for performance instead of ddev exec
+  // Run as current user to avoid permission issues with generated files
+  const uid = process.getuid ? process.getuid() : 1000
+  const gid = process.getgid ? process.getgid() : 1000
+  const containerName = `ddev-${projectName}-web`
+
+  // Adjust command path for docker exec
+  // If command is not 'php' or 'composer' and doesn't start with '/', assume it's in vendor/bin
+  let cmd = command[0]
+  if (cmd !== 'php' && cmd !== 'composer' && !cmd.startsWith('/') && !cmd.startsWith('./')) {
+    cmd = `vendor/bin/${cmd}`
+  }
+
+  const newCommand = [cmd, ...command.slice(1)]
+
+  return [
+    'docker',
+    'exec',
+    '-t',
+    '-u',
+    `${uid}:${gid}`,
+    '-w',
+    process.cwd(),
+    containerName,
+    ...newCommand,
+  ]
 }
 
 /**
