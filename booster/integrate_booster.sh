@@ -573,7 +573,16 @@ function copy_files() {
     local husky_src="${BOOSTER_INTERNAL_PATH}/.husky"
     if [ -d "$husky_src" ]; then
         log "  Copying .husky directory"
-        cp -R "$husky_src" .
+        mkdir -p .husky
+
+        # Copy everything except the 'tests' directory
+        for item in "$husky_src"/*; do
+            local item_name=$(basename "$item")
+            if [ "$item_name" != "tests" ]; then
+                cp -R "$item" .husky/
+            fi
+        done
+
         # Set execute permissions for scripts and hooks
         find ".husky" -type f \( -name "*.sh" -o -name "*.bash" -o -name "*.mjs" -o -name "pre-commit" -o -name "commit-msg" -o -name "pre-push" \) -exec chmod +x {} \;
     else
