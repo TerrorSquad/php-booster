@@ -14,6 +14,8 @@ const config = {
     'wip',
     'main',
     'master',
+    'develop',
+    'development',
     'develop/test',
     'develop/test2',
     'develop/host1',
