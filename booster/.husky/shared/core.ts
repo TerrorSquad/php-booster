@@ -184,13 +184,12 @@ async function getExecCommand(command: string[], type: string): Promise<string[]
   const containerPath = '/var/www/html'
 
   // Determine User ID
-  // On Linux, we use the host UID so file permissions match.
-  // On macOS/Windows, DDEV handles permissions via filesystem mounts (VirtioFS/Mutagen),
-  // so we use the default container user (1000) to ensure tools like Composer work correctly.
+  // On Linux and macOS, we use the host UID so file permissions match.
+  // On Windows, DDEV handles permissions via filesystem mounts, so we use default 1000.
   let uid = 1000
   let gid = 1000
 
-  if (process.platform === 'linux') {
+  if (process.platform !== 'win32') {
     uid = process.getuid ? process.getuid() : 1000
     gid = process.getgid ? process.getgid() : 1000
   }

@@ -156,8 +156,8 @@ function update_package_json() {
         log "'$project_pkg' not found. Copying from booster..."
         # Filter scripts using whitelist and devDependencies using blacklist when creating new package.json
         jq '
-            (["commit", "generate:api-doc:html", "prepare"] as $script_whitelist) |
-            (["vitest"] as $dev_blacklist) |
+            ["commit", "generate:api-doc:html", "prepare"] as $script_whitelist |
+            ["vitest", "@vitest/coverage-v8"] as $dev_blacklist |
             .scripts |= with_entries(select(.key as $k | $script_whitelist | index($k))) |
             .devDependencies |= with_entries(select(.key as $k | ($dev_blacklist | index($k) | not)))
         ' "$booster_pkg" > "$project_pkg" || error "Failed to create package.json using jq."
@@ -168,8 +168,8 @@ function update_package_json() {
         # This merges top-level objects like scripts, devDependencies
         jq -s '
             .[0] as $proj | .[1] as $booster |
-            (["commit", "generate:api-doc:html", "prepare"] as $script_whitelist) |
-            (["vitest"] as $dev_blacklist) |
+            ["commit", "generate:api-doc:html", "prepare"] as $script_whitelist |
+            ["vitest", "@vitest/coverage-v8"] as $dev_blacklist |
 
             ($booster.scripts // {} | with_entries(select(.key as $k | $script_whitelist | index($k)))) as $booster_scripts |
             ($booster.devDependencies // {} | with_entries(select(.key as $k | ($dev_blacklist | index($k) | not)))) as $booster_dev_deps |

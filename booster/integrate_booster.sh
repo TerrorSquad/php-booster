@@ -638,8 +638,8 @@ function update_package_json() {
         log "'$project_pkg' not found. Copying from booster..."
         # Filter scripts using whitelist and devDependencies using blacklist when creating new package.json
         jq '
-            (["commit", "generate:api-doc:html", "prepare"] as $script_whitelist) |
-            (["vitest"] as $dev_blacklist) |
+            ["commit", "generate:api-doc:html", "prepare"] as $script_whitelist |
+            ["vitest", "@vitest/coverage-v8"] as $dev_blacklist |
             .scripts |= with_entries(select(.key as $k | $script_whitelist | index($k))) |
             .devDependencies |= with_entries(select(.key as $k | ($dev_blacklist | index($k) | not)))
         ' "$booster_pkg" > "$project_pkg" || error "Failed to create package.json using jq."
@@ -650,8 +650,8 @@ function update_package_json() {
         # This merges top-level objects like scripts, devDependencies
         jq -s '
             .[0] as $proj | .[1] as $booster |
-            (["commit", "generate:api-doc:html", "prepare"] as $script_whitelist) |
-            (["vitest"] as $dev_blacklist) |
+            ["commit", "generate:api-doc:html", "prepare"] as $script_whitelist |
+            ["vitest", "@vitest/coverage-v8"] as $dev_blacklist |
 
             ($booster.scripts // {} | with_entries(select(.key as $k | $script_whitelist | index($k)))) as $booster_scripts |
             ($booster.devDependencies // {} | with_entries(select(.key as $k | ($dev_blacklist | index($k) | not)))) as $booster_dev_deps |
@@ -687,7 +687,7 @@ function update_package_json() {
     # Prefer pnpm-lock.dist.yaml (clean version without internal dev deps) if available
     local booster_pnpm_lock="${BOOSTER_INTERNAL_PATH}/pnpm-lock.yaml"
     local booster_dist_lock="${BOOSTER_INTERNAL_PATH}/pnpm-lock.dist.yaml"
-    
+
     if [ -f "$booster_dist_lock" ]; then
         booster_pnpm_lock="$booster_dist_lock"
     fi
