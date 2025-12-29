@@ -16,7 +16,7 @@ cp pnpm-lock.yaml pnpm-lock.yaml.bak
 
 # Remove vitest from package.json using jq
 if command -v jq >/dev/null 2>&1; then
-    jq 'del(.devDependencies.vitest)' package.json > package.json.tmp && mv package.json.tmp package.json
+    jq 'del(.devDependencies.vitest) | del(.devDependencies["@vitest/coverage-v8"])' package.json > package.json.tmp && mv package.json.tmp package.json
 else
     echo "Error: jq is required but not installed."
     exit 1
