@@ -2,7 +2,7 @@
   "name": "php_booster",
   "private": true,
   "type": "module",
-  "version": "1.17.1",
+  "version": "1.17.2",
   "scripts": {
     "commit": "commit",
     "test": "vitest run .husky/tests",

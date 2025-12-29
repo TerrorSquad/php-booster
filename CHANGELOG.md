@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.17.2](https://github.com/TerrorSquad/php-booster/compare/v1.17.1...v1.17.2) (2025-12-29)
+
+
+### Bug Fixes
+
+* **branch-validation:** add 'develop' and 'development' to skipped branches ([58059f5](https://github.com/TerrorSquad/php-booster/commit/58059f5e743b91df7cae55462c6fe72912209c8c))
+* **husky:** copy husky files excluding 'tests' directory ([45fd91a](https://github.com/TerrorSquad/php-booster/commit/45fd91a0c900303c8217fe9c77a0a67121729edc))
+* resolve jq syntax error and improve DDEV user detection ([4df7474](https://github.com/TerrorSquad/php-booster/commit/4df7474f11d683937fb38803683678d13eeb593b))
+
 ## [1.17.1](https://github.com/TerrorSquad/php-booster/compare/v1.17.0...v1.17.1) (2025-12-24)
 
 
