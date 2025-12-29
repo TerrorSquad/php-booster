@@ -123,7 +123,7 @@ jobs:
           echo "Updated @types/node to version ^$NODE_MAJOR"
 
       - name: Update NPM dependencies if needed
-        if: env.updated == 'true' && steps.npm-updates.outputs.has_updates == 'true'
+        if: steps.npm-updates.outputs.has_updates == 'true'
         working-directory: booster
         run: |
           echo "Updating NPM packages to latest versions..."
@@ -147,6 +147,18 @@ jobs:
 
           echo "NPM package versions updated in package.json"
           echo "Note: pnpm-lock.yaml NOT updated - run 'pnpm install' locally to test"
+          echo "updated=true" >> $GITHUB_ENV
+
+      - name: Update pnpm-lock.dist.yaml
+        if: steps.npm-updates.outputs.has_updates == 'true'
+        working-directory: booster
+        run: |
+          echo "Installing pnpm..."
+          npm install -g pnpm
+          echo "Updating pnpm-lock.dist.yaml..."
+          chmod +x generate_dist_lockfile.sh
+          ./generate_dist_lockfile.sh
+          echo "pnpm-lock.dist.yaml updated"
 
       - name: Check PHP package updates
         id: php-updates
@@ -283,6 +295,11 @@ jobs:
           if [ "$NPM_CHANGED" = true ] || [ "$NODE_CHANGED" = true ]; then
             echo "- \`booster/package.json\`" >> update-summary.md
           fi
+          if [ "$NPM_CHANGED" = true ]; then
+             if ! git diff --quiet HEAD booster/pnpm-lock.dist.yaml; then
+               echo "- \`booster/pnpm-lock.dist.yaml\`" >> update-summary.md
+             fi
+          fi
           if [ "${{ steps.php-updates.outputs.has_updates }}" == "true" ]; then
             if ! git diff --quiet HEAD booster/composer.json; then
               echo "- \`booster/composer.json\`" >> update-summary.md
@@ -317,6 +334,7 @@ jobs:
             booster/mise.toml
             booster/package.json
             booster/composer.json
+            booster/pnpm-lock.dist.yaml
 
       - name: No updates needed
         if: env.updated != 'true'

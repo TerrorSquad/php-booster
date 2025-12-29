@@ -636,17 +636,29 @@ function update_package_json() {
 
     if [ ! -f "$project_pkg" ]; then
         log "'$project_pkg' not found. Copying from booster..."
-        cp "$booster_pkg" "$project_pkg" || error "Failed to copy booster package.json."
-        success "package.json copied from booster."
+        # Filter scripts using whitelist and devDependencies using blacklist when creating new package.json
+        jq '
+            (["commit", "generate:api-doc:html", "prepare"] as $script_whitelist) |
+            (["vitest"] as $dev_blacklist) |
+            .scripts |= with_entries(select(.key as $k | $script_whitelist | index($k))) |
+            .devDependencies |= with_entries(select(.key as $k | ($dev_blacklist | index($k) | not)))
+        ' "$booster_pkg" > "$project_pkg" || error "Failed to create package.json using jq."
+        success "package.json created from booster (with filtered scripts and dependencies)."
     else
         log "'$project_pkg' already exists. Merging scripts, devDependencies, and sections..."
         # Merge using jq: project + booster (booster overwrites simple keys, merges objects)
         # This merges top-level objects like scripts, devDependencies
         jq -s '
             .[0] as $proj | .[1] as $booster |
+            (["commit", "generate:api-doc:html", "prepare"] as $script_whitelist) |
+            (["vitest"] as $dev_blacklist) |
+
+            ($booster.scripts // {} | with_entries(select(.key as $k | $script_whitelist | index($k)))) as $booster_scripts |
+            ($booster.devDependencies // {} | with_entries(select(.key as $k | ($dev_blacklist | index($k) | not)))) as $booster_dev_deps |
+
             $proj * {
-                scripts: (($proj.scripts // {}) + ($booster.scripts // {})),
-                devDependencies: (($proj.devDependencies // {}) + ($booster.devDependencies // {}))
+                scripts: (($proj.scripts // {}) + $booster_scripts),
+                devDependencies: (($proj.devDependencies // {}) + $booster_dev_deps)
             }
             ' "$project_pkg" "$booster_pkg" >"$tmp_pkg" || error "Failed to merge package.json using jq."
 
@@ -672,10 +684,17 @@ function update_package_json() {
     fi
 
     # Copy pnpm-lock.yaml if it exists (to ensure deterministic installs)
+    # Prefer pnpm-lock.dist.yaml (clean version without internal dev deps) if available
     local booster_pnpm_lock="${BOOSTER_INTERNAL_PATH}/pnpm-lock.yaml"
+    local booster_dist_lock="${BOOSTER_INTERNAL_PATH}/pnpm-lock.dist.yaml"
+    
+    if [ -f "$booster_dist_lock" ]; then
+        booster_pnpm_lock="$booster_dist_lock"
+    fi
+
     if [ -f "$booster_pnpm_lock" ]; then
         if [ ! -f "pnpm-lock.yaml" ]; then
-            cp "$booster_pnpm_lock" . || warn "Failed to copy pnpm-lock.yaml."
+            cp "$booster_pnpm_lock" "pnpm-lock.yaml" || warn "Failed to copy pnpm-lock.yaml."
             success "pnpm-lock.yaml copied."
         else
             log "pnpm-lock.yaml already exists. Skipping copy."

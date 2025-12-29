@@ -42,7 +42,7 @@ interface ProcessedConfig {
 /**
  * Load and parse validate-branch-name configuration
  */
-function loadConfig(): BranchConfig {
+export function loadConfig(): BranchConfig {
   const config = validateBranchNameConfig.config
 
   // Validate required properties and apply defaults
@@ -60,7 +60,7 @@ function loadConfig(): BranchConfig {
 /**
  * Check if the current branch should skip validation
  */
-function isBranchSkipped(branchName: string, config: BranchConfig): boolean {
+export function isBranchSkipped(branchName: string, config: BranchConfig): boolean {
   const skipped = config.skipped || []
   return skipped.includes(branchName)
 }
@@ -68,7 +68,7 @@ function isBranchSkipped(branchName: string, config: BranchConfig): boolean {
 /**
  * Process configuration and determine ticket requirements
  */
-function processConfig(config: BranchConfig): ProcessedConfig {
+export function processConfig(config: BranchConfig): ProcessedConfig {
   // Use explicit requireTickets flag, but validate that patterns exist if tickets are required
   const needTicket =
     config.requireTickets && !!(config.ticketIdPrefix && config.ticketNumberPattern)
@@ -94,7 +94,7 @@ function processConfig(config: BranchConfig): ProcessedConfig {
 /**
  * Extract ticket ID from branch name
  */
-function extractTicketId(branchName: string, config: BranchConfig): string | null {
+export function extractTicketId(branchName: string, config: BranchConfig): string | null {
   if (!config.ticketIdPrefix || !config.ticketNumberPattern) {
     return null
   }
@@ -155,7 +155,7 @@ async function lintCommitMessage(commitFile: string): Promise<boolean> {
 /**
  * Append ticket footer to commit message if needed
  */
-async function appendTicketFooter(commitFile: string): Promise<boolean> {
+export async function appendTicketFooter(commitFile: string): Promise<boolean> {
   try {
     // Load and process configuration
     const config = loadConfig()

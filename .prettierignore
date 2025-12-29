@@ -3,3 +3,6 @@
 # Un-ignore booster directory
 !booster/
 !booster/**
+
+# Ignore pnpm lock file in booster directory
+booster/pnpm-lock.yaml

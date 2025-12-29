@@ -1,4 +1,4 @@
-import { $, which } from 'zx'
+import { $, which, fs } from 'zx'
 import {
   ensureMutagenSync,
   exec,
@@ -49,12 +49,59 @@ export async function runStep(
 }
 
 /**
+ * Resolve the full path to a tool command based on its type
+ */
+function resolveCommandPath(tool: ToolConfig): string {
+  // Don't modify absolute paths or paths starting with ./
+  if (tool.command.startsWith('/') || tool.command.startsWith('./')) {
+    return tool.command
+  }
+
+  // If the command already contains a path separator, assume it's a relative path
+  // (e.g. "bin/console" or "vendor/bin/rector") and don't modify it
+  if (tool.command.includes('/')) {
+    return tool.command
+  }
+
+  // Don't modify standard system commands
+  if (['php', 'composer', 'git', 'npm', 'pnpm', 'yarn', 'node'].includes(tool.command)) {
+    return tool.command
+  }
+
+  if (tool.type === 'php') {
+    return `vendor/bin/${tool.command}`
+  }
+
+  if (tool.type === 'node') {
+    return `node_modules/.bin/${tool.command}`
+  }
+
+  return tool.command
+}
+
+/**
  * Check if a tool is available to run
  */
 async function isToolAvailable(tool: ToolConfig): Promise<boolean> {
+  const commandPath = resolveCommandPath(tool)
+
   if (tool.type === 'php' && (await isDdevProject())) {
+    // For standard PHP tools (php, composer), assume they exist in the container
+    if (tool.command === 'php' || tool.command === 'composer') {
+      return true
+    }
+    // For other tools (phpstan, ecs, rector), check if they exist
+    // This prevents trying to run tools that aren't installed
+    return await fs.pathExists(commandPath)
+  }
+
+  // For node tools or system tools, check if the command exists as a file
+  // (e.g. node_modules/.bin/eslint)
+  if (await fs.pathExists(commandPath)) {
     return true
   }
+
+  // Fallback to checking PATH (for system tools like git)
   return await which(tool.command)
     .then(() => true)
     .catch(() => false)
@@ -65,6 +112,7 @@ async function isToolAvailable(tool: ToolConfig): Promise<boolean> {
  */
 async function execTool(tool: ToolConfig, files: string[]): Promise<void> {
   const args = [...(tool.args || [])]
+  const command = resolveCommandPath(tool)
 
   if (tool.runForEachFile) {
     // Run command for each file individually with concurrency limit
@@ -77,7 +125,7 @@ async function execTool(tool: ToolConfig, files: string[]): Promise<void> {
     for (const chunk of chunks) {
       await Promise.all(
         chunk.map((file) =>
-          exec([tool.command, ...args, file], {
+          exec([command, ...args, file], {
             quiet: true,
             type: tool.type,
           }),
@@ -90,7 +138,7 @@ async function execTool(tool: ToolConfig, files: string[]): Promise<void> {
     if (tool.passFiles !== false) {
       cmdArgs.push(...files)
     }
-    await exec([tool.command, ...cmdArgs], { type: tool.type })
+    await exec([command, ...cmdArgs], { type: tool.type })
   }
 }
 

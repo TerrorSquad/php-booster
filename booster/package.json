@@ -5,6 +5,7 @@
   "version": "1.17.1",
   "scripts": {
     "commit": "commit",
+    "test": "vitest run .husky/tests",
     "generate:api-doc:html": "redocly build-docs documentation/openapi.yml --output=documentation/openapi.html",
     "prepare": "husky || true"
   },
@@ -18,6 +19,7 @@
     "husky": "^9.1.7",
     "typescript": "^5.9.3",
     "validate-branch-name": "^1.3.2",
+    "vitest": "^2.1.8",
     "zx": "^8.8.5"
   }
 }

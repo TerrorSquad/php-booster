@@ -22,7 +22,7 @@ import {
 const SKIP_COMMIT_MSG = 'chore: update API documentation'
 const SKIP_DEPTRAC_MSG = 'chore: update deptrac image'
 
-async function shouldSkip(): Promise<boolean> {
+export async function shouldSkip(): Promise<boolean> {
   const lastCommitMsg = (await $`git log -1 --pretty=%B`).stdout.trim()
   if (lastCommitMsg.includes(SKIP_COMMIT_MSG) || lastCommitMsg.includes(SKIP_DEPTRAC_MSG)) {
     log.info('Skipping pre-push hook for auto-generated commit.')
@@ -31,7 +31,7 @@ async function shouldSkip(): Promise<boolean> {
   return false
 }
 
-async function runTests(): Promise<boolean> {
+export async function runTests(): Promise<boolean> {
   if (await fs.pathExists('vendor/bin/pest')) {
     log.tool('Pest', 'Running tests...')
     try {
@@ -45,7 +45,7 @@ async function runTests(): Promise<boolean> {
   return true
 }
 
-async function handleApiDocs(): Promise<boolean> {
+export async function handleApiDocs(): Promise<boolean> {
   // Allow skipping API docs generation explicitly via env var
   if (isSkipped('api_docs')) {
     log.info('Skipping API docs generation (SKIP_API_DOCS environment variable set)')

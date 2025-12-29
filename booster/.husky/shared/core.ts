@@ -150,8 +150,8 @@ export async function isDdevProject(): Promise<boolean> {
  */
 async function getDdevProjectName(): Promise<string | null> {
   try {
-    const configPath = '.ddev/config.yaml'
-    const configContent = await fs.readFile(configPath, 'utf-8')
+    // isDdevProject() already confirmed .ddev/config.yaml exists in CWD
+    const configContent = await fs.readFile('.ddev/config.yaml', 'utf-8')
     const match = configContent.match(/^name:\s*(.+)$/m)
     return match ? match[1].trim() : null
   } catch {
@@ -163,7 +163,6 @@ async function getDdevProjectName(): Promise<string | null> {
  * Get the command to execute, wrapping in ddev exec if necessary
  * @param command The command parts (e.g. ['php', '-v'])
  * @param type The tool type ('node', 'php', 'system')
- * @throws Error if DDEV project name cannot be determined
  * @returns The modified command array ready for execution
  */
 async function getExecCommand(command: string[], type: string): Promise<string[]> {
@@ -180,31 +179,34 @@ async function getExecCommand(command: string[], type: string): Promise<string[]
     throw new Error('Could not determine DDEV project name from .ddev/config.yaml')
   }
 
-  // Use docker exec for performance instead of ddev exec
-  // Run as current user to avoid permission issues with generated files
-  const uid = process.getuid ? process.getuid() : 1000
-  const gid = process.getgid ? process.getgid() : 1000
-  const containerName = `ddev-${projectName}-web`
+  // Since isDdevProject() confirms we are at the project root (where .ddev exists),
+  // we map directly to the container's web root.
+  const containerPath = '/var/www/html'
 
-  // Adjust command path for docker exec
-  // If command is not 'php' or 'composer' and doesn't start with '/', assume it's in vendor/bin
-  let cmd = command[0]
-  if (cmd !== 'php' && cmd !== 'composer' && !cmd.startsWith('/') && !cmd.startsWith('./')) {
-    cmd = `vendor/bin/${cmd}`
+  // Determine User ID
+  // On Linux, we use the host UID so file permissions match.
+  // On macOS/Windows, DDEV handles permissions via filesystem mounts (VirtioFS/Mutagen),
+  // so we use the default container user (1000) to ensure tools like Composer work correctly.
+  let uid = 1000
+  let gid = 1000
+
+  if (process.platform === 'linux') {
+    uid = process.getuid ? process.getuid() : 1000
+    gid = process.getgid ? process.getgid() : 1000
   }
 
-  const newCommand = [cmd, ...command.slice(1)]
+  const containerName = `ddev-${projectName}-web`
 
   return [
     'docker',
     'exec',
-    '-t',
+    '-t', // Allocate pseudo-TTY
     '-u',
     `${uid}:${gid}`,
     '-w',
-    process.cwd(),
+    containerPath,
     containerName,
-    ...newCommand,
+    ...command,
   ]
 }
 
