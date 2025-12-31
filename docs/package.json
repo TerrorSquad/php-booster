@@ -22,6 +22,8 @@
     "node": "22.8.0"
   },
   "trustedDependencies": [
-    "unrs-resolver"
+    "esbuild",
+    "unrs-resolver",
+    "vue-demi"
   ]
 }
