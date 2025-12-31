@@ -15,7 +15,14 @@ Primary goals:
 
 ---
 ## 2. Integration Script Expectations
-Integration occurs via `booster/integrate_booster.sh` (fetched remotely in consumer projects). The script:
+Integration occurs via `booster/integrate_booster.sh` (fetched remotely in consumer projects).
+
+**CRITICAL**: `booster/integrate_booster.sh` is a **generated artifact**.
+- **DO NOT** edit `booster/integrate_booster.sh` directly.
+- Edit the source files in `booster/src/` (e.g., `main.sh`, `lib/*.sh`).
+- Run `make build` (or `booster/build.sh`) to regenerate the script.
+
+The script:
 - Detects DDEV vs standard environment.
 - Clones booster, merges composer + package.json scripts.
 - Adds missing dependencies only (checks installed state).
@@ -25,6 +32,7 @@ Integration occurs via `booster/integrate_booster.sh` (fetched remotely in consu
 Copilot SHOULD:
 - Prefer invoking or referencing existing scripts instead of reinventing logic.
 - Avoid suggesting manual edits duplicated by the integration script unless explicitly required.
+- Always remind the user to run `make build` after modifying `booster/src/` files.
 
 ---
 ## 3. Tooling Overview & Preferred Invocations
@@ -138,6 +146,28 @@ composer phpstan && composer psalm && composer ecs
 - Prefer existing scripts.
 - Keep changes minimal & merge-aware.
 - Ask for clarification only if a requested action would break idempotency or established conventions.
+
+---
+## 15. Testing & Verification
+The repository includes a Python-based integration test suite in `tools/internal-test/`.
+
+| Task | Command |
+|------|---------|
+| Run full Laravel test | `make test` (or `make test-laravel`) |
+| Run full Symfony test | `make test-symfony` |
+| Test Git hooks only | `make test-hooks` |
+| Clean test environments | `make test-clean` |
+
+Copilot SHOULD:
+- Suggest running these tests when modifying the integration logic.
+- Reference `tools/internal-test/test-integration.py` for test logic.
+
+---
+## 16. Documentation Site (`docs/`)
+The documentation is a **Nuxt 3** application using the **Docus** theme.
+- Content is in `docs/content/`.
+- Run `npm run dev` (or `pnpm dev`) inside `docs/` to preview.
+- Do not confuse `docs/` (the website) with `booster/documentation/` (the OpenAPI starter for consumers).
 
 ---
 End of repository-specific Copilot instructions.
