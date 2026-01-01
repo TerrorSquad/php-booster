@@ -1,0 +1,343 @@
+name: Update Booster Dependencies
+
+on:
+  schedule:
+    # Run every Monday at 9:00 AM UTC
+    - cron: '0 9 * * 1'
+  workflow_dispatch: # Allow manual trigger
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  update-dependencies:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Read Node.js version from mise.toml
+        id: mise-node-version
+        run: |
+          NODE_VERSION=$(grep 'node = ' booster/mise.toml | sed 's/node = "\(.*\)"/\1/')
+          echo "version=$NODE_VERSION" >> $GITHUB_OUTPUT
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ steps.mise-node-version.outputs.version }}
+
+      - name: Get latest Node.js LTS version
+        id: node-version
+        run: |
+          # Get latest Node.js LTS version from nodejs.org API
+          LATEST_NODE=$(curl -s https://nodejs.org/dist/index.json | jq -r '[.[] | select(.lts != false)][0].version' | sed 's/v//')
+          echo "latest=$LATEST_NODE" >> $GITHUB_OUTPUT
+          echo "Latest Node.js LTS: $LATEST_NODE"
+
+      - name: Update Node.js version in mise config
+        run: |
+          CURRENT_NODE=$(grep 'node = ' booster/mise.toml | sed 's/node = "\(.*\)"/\1/')
+          LATEST_NODE="${{ steps.node-version.outputs.latest }}"
+
+          echo "Current Node.js: $CURRENT_NODE"
+          echo "Latest Node.js LTS: $LATEST_NODE"
+
+          if [ "$CURRENT_NODE" != "$LATEST_NODE" ]; then
+            sed -i "s/node = \"$CURRENT_NODE\"/node = \"$LATEST_NODE\"/" booster/mise.toml
+            echo "updated=true" >> $GITHUB_ENV
+            echo "Updated Node.js from $CURRENT_NODE to $LATEST_NODE"
+          else
+            echo "Node.js version is already up to date"
+          fi
+      - name: Get latest pnpm version
+        id: pnpm-version
+        run: |
+          # Get latest pnpm version from npm registry
+          LATEST_PNPM=$(npm view pnpm version)
+          echo "latest=$LATEST_PNPM" >> $GITHUB_OUTPUT
+          echo "Latest pnpm: $LATEST_PNPM"
+
+      - name: Update pnpm version in mise config
+        working-directory: booster
+        run: |
+          CURRENT_PNPM=$(grep 'pnpm = ' mise.toml | sed 's/pnpm = "\(.*\)"/\1/')
+          LATEST_PNPM="${{ steps.pnpm-version.outputs.latest }}"
+
+          echo "Current pnpm: $CURRENT_PNPM"
+          echo "Latest pnpm: $LATEST_PNPM"
+
+          if [ "$CURRENT_PNPM" != "$LATEST_PNPM" ]; then
+            sed -i "s/pnpm = \"$CURRENT_PNPM\"/pnpm = \"$LATEST_PNPM\"/" mise.toml
+            echo "updated=true" >> $GITHUB_ENV
+            echo "Updated pnpm from $CURRENT_PNPM to $LATEST_PNPM"
+          else
+            echo "pnpm version is already up to date"
+          fi
+      - name: Check NPM package updates
+        id: npm-updates
+        working-directory: booster
+        run: |
+          # Check for outdated NPM packages using npm registry API
+          echo "Checking NPM packages for updates..."
+          HAS_UPDATES=false
+
+          # Read packages from package.json
+          PACKAGES=$(jq -r '.devDependencies | keys[]' package.json)
+
+          for PACKAGE in $PACKAGES; do
+            CURRENT_VERSION=$(jq -r ".devDependencies.\"$PACKAGE\"" package.json | sed 's/[\^~]//')
+
+            # Get latest version from NPM registry
+            LATEST_VERSION=$(curl -s "https://registry.npmjs.org/$PACKAGE/latest" | \
+              jq -r '.version' 2>/dev/null || echo "")
+
+            if [ -n "$LATEST_VERSION" ] && [ "$LATEST_VERSION" != "null" ]; then
+              echo "$PACKAGE: $CURRENT_VERSION -> $LATEST_VERSION"
+
+              # Simple version comparison
+              if [ "$CURRENT_VERSION" != "$LATEST_VERSION" ]; then
+                HAS_UPDATES=true
+              fi
+            fi
+          done
+
+          echo "has_updates=$HAS_UPDATES" >> $GITHUB_OUTPUT
+
+      - name: Update @types/node if Node.js version changed
+        if: env.updated == 'true'
+        working-directory: booster
+        run: |
+          LATEST_NODE="${{ steps.node-version.outputs.latest }}"
+          NODE_MAJOR=$(echo "$LATEST_NODE" | cut -d. -f1)
+          echo "Updating @types/node to ^$NODE_MAJOR..."
+
+          # Update package.json directly using jq
+          jq ".devDependencies[\"@types/node\"] = \"^$NODE_MAJOR\"" package.json > package.json.tmp
+          mv package.json.tmp package.json
+
+          echo "Updated @types/node to version ^$NODE_MAJOR"
+
+      - name: Update NPM dependencies if needed
+        if: steps.npm-updates.outputs.has_updates == 'true'
+        working-directory: booster
+        run: |
+          echo "Updating NPM packages to latest versions..."
+
+          # Read all dev dependencies
+          PACKAGES=$(jq -r '.devDependencies | keys[]' package.json)
+
+          for PACKAGE in $PACKAGES; do
+            # Get latest version from NPM registry
+            LATEST_VERSION=$(curl -s "https://registry.npmjs.org/$PACKAGE/latest" | \
+              jq -r '.version' 2>/dev/null || echo "")
+
+            if [ -n "$LATEST_VERSION" ] && [ "$LATEST_VERSION" != "null" ]; then
+              echo "Updating $PACKAGE to $LATEST_VERSION"
+
+              # Update package.json with latest version (using ^ prefix)
+              jq ".devDependencies[\"$PACKAGE\"] = \"^$LATEST_VERSION\"" package.json > package.json.tmp
+              mv package.json.tmp package.json
+            fi
+          done
+
+          echo "NPM package versions updated in package.json"
+          echo "Note: pnpm-lock.yaml NOT updated - run 'pnpm install' locally to test"
+          echo "updated=true" >> $GITHUB_ENV
+
+      - name: Update pnpm-lock.dist.yaml
+        if: steps.npm-updates.outputs.has_updates == 'true'
+        working-directory: booster
+        run: |
+          echo "Installing pnpm..."
+          npm install -g pnpm
+          echo "Updating pnpm-lock.dist.yaml..."
+          chmod +x generate_dist_lockfile.sh
+          ./generate_dist_lockfile.sh
+          echo "pnpm-lock.dist.yaml updated"
+
+      - name: Check PHP package updates
+        id: php-updates
+        run: |
+          # Parse composer.json and check each package on Packagist API
+          cd booster
+
+          echo "Checking PHP packages for updates..."
+          HAS_UPDATES=false
+
+          # Read packages from composer.json
+          PACKAGES=$(jq -r '.["require-dev"] | keys[]' composer.json)
+
+          for PACKAGE in $PACKAGES; do
+            CURRENT_VERSION=$(jq -r ".\"require-dev\".\"$PACKAGE\"" composer.json | sed 's/[\^~]//')
+
+            # Get latest stable version from Packagist v1 API (exclude dev, alpha, beta, RC)
+            LATEST_VERSION=$(curl -s "https://packagist.org/packages/$PACKAGE.json" | \
+              jq -r '.package.versions | to_entries | map(select(.key | test("^[0-9]+\\.[0-9]+\\.[0-9]+$"))) | .[0].key' 2>/dev/null || echo "")
+
+            if [ -n "$LATEST_VERSION" ] && [ "$LATEST_VERSION" != "null" ]; then
+              echo "$PACKAGE: $CURRENT_VERSION -> $LATEST_VERSION"
+
+              # Simple version comparison
+              if [ "$CURRENT_VERSION" != "$LATEST_VERSION" ]; then
+                HAS_UPDATES=true
+              fi
+            fi
+          done
+
+          echo "has_updates=$HAS_UPDATES" >> $GITHUB_OUTPUT
+      - name: Update PHP dependencies
+        if: steps.php-updates.outputs.has_updates == 'true'
+        working-directory: booster
+        run: |
+          # Update PHP package versions in composer.json using Packagist v1 API
+          PACKAGES=$(jq -r '.["require-dev"] | keys[]' composer.json)
+
+          for PACKAGE in $PACKAGES; do
+            # Get latest stable version from Packagist (exclude dev, alpha, beta, RC)
+            LATEST_VERSION=$(curl -s "https://packagist.org/packages/$PACKAGE.json" | \
+              jq -r '.package.versions | to_entries | map(select(.key | test("^[0-9]+\\.[0-9]+\\.[0-9]+$"))) | .[0].key' 2>/dev/null || echo "")
+
+            if [ -n "$LATEST_VERSION" ] && [ "$LATEST_VERSION" != "null" ]; then
+              echo "Updating $PACKAGE to ^$LATEST_VERSION"
+
+              # Update composer.json with new version constraint (2 spaces indentation)
+              jq --indent 2 ".\"require-dev\".\"$PACKAGE\" = \"^$LATEST_VERSION\"" composer.json > composer.json.tmp
+              mv composer.json.tmp composer.json
+            fi
+          done
+
+          echo "updated=true" >> $GITHUB_ENV
+
+      - name: Generate update summary
+        if: env.updated == 'true'
+        id: summary
+        run: |
+          echo "## 📦 Dependency Updates" > update-summary.md
+          echo "" >> update-summary.md
+          echo "This PR updates booster dependencies to their latest versions." >> update-summary.md
+          echo "" >> update-summary.md
+
+          # Node.js changes
+          if git diff --quiet HEAD booster/mise.toml; then
+            NODE_CHANGED=false
+          else
+            NODE_CHANGED=true
+            CURRENT_NODE=$(git diff HEAD booster/mise.toml | grep "^-node =" | sed 's/.*"\(.*\)".*/\1/')
+            NEW_NODE="${{ steps.node-version.outputs.latest }}"
+            echo "### Node.js" >> update-summary.md
+            echo "- Updated from \`$CURRENT_NODE\` to \`$NEW_NODE\`" >> update-summary.md
+            echo "- Updated \`@types/node\` to match" >> update-summary.md
+            echo "" >> update-summary.md
+          fi
+
+          # pnpm changes
+          PNPM_CHANGED=false
+          if ! git diff --quiet HEAD booster/mise.toml; then
+            # Check if pnpm field changed
+            OLD_PNPM=$(git diff HEAD booster/mise.toml | grep "^-pnpm =" | sed 's/.*"\(.*\)".*/\1/')
+            NEW_PNPM=$(git diff HEAD booster/mise.toml | grep "^+pnpm =" | sed 's/.*"\(.*\)".*/\1/')
+
+            if [ -n "$OLD_PNPM" ] && [ -n "$NEW_PNPM" ] && [ "$OLD_PNPM" != "$NEW_PNPM" ]; then
+              PNPM_CHANGED=true
+              echo "### Package Manager" >> update-summary.md
+              echo "- Updated pnpm from \`$OLD_PNPM\` to \`$NEW_PNPM\`" >> update-summary.md
+              echo "" >> update-summary.md
+            fi
+          fi
+
+          # PHP package changes
+          if [ "${{ steps.php-updates.outputs.has_updates }}" == "true" ]; then
+            if ! git diff --quiet HEAD booster/composer.json; then
+              echo "### PHP Packages" >> update-summary.md
+
+              # Parse composer.json diff for package changes
+              git diff HEAD booster/composer.json | grep -E '^\-[[:space:]]+"[^"]+": "\^' > /tmp/old-packages.txt || true
+              git diff HEAD booster/composer.json | grep -E '^\+[[:space:]]+"[^"]+": "\^' > /tmp/new-packages.txt || true
+
+              # Process each changed package
+              while IFS= read -r old_line; do
+                PACKAGE=$(echo "$old_line" | sed -n 's/.*"\([^"]*\)": "\^\([^"]*\)".*/\1/p')
+                OLD_VER=$(echo "$old_line" | sed -n 's/.*"\([^"]*\)": "\^\([^"]*\)".*/\2/p')
+
+                # Find matching new version
+                NEW_VER=$(grep "\"$PACKAGE\"" /tmp/new-packages.txt | sed -n 's/.*"\^\([^"]*\)".*/\1/p' || echo "")
+
+                if [ -n "$NEW_VER" ] && [ "$OLD_VER" != "$NEW_VER" ]; then
+                  echo "- \`$PACKAGE\`: ^$OLD_VER → ^$NEW_VER" >> update-summary.md
+                fi
+              done < /tmp/old-packages.txt
+
+              echo "" >> update-summary.md
+            fi
+          fi
+
+          # NPM package changes
+          NPM_CHANGED=false
+          if [ "${{ steps.npm-updates.outputs.has_updates }}" == "true" ]; then
+            if ! git diff --quiet HEAD booster/package.json; then
+              NPM_CHANGED=true
+              echo "### NPM Packages" >> update-summary.md
+              echo "Updated devDependencies to latest versions. See \`package.json\` for details." >> update-summary.md
+              echo "" >> update-summary.md
+            fi
+          fi
+
+          # Files Changed - only list files that actually changed
+          echo "### Files Changed" >> update-summary.md
+          if [ "$NODE_CHANGED" = true ] || [ "$PNPM_CHANGED" = true ]; then
+            echo "- \`booster/mise.toml\`" >> update-summary.md
+          fi
+          if [ "$NPM_CHANGED" = true ] || [ "$NODE_CHANGED" = true ]; then
+            echo "- \`booster/package.json\`" >> update-summary.md
+          fi
+          if [ "$NPM_CHANGED" = true ]; then
+             if ! git diff --quiet HEAD booster/pnpm-lock.dist.yaml; then
+               echo "- \`booster/pnpm-lock.dist.yaml\`" >> update-summary.md
+             fi
+          fi
+          if [ "${{ steps.php-updates.outputs.has_updates }}" == "true" ]; then
+            if ! git diff --quiet HEAD booster/composer.json; then
+              echo "- \`booster/composer.json\`" >> update-summary.md
+            fi
+          fi
+
+          cat update-summary.md
+
+      - name: Create Pull Request
+        if: env.updated == 'true'
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: |
+            chore(deps): update booster dependencies
+
+            - Update Node.js to ${{ steps.node-version.outputs.latest }}
+            - Update pnpm to ${{ steps.pnpm-version.outputs.latest }}
+            - Update PHP packages to latest versions
+            - Update NPM packages to latest versions
+          branch: update-booster-dependencies
+          delete-branch: true
+          title: 'chore(deps): Update Booster Dependencies'
+          body-path: update-summary.md
+          labels: |
+            dependencies
+            automation
+            booster
+          assignees: ${{ github.repository_owner }}
+          draft: false
+          add-paths: |
+            booster/mise.toml
+            booster/package.json
+            booster/composer.json
+            booster/pnpm-lock.dist.yaml
+
+      - name: No updates needed
+        if: env.updated != 'true'
+        run: |
+          echo "✅ All dependencies are up to date!"
+          echo "No pull request created."

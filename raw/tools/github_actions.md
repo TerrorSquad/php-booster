@@ -1,0 +1,220 @@
+# GitHub Actions Auto-Fix
+
+> Automate code style fixes and refactoring with GitHub Actions for PHP projects.
+
+We include GitHub Actions that automatically apply code style fixes (ECS) and refactoring (Rector) on push.
+
+## Features
+
+- **Automatic Processing**: Runs on push/PR.
+- **Smart Detection**: Only processes changed files.
+- **Auto-commits**: Pushes fixes back to the branch.
+
+## Available Workflow
+
+### PHP Auto-Fix Workflow (`php-auto-fix-simple.yml`)
+
+```yaml
+- name: Run PHP Auto-Fix
+  uses: ./.github/actions/php-auto-fix
+  with:
+    php-version: '8.3'
+```
+
+## Configuration
+
+### Environment Variables
+
+<table>
+<thead>
+  <tr>
+    <th>
+      Input
+    </th>
+    
+    <th>
+      Description
+    </th>
+    
+    <th>
+      Default
+    </th>
+  </tr>
+</thead>
+
+<tbody>
+  <tr>
+    <td>
+      <code>
+        php-version
+      </code>
+    </td>
+    
+    <td>
+      PHP version to use
+    </td>
+    
+    <td>
+      <code>
+        8.3
+      </code>
+    </td>
+  </tr>
+  
+  <tr>
+    <td>
+      <code>
+        skip-rector
+      </code>
+    </td>
+    
+    <td>
+      Skip Rector processing
+    </td>
+    
+    <td>
+      <code>
+        false
+      </code>
+    </td>
+  </tr>
+  
+  <tr>
+    <td>
+      <code>
+        skip-ecs
+      </code>
+    </td>
+    
+    <td>
+      Skip ECS processing
+    </td>
+    
+    <td>
+      <code>
+        false
+      </code>
+    </td>
+  </tr>
+  
+  <tr>
+    <td>
+      <code>
+        commit-message
+      </code>
+    </td>
+    
+    <td>
+      Custom commit message
+    </td>
+    
+    <td>
+      <code>
+        style: auto-fix code with Rector and ECS
+      </code>
+    </td>
+  </tr>
+  
+  <tr>
+    <td>
+      <code>
+        file-pattern
+      </code>
+    </td>
+    
+    <td>
+      File pattern to match
+    </td>
+    
+    <td>
+      <code>
+        *.php
+      </code>
+    </td>
+  </tr>
+</tbody>
+</table>
+
+### Skip Auto-Fix
+
+To skip auto-fix for specific commits, include `[skip auto-fix]` in your commit message.
+
+- Uses `GITHUB_TOKEN` with minimal required permissions
+- Only processes files changed in the current commit/PR
+- Validates tool availability before execution
+- Includes safeguards against infinite loops
+
+## Benefits
+
+### For Developers
+
+- 🚀 **Faster local development** - No need to run formatters locally
+- 🔄 **Consistent code style** across the entire team
+- 📈 **Automatic modernization** of legacy PHP patterns
+- 🛡️ **Reduced merge conflicts** from formatting differences
+
+### For Teams
+
+- 📊 **Enforced standards** without developer overhead
+- 🤝 **Improved code reviews** - Focus on logic, not style
+- 🔧 **Automatic maintenance** of code quality
+- 📝 **Transparent process** with clear commit history
+
+## Integration with Git Hooks
+
+The GitHub Actions work seamlessly with local git hooks:
+
+- **Local hooks** catch issues during development
+- **GitHub Actions** provide a safety net for anything that slips through
+- **Consistent tooling** ensures the same rules apply everywhere
+
+This creates a comprehensive code quality pipeline from development to production.
+
+## Troubleshooting
+
+### Action Not Running
+
+- Verify PHP files were actually changed
+- Check workflow triggers match your branch names
+- Ensure `rector.php` and `ecs.php` exist
+
+### No Changes Applied
+
+- Confirm Rector and ECS are installed via Composer
+- Validate configuration files are correct
+- Check action logs for specific error messages
+
+### Permission Issues
+
+- Ensure repository has Actions enabled
+- Verify `GITHUB_TOKEN` has write permissions
+- For protected branches, consider using a personal access token
+
+## Examples
+
+### Basic Auto-Fix Commit
+
+```text
+style: auto-fix code with Rector and ECS
+
+Files processed: src/Controller/UserController.php src/Service/EmailService.php
+
+This commit was automatically created by GitHub Actions
+to apply code style fixes and modernizations.
+
+[skip ci]
+```
+
+### PR Comment
+
+When fixes are applied to a pull request, the action automatically adds a comment:
+
+> 🤖 **Auto-fix Applied**
+> 
+> Rector and ECS have automatically fixed code style and modernization issues.
+> 
+> Files processed: `src/Controller/UserController.php`
+> 
+> Please review the changes before merging.
+
+The GitHub Actions auto-fix feature ensures your codebase maintains consistent quality standards without any manual intervention, making code reviews more focused and productive.

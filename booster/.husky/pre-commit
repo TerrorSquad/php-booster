@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+
+# Git hook wrapper for ZX implementation
+
+# Get the directory of this script
+CWD="$(dirname "$0")"
+
+HOOK_DIR="$(cd "$CWD" && pwd)"
+ROOT_DIR="$HOOK_DIR"/..
+cd "$ROOT_DIR"
+
+HOOK="$CWD/pre-commit.ts"
+
+# Use the generic runner script to execute the TypeScript hook
+exec "$CWD/shared/runner.sh" pnpm zx $HOOK "$@"

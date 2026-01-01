@@ -1,0 +1,24 @@
+# php-booster
+
+## Documentation Sets
+
+- [php-booster](https://terrorsquad.github.io/php-booster//llms-full.txt)
+
+## Landing
+
+- [Home](https://terrorsquad.github.io/php-booster)
+
+## Docs
+
+- [Integration Guide](https://terrorsquad.github.io/php-booster/integration_guide/integration_guide): Step-by-step guide to integrating the PHP Development Booster into your project.
+- [Code Formatting](https://terrorsquad.github.io/php-booster/tools/code_formatting): Enforce consistent code style with EasyCodingStandard (ECS) in your PHP projects.
+- [Code Refactoring](https://terrorsquad.github.io/php-booster/tools/code_refactoring): Automate code refactoring and PHP upgrades with Rector.
+- [Static Analysis](https://terrorsquad.github.io/php-booster/tools/static_analysis): Catch errors and enforce type safety with PHPStan and Psalm.
+- [Git Hooks](https://terrorsquad.github.io/php-booster/tools/git_hooks): Enforce code quality and validate commits with TypeScript-based ZX hooks.
+- [API Documentation](https://terrorsquad.github.io/php-booster/tools/api_documentation): Generate OpenAPI specifications and documentation with Swagger-PHP and ReDoc.
+- [IDE Configuration](https://terrorsquad.github.io/php-booster/tools/ide_configuration): Pre-configured settings for VS Code and PhpStorm to ensure a consistent development experience.
+- [SonarQube Integration](https://terrorsquad.github.io/php-booster/tools/sonarqube): Integrate with SonarQube for continuous code quality inspection.
+- [GitHub Actions Auto-Fix](https://terrorsquad.github.io/php-booster/tools/github_actions): Automate code style fixes and refactoring with GitHub Actions for PHP projects.
+- [Renovate](https://terrorsquad.github.io/php-booster/tools/renovate): Automated dependency management with Renovate for PHP projects.
+- [Troubleshooting](https://terrorsquad.github.io/php-booster/troubleshooting/troubleshooting): Common issues and solutions when using the PHP Development Booster.
+- [License](https://terrorsquad.github.io/php-booster/license/license): MIT License for the PHP Development Booster.

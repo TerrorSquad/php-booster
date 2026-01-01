@@ -1,0 +1,1082 @@
+# Home
+
+::div{.text-center.py-12}
+# PHP Development Booster
+
+A curated stack of quality tools for PHP projects: Static Analysis, Formatting, Refactoring, and Git Hooks.
+
+  :::div{.flex.justify-center.gap-4.mt-8}
+    ::::u-button
+    ---
+    icon: i-heroicons-rocket-launch
+    size: xl
+    to: https://terrorsquad.github.io/php-booster/integration_guide/integration_guide
+    ---
+    Explore Now
+    ::::
+
+    ::::u-button
+    ---
+    color: gray
+    icon: i-simple-icons-github
+    size: xl
+    target: _blank
+    to: https://github.com/TerrorSquad/php-booster/
+    variant: ghost
+    ---
+    Star on GitHub
+    ::::
+  :::
+::
+
+::u-page-section
+  :::u-page-grid
+    ::::u-page-card
+    ---
+    spotlight: true
+    icon: i-logos-docker-icon
+    title: DDEV-Powered Development
+    ---
+    Leverage the efficiency of [DDEV](https://www.ddev.com/){rel=""nofollow""} for:
+
+    - Seamless local development experience.
+    - Consistent environments.
+    ::::
+
+    ::::u-page-card
+    ---
+    spotlight: true
+    icon: i-vscode-icons-file-type-phpstan
+    title: Code Quality Tools
+    ---
+    Pre-configured tools to maintain high code quality:
+
+    - [PHPStan](https://phpstan.org/){rel=""nofollow""} for static analysis.
+    - [Psalm](https://psalm.dev/){rel=""nofollow""} for advanced type checking.
+    - [ECS](https://github.com/easy-coding-standard/easy-coding-standard){rel=""nofollow""} for coding standards enforcement.
+    ::::
+
+    ::::u-page-card
+    ---
+    spotlight: true
+    icon: i-simple-icons-newrelic
+    title: Automated Refactoring
+    ---
+    Keep your codebase modern with [Rector](https://getrector.org/){rel=""nofollow""} integration:
+
+    - Automated code upgrades.
+    - Instant refactoring.
+    ::::
+
+    ::::u-page-card{spotlight icon="i-noto-hook" title="Git Hooks & Conventions"}
+    Enforce best practices automatically:
+
+    - [Conventional Commits](https://www.conventionalcommits.org/){rel=""nofollow""} validation.
+    - Branch naming conventions.
+    ::::
+
+    ::::u-page-card{spotlight icon="i-noto-gear" title="API Documentation"}
+    Ready-to-use API documentation setup:
+
+    - [OpenAPI](https://swagger.io/specification/){rel=""nofollow""} starter specification.
+    - [ReDoc](https://github.com/Redocly/redoc){rel=""nofollow""} visualization.
+    ::::
+
+    ::::u-page-card
+    ---
+    spotlight: true
+    icon: i-noto-hammer-and-wrench
+    title: IDE Configuration
+    ---
+    Settings included for immediate productivity:
+
+    - VS Code configuration.
+    - PhpStorm configuration.
+    ::::
+  :::
+::
+
+
+# Integration Guide
+
+## Quick Start
+
+Follow these steps to integrate the PHP Development Booster into your existing PHP project:
+
+1. **Prepare Your Project**:
+   - Ensure your PHP project is under version control (e.g., Git).
+   - Check out a new branch and ensure there are no uncommitted changes.
+2. **Run the Integration Script**:
+   Execute the following command in your project root to integrate the booster:
+   ```bash
+   curl -sSL https://raw.githubusercontent.com/TerrorSquad/php-booster/main/booster/integrate_booster.sh | bash
+   ```
+3. **Complete the Integration**:
+   - Follow the on-screen instructions provided by the script.
+   - Review the changes made to your project.
+4. **Commit and Push**:
+   - Commit the changes to your branch:
+     ```bash
+     git add .
+     git commit -m "Integrate PHP Development Booster"
+     ```
+   - Push the branch to your repository and create a pull request for review.
+
+## Interactive Mode
+
+The integration script includes an **Interactive Mode** (`-I`) that guides you through the setup process with a wizard. This is useful for customizing the integration (selecting specific tools, configuring ticket IDs, etc.).
+
+### Usage
+
+```bash
+curl -sSL https://raw.githubusercontent.com/TerrorSquad/php-booster/main/booster/integrate_booster.sh | bash -s -- -I
+```
+
+### Configuration Steps
+
+1. **Select Code Quality Tools**: Choose to install ECS, Rector, PHPStan, or Psalm individually or all at once.
+2. **Configure Git Workflow**:
+   - **Ticket IDs**: Enforce ticket IDs in branch names (e.g., `feature/PRJ-123-description`).
+   - **Ticket Prefix**: Set your project's prefix (e.g., `PRJ`, `JIRA`).
+   - **Commit Footer**: Customize the footer label (e.g., `Closes: PRJ-123`).
+3. **IDE Configuration**: Optionally install settings for VS Code, PhpStorm, and EditorConfig.
+
+The wizard will display a summary of your choices before applying any changes.
+
+
+# Code Formatting
+
+We use [EasyCodingStandard (ECS)](https://github.com/easy-coding-standard/easy-coding-standard){rel="&#x22;nofollow&#x22;"} to enforce consistent code style and formatting.
+
+## Usage
+
+Use the following commands, which are also defined as Composer scripts:
+
+- To check your code for style violations:
+  ```bash
+  composer check-cs
+  ```
+- To automatically fix many style violations:
+  ```bash
+  composer fix-cs
+  ```
+
+If you're using DDEV, you can run these commands within your DDEV environment:
+
+```bash
+ddev composer check-cs
+ddev composer fix-cs
+```
+
+## Configuration
+
+The `ecs.php` file in your project root is where you configure EasyCodingStandard. This file allows you to define the coding standards you want to enforce, choose specific code sniffers, and customize various settings.
+
+---
+
+## Additional Resources
+
+- [EasyCodingStandard Documentation](https://github.com/symplify/easy-coding-standard){rel="&#x22;nofollow&#x22;"}
+- [List of Available Checkers (Sniffs)](https://github.com/symplify/easy-coding-standard#use-prepared-sets){rel="&#x22;nofollow&#x22;"}
+
+**Remember:** Consistent code style is key to a healthy and maintainable codebase. Make EasyCodingStandard an integral part of your development workflow and enjoy the benefits of clean, well-formatted code!
+
+
+# Code Refactoring
+
+We use [Rector](https://getrector.org/){rel="&#x22;nofollow&#x22;"} to automate code refactoring and PHP version upgrades.
+
+## Usage
+
+Use the following commands, which are also defined as Composer scripts:
+
+- To perform a full refactoring of your codebase:
+  ```bash
+  composer rector process 
+  ```
+- **Dry Run:** It's highly recommended to perform a dry run first to see the proposed changes without actually modifying your code
+  ```bash
+  composer rector process --dry-run 
+  ```
+
+If you're using DDEV, you can run these commands within your DDEV environment:
+
+```bash
+ddev composer rector process
+ddev composer rector process --dry-run
+```
+
+## Configuration
+
+The `rector.php` file in your project root is where you configure Rector. This file allows you to select the Rector sets (collections of rules) you want to apply, define custom rules, and adjust various settings.
+
+
+# Static Analysis
+
+We use [PHPStan](https://phpstan.org/){rel="&#x22;nofollow&#x22;"} and [Psalm](https://psalm.dev/){rel="&#x22;nofollow&#x22;"} for static analysis to catch errors and enforce type safety.
+
+## PHPStan
+
+### Usage
+
+```bash
+composer phpstan 
+```
+
+- **For SonarQube Integration:**
+  ```bash
+  composer phpstan:sonar
+  ```
+- **DDEV:**
+  ```bash
+  ddev composer phpstan
+  ddev composer phpstan:sonar
+  ```
+
+### Configuration
+
+The `phpstan.neon.dist` file in your project root provides the base configuration. Create a `phpstan.neon` file to override settings.
+
+## Psalm
+
+### Usage
+
+```bash
+composer psalm
+```
+
+- **In your IDE:** See the [IDE Configuration](https://terrorsquad.github.io/php-booster/tools/ide_configuration#ddev-integration-helper) page for details on setting up the `psalm-ddev` wrapper.
+- **For SonarQube Integration:**
+
+```bash
+composer psalm:sonar
+```
+
+- **DDEV:**
+
+```bash
+ddev composer psalm
+ddev composer psalm:sonar
+```
+
+### Configuration
+
+The `psalm.xml` file in your project root configures Psalm.
+
+
+# Git Hooks
+
+We use TypeScript-based ZX hooks to enforce code quality and validate commits.
+
+## Available Hooks
+
+### Pre-commit (`pre-commit.ts`)
+
+Runs quality tools on staged files (PHP Syntax, Rector, ECS, PHPStan, Psalm, etc.).
+
+**Environment Variables:**
+
+- `SKIP_PRECOMMIT=1` - Skip entire hook
+- `SKIP_RECTOR=1`, `SKIP_ECS=1`, etc. - Skip specific tools
+- `GIT_HOOKS_VERBOSE=1` - Enable verbose logging
+
+### Pre-push (`pre-push.ts`)
+
+Runs comprehensive checks (Deptrac, PHPUnit, API Docs) before pushing.
+
+**Environment Variables:**
+
+- `SKIP_PREPUSH=1` - Skip entire hook
+- `SKIP_PHPUNIT=1` - Skip PHPUnit tests
+- `SKIP_API_DOCS=1` - Skip API documentation
+- `GIT_HOOKS_VERBOSE=1` - Enable verbose logging
+
+### Commit-msg (`commit-msg.ts`)
+
+Validates commit messages and branch names:
+
+- **Branch name validation** - Uses validate-branch-name configuration
+- **Commit message linting** - CommitLint enforcement
+- **Ticket footer appending** - Automatically adds ticket ID to commit messages when required
+
+**Environment Variables:**
+
+- `SKIP_COMMITMSG=1` - Skip entire hook
+- `GIT_HOOKS_VERBOSE=1` - Enable verbose logging
+
+## Configuration
+
+### Commit Message Format
+
+CommitLint configuration is defined in `commitlint.config.ts`:
+
+```typescript
+// Example: Conventional Commits format
+type: 'feat|fix|chore|docs|style|refactor|perf|test'
+scope: 'optional scope'
+message: 'clear description'
+```
+
+### Branch Name Rules
+
+Configure branch naming in `validate-branch-name.config.cjs`:
+
+```javascript
+module.exports = {
+  config: {
+    types: ['feat', 'fix', 'chore'],
+    ticketIdPrefix: 'TICKET',
+    ticketNumberPattern: '[0-9]+',
+    requireTickets: true,
+    commitFooterLabel: 'Closes',
+  }
+}
+```
+
+## Usage
+
+### Running Hooks Manually
+
+While hooks run automatically, you can execute them manually:
+
+```bash
+# Pre-commit checks
+./node_modules/.bin/zx ./booster/.husky/pre-commit.ts
+
+# Pre-push checks
+./node_modules/.bin/zx ./booster/.husky/pre-push.ts
+
+# Commit message validation
+./node_modules/.bin/zx ./booster/.husky/commit-msg.ts <commit-file>
+```
+
+### Skipping Hooks
+
+Use environment variables to skip specific tools or entire hooks:
+
+```bash
+# Skip ECS during commit (but run other tools)
+SKIP_ECS=1 git commit -m "..."
+
+# Skip entire pre-commit hook
+SKIP_PRECOMMIT=1 git commit -m "..."
+
+# Verbose output for debugging
+GIT_HOOKS_VERBOSE=1 git commit -m "..."
+```
+
+### DDEV Integration
+
+If using DDEV, the `runner.sh` script automatically forwards environment variables to the container:
+
+```bash
+SKIP_PHPUNIT=1 SKIP_API_DOCS=1 git push
+```
+
+## Hook Implementation Details
+
+### TypeScript with ZX
+
+All hooks are implemented in TypeScript using [ZX](https://google.github.io/zx/){rel="&#x22;nofollow&#x22;"}, a tool for writing shell scripts in JavaScript/TypeScript:
+
+- Type-safe implementations
+- Better error handling and logging
+- Shared utilities in `shared/` (exported via `shared/index.ts`)
+- Consistent patterns across all hooks
+
+### Shared Utilities
+
+The `shared/` directory provides:
+
+- `isSkipped(name)` - Check if a tool/hook should be skipped
+- `runTool(name, action, fn)` - Execute with error handling and timing
+- `log.*` - Consistent colored logging
+- Tool execution logic with binary detection
+
+## Best Practices
+
+- Use skip variables during development when you need to bypass specific checks
+- Enable `GIT_HOOKS_VERBOSE=1` when troubleshooting hook issues
+- Review hook output carefully before committing or pushing
+- Keep hooks fast by only running on changed files
+- Customize skip variables in `.env` or `.git-hooks.env` for your workflow
+
+## Troubleshooting
+
+### Hooks Not Running
+
+1. Ensure hooks are installed: `npm run prepare`
+2. Check hook permissions: `ls -la .git/hooks/`
+3. Verify ZX installation: `npm ls zx`
+
+### Tool Not Found
+
+Ensure dependencies are installed:
+
+```bash
+composer install          # PHP tools
+npm install or pnpm install  # Node tools
+```
+
+### DDEV Container Issues
+
+Verify container is running and runner.sh has proper permissions:
+
+```bash
+ddev status
+ls -la booster/.husky/shared/runner.sh
+```
+
+## Additional Resources
+
+- [ZX Documentation](https://google.github.io/zx/){rel="&#x22;nofollow&#x22;"}
+- [CommitLint Documentation](https://commitlint.js.org/){rel="&#x22;nofollow&#x22;"}
+- [validate-branch-name](https://github.com/blockchain-jd-com/validate-branch-name){rel="&#x22;nofollow&#x22;"}
+
+::callout{color="green" icon="i-heroicons-check-circle"}
+- Customize hooks to match your team's workflow
+- Use environment variables to adapt hooks for different scenarios
+- Review and commit hook output in your PR reviews
+::
+
+
+# API Documentation
+
+We use [Swagger-PHP](https://zircote.github.io/swagger-php/){rel="&#x22;nofollow&#x22;"} for annotations and [ReDoc](https://github.com/Redocly/redoc){rel="&#x22;nofollow&#x22;"} for generating documentation.
+
+## Usage
+
+1. **Annotate Code**: Add Swagger-PHP annotations to your classes and methods.
+2. **Generate Spec**:
+   ```bash
+   composer generate-api-spec
+   ```
+   :br&#x2A;*DDEV:**
+   ```bash
+   ddev composer generate-api-spec
+   ```
+   :brThis updates `documentation/openapi.yml`.
+3. **Generate HTML**:
+   ```bash
+   npm run generate:api-doc:html
+   ```
+
+## Automation
+
+Git hooks automatically regenerate documentation when `openapi.yml` changes.
+
+## Additional Resources
+
+- [Swagger-PHP Documentation](https://zircote.github.io/swagger-php/){rel="&#x22;nofollow&#x22;"}
+- [ReDoc Documentation](https://github.com/Redocly/redoc){rel="&#x22;nofollow&#x22;"}
+- [OpenAPI Specification](https://swagger.io/specification/){rel="&#x22;nofollow&#x22;"}
+
+**Remember:**
+
+::callout{color="green" icon="i-heroicons-check-circle"}
+- Keep your annotations up-to-date as you make changes to your API
+- Consider adding ReDoc or another visualization tool to make your API documentation even more accessible and user-friendly
+- Use the generated OpenAPI specification to power other API-related tools and workflows.
+::
+
+
+# IDE Configuration
+
+We provide configuration files for **Visual Studio Code** (`.vscode/`) to ensure a consistent development experience.
+
+## Visual Studio Code
+
+- **Extensions**: `extensions.json` lists recommended extensions (PHP Intelephense, PHP Debug, etc.).
+- **Settings**: `settings.json` configures formatting and linting.
+- **Debugging**: `launch.json` is pre-configured for Xdebug with DDEV.
+
+### DDEV Integration
+
+1. **Generate Settings**:
+   Run this to configure the correct DDEV container name and path mappings:
+   ```bash
+   .ddev/scripts/generate-vscode-settings.sh
+   ```
+2. **Psalm Integration**:
+   The `bin/psalm-ddev` wrapper allows the Psalm extension to run inside the container. The generation script handles the necessary symlinks.
+
+## PHPStorm (Optional)
+
+1. **Interpreter**: Configure CLI Interpreter from Docker/DDEV.
+2. **Deployment**: Set up SFTP deployment to the DDEV web container.
+3. **Plugins**: Install the **DDEV Integration** plugin.
+
+By configuring your IDE effectively, you can create a more productive and enjoyable development experience. Whether you prefer Vscode or PHPStorm, the Booster provides guidance and recommendations to help you get the most out of your chosen IDE.
+
+---
+
+## Additional Resources
+
+- **Visual Studio Code Documentation:** <https://code.visualstudio.com/docs>{rel="&#x22;nofollow&#x22;"}
+- **PHPStorm Official Website:** <https://www.jetbrains.com/phpstorm/>{rel="&#x22;nofollow&#x22;"}
+
+::callout{color="blue" icon="i-heroicons-information-circle"}
+Remember: a well-configured IDE is your ally in the quest for efficient and high-quality PHP development. Take the time to explore the settings and plugins available, and tailor your IDE to match your unique workflow and preferences.
+::
+
+
+# SonarQube Integration
+
+We provide configurations to integrate your project with [SonarQube](https://www.sonarsource.com/products/sonarqube/){rel="&#x22;nofollow&#x22;"} for continuous code quality inspection.
+
+## Setup
+
+1. **Configure Project**: Update `sonar-project.properties` in your project root with your project and organization keys.
+2. **Generate Reports**: Use the provided scripts to generate compatible reports for PHPStan and Psalm:
+   ```bash
+   # PHPStan
+   composer phpstan:sonar
+
+   # Psalm
+   composer psalm:sonar
+   ```
+   :br&#x2A;*DDEV:**
+   ```bash
+   ddev composer phpstan:sonar
+   ddev composer psalm:sonar
+   ```
+3. **CI/CD**: The `.github/workflows/sonarqube.yml` file (if present) defines a workflow to run analysis on push.
+
+
+# GitHub Actions Auto-Fix
+
+We include GitHub Actions that automatically apply code style fixes (ECS) and refactoring (Rector) on push.
+
+## Features
+
+- **Automatic Processing**: Runs on push/PR.
+- **Smart Detection**: Only processes changed files.
+- **Auto-commits**: Pushes fixes back to the branch.
+
+## Available Workflow
+
+### PHP Auto-Fix Workflow (`php-auto-fix-simple.yml`)
+
+```yaml
+- name: Run PHP Auto-Fix
+  uses: ./.github/actions/php-auto-fix
+  with:
+    php-version: '8.3'
+```
+
+## Configuration
+
+### Environment Variables
+
+| Input            | Description            | Default                                    |
+| ---------------- | ---------------------- | ------------------------------------------ |
+| `php-version`    | PHP version to use     | `8.3`                                      |
+| `skip-rector`    | Skip Rector processing | `false`                                    |
+| `skip-ecs`       | Skip ECS processing    | `false`                                    |
+| `commit-message` | Custom commit message  | `style: auto-fix code with Rector and ECS` |
+| `file-pattern`   | File pattern to match  | `*.php`                                    |
+
+### Skip Auto-Fix
+
+To skip auto-fix for specific commits, include `[skip auto-fix]` in your commit message.
+
+- Uses `GITHUB_TOKEN` with minimal required permissions
+- Only processes files changed in the current commit/PR
+- Validates tool availability before execution
+- Includes safeguards against infinite loops
+
+## Benefits
+
+### For Developers
+
+- 🚀 **Faster local development** - No need to run formatters locally
+- 🔄 **Consistent code style** across the entire team
+- 📈 **Automatic modernization** of legacy PHP patterns
+- 🛡️ **Reduced merge conflicts** from formatting differences
+
+### For Teams
+
+- 📊 **Enforced standards** without developer overhead
+- 🤝 **Improved code reviews** - Focus on logic, not style
+- 🔧 **Automatic maintenance** of code quality
+- 📝 **Transparent process** with clear commit history
+
+## Integration with Git Hooks
+
+The GitHub Actions work seamlessly with local git hooks:
+
+- **Local hooks** catch issues during development
+- **GitHub Actions** provide a safety net for anything that slips through
+- **Consistent tooling** ensures the same rules apply everywhere
+
+This creates a comprehensive code quality pipeline from development to production.
+
+## Troubleshooting
+
+### Action Not Running
+
+- Verify PHP files were actually changed
+- Check workflow triggers match your branch names
+- Ensure `rector.php` and `ecs.php` exist
+
+### No Changes Applied
+
+- Confirm Rector and ECS are installed via Composer
+- Validate configuration files are correct
+- Check action logs for specific error messages
+
+### Permission Issues
+
+- Ensure repository has Actions enabled
+- Verify `GITHUB_TOKEN` has write permissions
+- For protected branches, consider using a personal access token
+
+## Examples
+
+### Basic Auto-Fix Commit
+
+```text
+style: auto-fix code with Rector and ECS
+
+Files processed: src/Controller/UserController.php src/Service/EmailService.php
+
+This commit was automatically created by GitHub Actions
+to apply code style fixes and modernizations.
+
+[skip ci]
+```
+
+### PR Comment
+
+When fixes are applied to a pull request, the action automatically adds a comment:
+
+> 🤖 **Auto-fix Applied**
+>
+> Rector and ECS have automatically fixed code style and modernization issues.
+>
+> Files processed: `src/Controller/UserController.php`
+>
+> Please review the changes before merging.
+
+The GitHub Actions auto-fix feature ensures your codebase maintains consistent quality standards without any manual intervention, making code reviews more focused and productive.
+
+
+# Renovate
+
+We include a pre-configured [Renovate](https://docs.renovatebot.com/){rel="&#x22;nofollow&#x22;"} setup for automated dependency management.
+
+## Configuration
+
+The default `renovate.json` configuration includes:
+
+```json
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:base"
+  ],
+  "packageRules": [
+    {
+      "matchUpdateTypes": ["minor", "patch"],
+      "matchCurrentVersion": "!/^0/",
+      "automerge": true
+    },
+    {
+      "matchDepTypes": ["devDependencies"],
+      "groupName": "dev dependencies",
+      "schedule": ["every weekend"]
+    },
+    {
+      "matchPackagePatterns": ["phpunit/", "phpstan/", "psalm/", "symfony/", "doctrine/", "guzzlehttp/"],
+      "groupName": "PHP dependencies"
+    }
+  ],
+  "timezone": "Europe/Paris",
+  "schedule": ["every weekend"],
+  "labels": ["dependencies", "renovate"],
+  "branchPrefix": "deps/"
+}
+```
+
+### Key Settings
+
+| Setting        | Description               | Default Value              |
+| -------------- | ------------------------- | -------------------------- |
+| `extends`      | Base configuration preset | `config:base`              |
+| `schedule`     | When to check for updates | `every weekend`            |
+| `timezone`     | Timezone for scheduling   | `Europe/Paris`             |
+| `labels`       | PR labels                 | `dependencies`, `renovate` |
+| `branchPrefix` | Branch naming prefix      | `deps/`                    |
+| `automerge`    | Auto-merge stable updates | Enabled for patch/minor    |
+
+### Customization
+
+You can customize the configuration after integration by editing `renovate.json` in your project root:
+
+#### Change Update Schedule
+
+```json
+{
+  "schedule": ["every weekday"]
+}
+```
+
+#### Adjust Automerge Rules
+
+```json
+{
+  "packageRules": [
+    {
+      "matchUpdateTypes": ["patch"],
+      "automerge": true
+    }
+  ]
+}
+```
+
+#### Customize Grouping
+
+```json
+{
+  "packageRules": [
+    {
+      "matchPackagePatterns": ["symfony"],
+      "groupName": "Symfony packages"
+    }
+  ]
+}
+```
+
+## Enabling Renovate
+
+### On GitHub
+
+1. Install the [Renovate GitHub App](https://github.com/apps/renovate){rel="&#x22;nofollow&#x22;"} on your repository
+2. Grant necessary permissions (read repo contents, create PRs)
+3. Renovate will automatically detect your `renovate.json` configuration
+4. Wait for the first pull request with dependency updates
+
+### On GitLab
+
+1. Go to your project's **Settings > Members**
+2. Add the Renovate bot user with at least **Developer** role (required for creating merge requests)
+3. Configure CI/CD variables if needed:
+   - `RENOVATE_TOKEN`: Personal access token with API access (for private repos)
+   - `RENOVATE_PLATFORM`: Set to `gitlab`
+4. Optional: Set up scheduled pipelines to run Renovate at regular intervals
+5. Renovate will start creating merge requests based on your `renovate.json` configuration
+
+For more details, see [Renovate GitLab documentation](https://docs.renovatebot.com/modules/platform/gitlab/){rel="&#x22;nofollow&#x22;"}.
+
+### Self-Hosted
+
+For self-hosted Renovate installations:
+
+1. Install Renovate following the [self-hosting guide](https://docs.renovatebot.com/self-hosting/){rel="&#x22;nofollow&#x22;"}
+2. Configure your Renovate instance to scan repositories with `renovate.json` files
+3. Set up environment variables:
+   - `RENOVATE_PLATFORM`: Your git platform (`github`, `gitlab`, `bitbucket`, etc.)
+   - `RENOVATE_ENDPOINT`: Your platform's API endpoint
+   - `RENOVATE_TOKEN`: Authentication token with repository access
+4. The provided `renovate.json` configuration works with self-hosted instances
+5. Consider customizing the schedule to match your team's workflow
+
+**Example Docker command:**
+
+```bash
+docker run --rm \
+  -e RENOVATE_PLATFORM=gitlab \
+  -e RENOVATE_ENDPOINT=https://gitlab.example.com/api/v4 \
+  -e RENOVATE_TOKEN=your-token \
+  -v /path/to/config:/usr/src/app/config \
+  renovate/renovate
+```
+
+For more advanced setups, refer to the [official self-hosting documentation](https://docs.renovatebot.com/self-hosting/){rel="&#x22;nofollow&#x22;"}.
+
+## Package Support
+
+Renovate automatically detects and updates:
+
+- **PHP** - Composer dependencies (`composer.json`)
+- **JavaScript** - npm/pnpm/yarn packages (`package.json`)
+- **Docker** - Base images in Dockerfiles
+- **GitHub Actions** - Action versions in workflows
+
+## Best Practices
+
+### Review Strategy
+
+- ✅ Auto-merge patch updates (bug fixes)
+- ✅ Auto-merge minor updates (new features, backward compatible)
+- ⚠️ Manually review major updates (breaking changes)
+- ⚠️ Always review updates for security-critical packages
+
+### Repository Settings
+
+- Enable **branch protection** rules on your main branch
+- Require **status checks** to pass before merging
+- Consider requiring **code owner reviews** for major updates
+
+### Testing
+
+- Ensure your **CI/CD pipeline** runs on Renovate PRs
+- Include **integration tests** to catch breaking changes
+- Use **semantic versioning** in your own packages
+
+## Benefits
+
+### For Developers
+
+- 🔒 **Improved security** through timely dependency updates
+- 📈 **Stay current** with latest package features
+- 🕐 **Time savings** from automated update management
+- 📊 **Clear visibility** of dependency health
+
+### For Teams
+
+- 🛡️ **Reduced vulnerabilities** through faster patching
+- 🔄 **Consistent updates** across all projects
+- 📝 **Audit trail** with automated PR history
+- 🎯 **Focused reviews** on meaningful changes
+
+## Troubleshooting
+
+### Renovate Not Creating PRs
+
+- Verify the Renovate app is installed and has access
+- Check that `renovate.json` is valid JSON
+- Review Renovate logs in your repository settings
+- Ensure dependencies are not pinned or locked
+
+### Too Many PRs
+
+- Adjust the schedule to less frequent checks
+- Enable more aggressive grouping rules
+- Increase the automerge criteria
+
+### Failing Status Checks
+
+- Review your CI/CD pipeline configuration
+- Check if tests need updates for new package versions
+- Consider updating test fixtures or mocks
+
+### Merge Conflicts
+
+- Keep your base branch up to date
+- Rebase Renovate branches regularly
+- Enable Renovate's rebase options
+
+## Integration with Other Tools
+
+Renovate works seamlessly with:
+
+- **GitHub Actions** - Automatically triggers CI checks
+- **Composer Audit** - Security vulnerability scanning
+- **PHPStan/Psalm** - Static analysis on updated code
+- **Git Hooks** - Pre-commit validation still applies
+
+## Advanced Configuration
+
+### Extending Presets
+
+```json
+{
+  "extends": [
+    "config:base",
+    ":dependencyDashboard",
+    ":semanticCommits",
+    ":automergeDigest"
+  ]
+}
+```
+
+### Custom Managers
+
+```json
+{
+  "regexManagers": [
+    {
+      "fileMatch": ["^Dockerfile$"],
+      "matchStrings": ["ENV PHP_VERSION=(?<currentValue>.*?)\\n"],
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "php/php-src"
+    }
+  ]
+}
+```
+
+### Notifications
+
+```json
+{
+  "vulnerabilityAlerts": {
+    "enabled": true,
+    "labels": ["security"]
+  }
+}
+```
+
+## Resources
+
+- [Renovate Documentation](https://docs.renovatebot.com/){rel="&#x22;nofollow&#x22;"}
+- [Configuration Options](https://docs.renovatebot.com/configuration-options/){rel="&#x22;nofollow&#x22;"}
+- [Preset Configs](https://docs.renovatebot.com/presets-default/){rel="&#x22;nofollow&#x22;"}
+- [GitHub App](https://github.com/apps/renovate){rel="&#x22;nofollow&#x22;"}
+
+The Renovate integration ensures your dependencies stay current, secure, and well-maintained with minimal manual effort.
+
+
+# Troubleshooting
+
+## Integration Issues
+
+### Script Fails
+
+- **Missing Dependencies**: Ensure `curl` is installed and DDEV is running (`ddev status`).
+- **Verbose Mode**: Run the script with `-v` for details.
+
+### Files Not Created
+
+- Run from project root.
+- Check write permissions.
+
+### Permission Errors
+
+```bash
+chmod +x .husky/shared/runner.sh
+ddev restart
+```
+
+## Git Hooks Issues
+
+### Pre-commit Hook Fails
+
+**"Could not open input file"**: Usually a DDEV path issue.
+
+1. Check `.husky/pre-commit` paths.
+2. Restart DDEV: `ddev restart`.
+
+### Branch Name Validation Fails
+
+- Check config: `validate-branch-name.config.cjs`.
+- Test manually: `node_modules/.bin/validate-branch-name -t "feature/PRJ-123-test"`.
+
+### Commit Message Rejected
+
+- Use Conventional Commits: `type(scope): description`.
+- Example: `feat: add login`.
+
+## Tool Integration Issues
+
+### Composer Scripts Fail
+
+- Verify installation: `composer show`.
+- Use DDEV prefix: `ddev composer ecs`.
+- Check `composer.json` scripts.
+
+### Path Issues (ECS/PHPStan)
+
+- **DDEV**: Ensure paths in `ecs.php` or `phpstan.neon` are relative to project root, not absolute host paths.
+
+1. Use the runner script:
+   ```bash
+   # Instead of direct tool calls
+   bash tools/runner.sh vendor/bin/ecs check src/
+
+   # Use composer scripts (recommended)
+   ddev composer ecs
+   ```
+2. Check tool configurations have correct paths:
+   ```bash
+   # Check ECS config
+   cat ecs.php
+
+   # Check PHPStan config  
+   cat phpstan.neon.dist
+   ```
+
+## DDEV Issues
+
+### Container Not Starting
+
+**Problem**: DDEV containers fail to start or show errors.
+
+**Solution**:
+
+1. Check DDEV status and logs:
+   ```bash
+   ddev status
+   ddev logs
+   ```
+2. Restart DDEV:
+   ```bash
+   ddev restart
+   ```
+3. If containers are corrupted, recreate:
+   ```bash
+   ddev delete -y
+   ddev start
+   ```
+
+### Performance Issues
+
+**Problem**: DDEV is slow or unresponsive.
+
+**Solution**:
+
+1. Configure Mutagen for better file sync performance (especially on macOS):
+   ```bash
+   ddev config --mutagen-enabled
+   ddev restart
+   ```
+2. Exclude unnecessary directories from sync:
+   ```yaml
+   # In .ddev/config.yaml
+   upload_dirs:
+     - storage/app/uploads
+   ```
+
+## Testing Issues
+
+### Integration Tests Fail
+
+- **Check Env**: `./tools/internal-test/test-integration.py env-check`
+- **Clean**: `./tools/internal-test/test-integration.py clean`
+- **Isolate**: Run `setup` or `integrate` steps individually.
+
+### Cleanup
+
+- **Manual**: `ddev delete -y` inside test project folders.
+- **Docker**: `docker system prune -f`.
+
+## IDE Issues
+
+### VS Code
+
+- **Extensions**: Ensure recommended extensions are installed (`code --list-extensions`).
+- **Settings**: Check `.vscode/settings.json`.
+
+### PHPStorm
+
+- **Plugin**: Install DDEV Integration plugin.
+- **Interpreter**: Configure PHP interpreter to use DDEV.
+
+## Getting Help
+
+1. Check [GitHub Issues](https://github.com/TerrorSquad/php-booster/issues){rel="&#x22;nofollow&#x22;"}.
+2. Run validation: `./tools/internal-test/test-integration.py full`.
+3. Open an issue with OS, PHP/DDEV versions, and error logs.
+
+
+# License
+
+The MIT License (MIT)
+
+Copyright (c) 2026 Goran Ninkovic
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.

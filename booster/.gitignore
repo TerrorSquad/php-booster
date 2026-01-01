@@ -1,0 +1,15 @@
+vendor
+.idea
+node_modules
+.pnpm-store
+coverage.xml
+phpstan_sonar.json
+psalm_sonar.json
+.phpunit.result.cache
+.ddev/php/xdebug-local.ini
+.qodo
+.vscode/tasks.json
+.vscode/launch.json
+.vscode/settings.json
+.ddev/homeadditions/.gitconfig
+.deptrac.cache

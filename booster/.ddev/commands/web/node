@@ -1,0 +1,7 @@
+#!/bin/bash
+
+## Description: Run nodejs
+## Usage: node [command]
+## Example: node -v
+
+"node" "$@"

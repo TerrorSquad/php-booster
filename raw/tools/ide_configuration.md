@@ -1,0 +1,41 @@
+# IDE Configuration
+
+> Pre-configured settings for VS Code and PhpStorm to ensure a consistent development experience.
+
+We provide configuration files for **Visual Studio Code** (`.vscode/`) to ensure a consistent development experience.
+
+## Visual Studio Code
+
+- **Extensions**: `extensions.json` lists recommended extensions (PHP Intelephense, PHP Debug, etc.).
+- **Settings**: `settings.json` configures formatting and linting.
+- **Debugging**: `launch.json` is pre-configured for Xdebug with DDEV.
+
+### DDEV Integration
+
+1. **Generate Settings**:
+Run this to configure the correct DDEV container name and path mappings:```bash
+.ddev/scripts/generate-vscode-settings.sh
+```
+2. **Psalm Integration**:
+The `bin/psalm-ddev` wrapper allows the Psalm extension to run inside the container. The generation script handles the necessary symlinks.
+
+## PHPStorm (Optional)
+
+1. **Interpreter**: Configure CLI Interpreter from Docker/DDEV.
+2. **Deployment**: Set up SFTP deployment to the DDEV web container.
+3. **Plugins**: Install the **DDEV Integration** plugin.
+
+By configuring your IDE effectively, you can create a more productive and enjoyable development experience. Whether you prefer Vscode or PHPStorm, the Booster provides guidance and recommendations to help you get the most out of your chosen IDE.
+
+---
+
+## Additional Resources
+
+- **Visual Studio Code Documentation:** [https://code.visualstudio.com/docs](https://code.visualstudio.com/docs)
+- **PHPStorm Official Website:** [https://www.jetbrains.com/phpstorm/](https://www.jetbrains.com/phpstorm/)
+
+<callout color="blue" icon="i-heroicons-information-circle">
+
+Remember: a well-configured IDE is your ally in the quest for efficient and high-quality PHP development. Take the time to explore the settings and plugins available, and tailor your IDE to match your unique workflow and preferences.
+
+</callout>

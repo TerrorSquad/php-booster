@@ -1,0 +1,12 @@
+{
+  "recommendations": [
+    "sonarsource.sonarlint-vscode",
+    "usernamehw.errorlens",
+    "Gruntfuggly.todo-tree",
+    "vivaxy.vscode-conventional-commits",
+    "devsense.phptools-vscode",
+    "IgorSbitnev.error-gutters",
+    "wayou.vscode-todo-highlight",
+    "getpsalm.psalm-vscode-plugin"
+  ]
+}

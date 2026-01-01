@@ -1,0 +1,135 @@
+# Troubleshooting
+
+> Common issues and solutions when using the PHP Development Booster.
+
+## Integration Issues
+
+### Script Fails
+
+- **Missing Dependencies**: Ensure `curl` is installed and DDEV is running (`ddev status`).
+- **Verbose Mode**: Run the script with `-v` for details.
+
+### Files Not Created
+
+- Run from project root.
+- Check write permissions.
+
+### Permission Errors
+
+```bash
+chmod +x .husky/shared/runner.sh
+ddev restart
+```
+
+## Git Hooks Issues
+
+### Pre-commit Hook Fails
+
+**"Could not open input file"**: Usually a DDEV path issue.
+
+1. Check `.husky/pre-commit` paths.
+2. Restart DDEV: `ddev restart`.
+
+### Branch Name Validation Fails
+
+- Check config: `validate-branch-name.config.cjs`.
+- Test manually: `node_modules/.bin/validate-branch-name -t "feature/PRJ-123-test"`.
+
+### Commit Message Rejected
+
+- Use Conventional Commits: `type(scope): description`.
+- Example: `feat: add login`.
+
+## Tool Integration Issues
+
+### Composer Scripts Fail
+
+- Verify installation: `composer show`.
+- Use DDEV prefix: `ddev composer ecs`.
+- Check `composer.json` scripts.
+
+### Path Issues (ECS/PHPStan)
+
+- **DDEV**: Ensure paths in `ecs.php` or `phpstan.neon` are relative to project root, not absolute host paths.
+
+1. Use the runner script:```bash
+# Instead of direct tool calls
+bash tools/runner.sh vendor/bin/ecs check src/
+
+# Use composer scripts (recommended)
+ddev composer ecs
+```
+2. Check tool configurations have correct paths:```bash
+# Check ECS config
+cat ecs.php
+
+# Check PHPStan config  
+cat phpstan.neon.dist
+```
+
+## DDEV Issues
+
+### Container Not Starting
+
+**Problem**: DDEV containers fail to start or show errors.
+
+**Solution**:
+
+1. Check DDEV status and logs:```bash
+ddev status
+ddev logs
+```
+2. Restart DDEV:```bash
+ddev restart
+```
+3. If containers are corrupted, recreate:```bash
+ddev delete -y
+ddev start
+```
+
+### Performance Issues
+
+**Problem**: DDEV is slow or unresponsive.
+
+**Solution**:
+
+1. Configure Mutagen for better file sync performance (especially on macOS):```bash
+ddev config --mutagen-enabled
+ddev restart
+```
+2. Exclude unnecessary directories from sync:```yaml
+# In .ddev/config.yaml
+upload_dirs:
+  - storage/app/uploads
+```
+
+## Testing Issues
+
+### Integration Tests Fail
+
+- **Check Env**: `./tools/internal-test/test-integration.py env-check`
+- **Clean**: `./tools/internal-test/test-integration.py clean`
+- **Isolate**: Run `setup` or `integrate` steps individually.
+
+### Cleanup
+
+- **Manual**: `ddev delete -y` inside test project folders.
+- **Docker**: `docker system prune -f`.
+
+## IDE Issues
+
+### VS Code
+
+- **Extensions**: Ensure recommended extensions are installed (`code --list-extensions`).
+- **Settings**: Check `.vscode/settings.json`.
+
+### PHPStorm
+
+- **Plugin**: Install DDEV Integration plugin.
+- **Interpreter**: Configure PHP interpreter to use DDEV.
+
+## Getting Help
+
+1. Check [GitHub Issues](https://github.com/TerrorSquad/php-booster/issues).
+2. Run validation: `./tools/internal-test/test-integration.py full`.
+3. Open an issue with OS, PHP/DDEV versions, and error logs.

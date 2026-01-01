@@ -1,0 +1,13 @@
+# Python cache files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Test artifacts
+tests/*/
+!tests/.gitignore
+node_modules
+/.husky
+/.eslintcache
+coverage/

@@ -1,0 +1,178 @@
+# Git Hooks
+
+> Enforce code quality and validate commits with TypeScript-based ZX hooks.
+
+We use TypeScript-based ZX hooks to enforce code quality and validate commits.
+
+## Available Hooks
+
+### Pre-commit (`pre-commit.ts`)
+
+Runs quality tools on staged files (PHP Syntax, Rector, ECS, PHPStan, Psalm, etc.).
+
+**Environment Variables:**
+
+- `SKIP_PRECOMMIT=1` - Skip entire hook
+- `SKIP_RECTOR=1`, `SKIP_ECS=1`, etc. - Skip specific tools
+- `GIT_HOOKS_VERBOSE=1` - Enable verbose logging
+
+### Pre-push (`pre-push.ts`)
+
+Runs comprehensive checks (Deptrac, PHPUnit, API Docs) before pushing.
+
+**Environment Variables:**
+
+- `SKIP_PREPUSH=1` - Skip entire hook
+- `SKIP_PHPUNIT=1` - Skip PHPUnit tests
+- `SKIP_API_DOCS=1` - Skip API documentation
+- `GIT_HOOKS_VERBOSE=1` - Enable verbose logging
+
+### Commit-msg (`commit-msg.ts`)
+
+Validates commit messages and branch names:
+
+- **Branch name validation** - Uses validate-branch-name configuration
+- **Commit message linting** - CommitLint enforcement
+- **Ticket footer appending** - Automatically adds ticket ID to commit messages when required
+
+**Environment Variables:**
+
+- `SKIP_COMMITMSG=1` - Skip entire hook
+- `GIT_HOOKS_VERBOSE=1` - Enable verbose logging
+
+## Configuration
+
+### Commit Message Format
+
+CommitLint configuration is defined in `commitlint.config.ts`:
+
+```typescript
+// Example: Conventional Commits format
+type: 'feat|fix|chore|docs|style|refactor|perf|test'
+scope: 'optional scope'
+message: 'clear description'
+```
+
+### Branch Name Rules
+
+Configure branch naming in `validate-branch-name.config.cjs`:
+
+```javascript
+module.exports = {
+  config: {
+    types: ['feat', 'fix', 'chore'],
+    ticketIdPrefix: 'TICKET',
+    ticketNumberPattern: '[0-9]+',
+    requireTickets: true,
+    commitFooterLabel: 'Closes',
+  }
+}
+```
+
+## Usage
+
+### Running Hooks Manually
+
+While hooks run automatically, you can execute them manually:
+
+```bash
+# Pre-commit checks
+./node_modules/.bin/zx ./booster/.husky/pre-commit.ts
+
+# Pre-push checks
+./node_modules/.bin/zx ./booster/.husky/pre-push.ts
+
+# Commit message validation
+./node_modules/.bin/zx ./booster/.husky/commit-msg.ts <commit-file>
+```
+
+### Skipping Hooks
+
+Use environment variables to skip specific tools or entire hooks:
+
+```bash
+# Skip ECS during commit (but run other tools)
+SKIP_ECS=1 git commit -m "..."
+
+# Skip entire pre-commit hook
+SKIP_PRECOMMIT=1 git commit -m "..."
+
+# Verbose output for debugging
+GIT_HOOKS_VERBOSE=1 git commit -m "..."
+```
+
+### DDEV Integration
+
+If using DDEV, the `runner.sh` script automatically forwards environment variables to the container:
+
+```bash
+SKIP_PHPUNIT=1 SKIP_API_DOCS=1 git push
+```
+
+## Hook Implementation Details
+
+### TypeScript with ZX
+
+All hooks are implemented in TypeScript using [ZX](https://google.github.io/zx/), a tool for writing shell scripts in JavaScript/TypeScript:
+
+- Type-safe implementations
+- Better error handling and logging
+- Shared utilities in `shared/` (exported via `shared/index.ts`)
+- Consistent patterns across all hooks
+
+### Shared Utilities
+
+The `shared/` directory provides:
+
+- `isSkipped(name)` - Check if a tool/hook should be skipped
+- `runTool(name, action, fn)` - Execute with error handling and timing
+- `log.*` - Consistent colored logging
+- Tool execution logic with binary detection
+
+## Best Practices
+
+- Use skip variables during development when you need to bypass specific checks
+- Enable `GIT_HOOKS_VERBOSE=1` when troubleshooting hook issues
+- Review hook output carefully before committing or pushing
+- Keep hooks fast by only running on changed files
+- Customize skip variables in `.env` or `.git-hooks.env` for your workflow
+
+## Troubleshooting
+
+### Hooks Not Running
+
+1. Ensure hooks are installed: `npm run prepare`
+2. Check hook permissions: `ls -la .git/hooks/`
+3. Verify ZX installation: `npm ls zx`
+
+### Tool Not Found
+
+Ensure dependencies are installed:
+
+```bash
+composer install          # PHP tools
+npm install or pnpm install  # Node tools
+```
+
+### DDEV Container Issues
+
+Verify container is running and runner.sh has proper permissions:
+
+```bash
+ddev status
+ls -la booster/.husky/shared/runner.sh
+```
+
+## Additional Resources
+
+- [ZX Documentation](https://google.github.io/zx/)
+- [CommitLint Documentation](https://commitlint.js.org/)
+- [validate-branch-name](https://github.com/blockchain-jd-com/validate-branch-name)
+
+<callout color="green" icon="i-heroicons-check-circle">
+
+- Customize hooks to match your team's workflow
+- Use environment variables to adapt hooks for different scenarios
+- Review and commit hook output in your PR reviews
+
+</callout>
