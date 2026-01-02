@@ -38,6 +38,8 @@ Copilot SHOULD:
 ## 3. Tooling Overview & Preferred Invocations
 If inside a DDEV project, prefix composer commands with `ddev`. Otherwise call `composer` directly.
 
+**Package Manager**: In the `docs` directory use `bun` instead of `pnpm` or `npm` for Node.js dependencies.
+
 | Task | Preferred Script / Command |
 |------|----------------------------|
 | Code formatting (check+fix) | `composer ecs` (or `ddev composer ecs`) |
@@ -97,12 +99,14 @@ When suggesting changes to integration behavior:
 ---
 ## 9. Performance & Safety Guidance for Suggestions
 Copilot SHOULD:
+- **ALWAYS run `pwd` before executing any shell command** to verify the current working directory.
 - Prefer minimal examples (focus on demonstrating integration with existing tooling).
 - Avoid generating large boilerplate (framework scaffolds, duplicate OpenAPI spec sections, huge sample controllers).
 - Encourage running existing scripts instead of custom shell loops.
 - Suggest adding tests or dry-run modes (future enhancements) rather than embedding heavy inline logic.
 
 Copilot SHOULD NOT:
+- Assume the current directory is the project root.
 - Suggest deleting or renaming core config files.
 - Add alternative linters/formatters that conflict (e.g., php-cs-fixer config when ECS already used) without explicit request.
 - Introduce global stateful curl|bash patterns; prefer pinned actions or documented steps.

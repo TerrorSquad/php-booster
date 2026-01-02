@@ -1,12 +1,19 @@
 export default defineNuxtConfig({
   // https://github.com/nuxt-themes/docus
-  extends: ["@nuxt-themes/docus"],
+  extends: ["docus"],
 
   devtools: { enabled: true },
 
   app: {
     baseURL: "/php-booster/",
-    buildAssetsDir: "assets",
+  },
+
+  robots: {
+    robotsTxt: false,
+  },
+
+  llms: {
+    domain: 'https://terrorsquad.github.io/php-booster/',
   },
 
   modules: [
@@ -16,4 +23,13 @@ export default defineNuxtConfig({
   ],
 
   compatibilityDate: "2024-09-08",
+
+  vite: {
+    optimizeDeps: {
+      include: [
+        "@vue/devtools-core",
+        "@vue/devtools-kit",
+      ]
+    }
+  },
 });

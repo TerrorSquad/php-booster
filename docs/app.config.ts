@@ -1,42 +1,41 @@
-// https://github.com/nuxt-themes/docus/blob/main/nuxt.schema.ts
+// https://github.com/nuxt-content/docus/blob/main/layer/nuxt.schema.ts
 export default defineAppConfig({
-  docus: {
+  seo: {
     title: "PHP Booster",
     description: "Your PHP Booster for success",
-
-    aside: {
-      level: 0,
-      collapsed: false,
-      exclude: [],
-    },
-
-    main: {
-      padded: true,
-      fluid: false,
-    },
-
-    header: {
-      logo: false,
-      showLinkIcon: true,
-      exclude: [],
-      fluid: false,
-    },
-
     titleTemplate: "%s · PHP Booster",
+  },
 
-    socials: {
-      github: "terrorsquad/php-booster",
+  header: {
+    title: "PHP Booster",
+    logo: {
+      alt: "PHP Booster",
+      light: "",
+      dark: "",
     },
+  },
 
-    layout: "default",
 
-    footer: {
-      credits: {
-        icon: "🚀",
-        text: "By Goran Ninkovic " + new Date().getFullYear(),
-        href: "https://goranninkovic.com",
-      },
-      fluid: false,
+  github: {
+    owner: "terrorsquad",
+    name: "php-booster",
+    branch: "main",
+    rootDir: "docs",
+    url: "https://github.com/terrorsquad/php-booster",
+  },
+
+  socials: {
+    linkedin: {
+      label: "LinkedIn",
+      icon: "i-simple-icons-linkedin",
+      href: "https://www.linkedin.com/in/goran-ninkovic/",
+    },
+  },
+
+  ui: {
+    colors: {
+      primary: "emerald",
+      neutral: "gray",
     },
   },
 });

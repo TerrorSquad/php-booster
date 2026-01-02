@@ -1,5 +1,5 @@
 {
-  "name": "docus-starter",
+  "name": "php-booster",
   "version": "1.17.2",
   "private": true,
   "scripts": {
@@ -10,18 +10,16 @@
     "lint": "eslint ."
   },
   "devDependencies": {
-    "@nuxt-themes/docus": "^1.15.1",
-    "@nuxt/devtools": "^1.7.0",
-    "@nuxt/eslint-config": "^1.4.0",
-    "@nuxtjs/plausible": "^1.2.0",
+    "@nuxt/devtools": "^3.1.1",
+    "@nuxt/eslint-config": "^1.12.1",
+    "@nuxtjs/plausible": "^2.0.1",
     "@types/node": "^20.17.47",
+    "docus": "^5.4.1",
     "eslint": "^9.27.0",
-    "nuxt": "^3.11.2"
-  },
-  "volta": {
-    "node": "22.8.0"
+    "nuxt": "^4.2.2"
   },
   "trustedDependencies": [
+    "better-sqlite3",
     "esbuild",
     "unrs-resolver",
     "vue-demi"
