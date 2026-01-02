@@ -37,13 +37,11 @@ Follow these steps to integrate the PHP Development Booster into your existing P
 
 ::tip
 The integration script includes an **Interactive Mode** (`-I`) that guides you through the setup process with a wizard. This is useful for customizing the integration (selecting specific tools, configuring ticket IDs, etc.).
-::
-
-### Usage
 
 ```bash [Terminal]
 curl -sSL https://raw.githubusercontent.com/TerrorSquad/php-booster/main/booster/integrate_booster.sh | bash -s -- -I
 ```
+::
 
 ### Configuration Steps
 
