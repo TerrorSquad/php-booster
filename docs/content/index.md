@@ -28,9 +28,8 @@ main:
     spotlight: true
     icon: i-logos-docker-icon
     ---
-    Leverage the efficiency of [DDEV](https://www.ddev.com/) for:
-     - Seamless local development experience.
-     - Consistent environments.
+    #description
+    Leverage the efficiency of [DDEV](https://www.ddev.com/) for a seamless and consistent local development experience.
     ::::
 
     ::::u-page-card
@@ -39,10 +38,8 @@ main:
     spotlight: true
     icon: i-vscode-icons-file-type-phpstan
     ---
-    Pre-configured tools to maintain high code quality:
-     - [PHPStan](https://phpstan.org/) for static analysis.
-     - [Psalm](https://psalm.dev/) for advanced type checking.
-     - [ECS](https://github.com/easy-coding-standard/easy-coding-standard) for coding standards enforcement.
+    #description
+    Maintain high code quality with pre-configured [PHPStan](https://phpstan.org/), [Psalm](https://psalm.dev/), and [ECS](https://github.com/easy-coding-standard/easy-coding-standard).
     ::::
     
 
@@ -52,9 +49,8 @@ main:
     spotlight: true
     icon: i-simple-icons-newrelic
     ---
-    Keep your codebase modern with [Rector](https://getrector.org/) integration:
-     - Automated code upgrades.
-     - Instant refactoring.
+    #description
+    Keep your codebase modern with [Rector](https://getrector.org/) integration for automated upgrades and instant refactoring.
     ::::
 
     ::::u-page-card
@@ -63,9 +59,8 @@ main:
     spotlight: true
     icon: i-noto-hook
     ---
-    Enforce best practices automatically:
-     - [Conventional Commits](https://www.conventionalcommits.org/) validation.
-     - Branch naming conventions.
+    #description
+    Enforce best practices automatically with [Conventional Commits](https://www.conventionalcommits.org/) and branch naming validation.
     ::::
 
     ::::u-page-card
@@ -74,9 +69,8 @@ main:
     spotlight: true
     icon: i-noto-gear
     ---
-    Ready-to-use API documentation setup:
-     - [OpenAPI](https://swagger.io/specification/) starter specification.
-     - [ReDoc](https://github.com/Redocly/redoc) visualization.
+    #description
+    Ready-to-use API documentation setup with [OpenAPI](https://swagger.io/specification/) starter spec and [ReDoc](https://github.com/Redocly/redoc) visualization.
     ::::
 
     ::::u-page-card
@@ -85,9 +79,8 @@ main:
     spotlight: true
     icon: i-noto-hammer-and-wrench
     ---
-    Settings included for immediate productivity:
-     - VS Code configuration.
-     - PhpStorm configuration.
+    #description
+    Immediate productivity with included settings for [VS Code](https://code.visualstudio.com/) and [PhpStorm](https://www.jetbrains.com/phpstorm/).
     ::::
 
   :::
