@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.18.0](https://github.com/TerrorSquad/php-booster/compare/v1.17.2...v1.18.0) (2026-01-12)
+
+
+### Features
+
+* **docs:** revamp documentation structure and content ([3410275](https://github.com/TerrorSquad/php-booster/commit/3410275d0fece72577e30a3c9bbdb19d37006dcf))
+
 ## [1.17.2](https://github.com/TerrorSquad/php-booster/compare/v1.17.1...v1.17.2) (2025-12-29)
 
 
