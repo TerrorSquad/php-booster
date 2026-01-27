@@ -7,7 +7,7 @@
     "commit": "commit",
     "test": "vitest run .husky/tests",
     "test:coverage": "vitest run .husky/tests --coverage",
-    "generate:api-doc:html": "redocly build-docs documentation/openapi.yml --output=documentation/openapi.html",
+    "generate:api-doc:html": "redocly build-docs openapi/openapi.yml --output=openapi/openapi.html",
     "prepare": "husky || true"
   },
   "devDependencies": {

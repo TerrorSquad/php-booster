@@ -21,7 +21,7 @@ if ($openapi === null) {
     exit('Failed to generate OpenAPI documentation.');
 }
 
-$filename = 'documentation/openapi.yml';
+$filename = 'openapi/openapi.yml';
 $content = $openapi->toYaml();
 
 if (file_put_contents($filename, $content) === false) {

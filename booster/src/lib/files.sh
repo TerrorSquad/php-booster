@@ -308,17 +308,17 @@ function update_gitignore() {
 # --- Function to Update Tool Paths Dynamically ---
 function update_tool_paths() {
     # --- Copy Documentation Directory ---
-    local booster_doc_path="${BOOSTER_INTERNAL_PATH}/documentation"
+    local booster_doc_path="${BOOSTER_INTERNAL_PATH}/openapi"
     if [ -d "$booster_doc_path" ]; then
-        if [ ! -d "documentation" ]; then
-            log "  Copying '$booster_doc_path' to 'documentation'..."
-            cp -R "$booster_doc_path" "documentation" || warn "Failed to copy documentation directory."
+        if [ ! -d "openapi" ]; then
+            log "  Copying '$booster_doc_path' to 'openapi'..."
+            cp -R "$booster_doc_path" "openapi" || warn "Failed to copy openapi directory."
         else
-            log "  'documentation' directory exists. Copying missing files..."
+            log "  'openapi' directory exists. Copying missing files..."
             for doc_file in "$booster_doc_path"/*; do
                 local filename=$(basename "$doc_file")
-                if [ ! -e "documentation/$filename" ]; then
-                    cp -R "$doc_file" "documentation/"
+                if [ ! -e "openapi/$filename" ]; then
+                    cp -R "$doc_file" "openapi/"
                     log "    Copied '$filename'."
                 else
                     log "    '$filename' already exists. Skipping to preserve customizations."

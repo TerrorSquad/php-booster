@@ -64,7 +64,7 @@ The interactive mode tests verify:
    - psalm.xml
    - .editorconfig
    - .booster-version
-   - documentation/openapi.yml
+   - openapi/openapi.yml
    - .husky/commit-msg
    - .husky/shared/index.ts
 3. That the branch validation config contains the correct ticket prefix ("PRJ")

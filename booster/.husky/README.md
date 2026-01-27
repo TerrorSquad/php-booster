@@ -73,7 +73,7 @@ Enforces commit message standards and branch naming.
 Ensures the codebase is ready for deployment.
 
 - **Tests**: Runs the fast test suite (`composer test:pest`).
-- **API Documentation**: Checks if `documentation/openapi.yml` matches the code.
+- **API Documentation**: Checks if `openapi/openapi.yml` matches the code.
   - If outdated, it **regenerates** the docs and **auto-commits** them.
   - **Important**: If an auto-commit occurs, the hook will warn you to **push again** to include the new commit.
 

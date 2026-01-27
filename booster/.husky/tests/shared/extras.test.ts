@@ -96,7 +96,7 @@ describe('extras.ts', () => {
       vi.mocked(fs.pathExists).mockResolvedValue(true)
       vi.mocked(exec)
         .mockResolvedValueOnce({} as any) // generate-api-spec
-        .mockResolvedValueOnce({ toString: () => 'documentation/openapi.yml' } as any) // git diff
+        .mockResolvedValueOnce({ toString: () => 'openapi/openapi.yml' } as any) // git diff
         .mockResolvedValueOnce({} as any) // generate html
         .mockResolvedValueOnce({} as any) // git add
         .mockRejectedValueOnce(new Error('diff failed')) // git diff (changes exist)
@@ -112,7 +112,7 @@ describe('extras.ts', () => {
       vi.mocked(fs.pathExists).mockResolvedValue(true)
       vi.mocked(exec)
         .mockResolvedValueOnce({} as any) // generate-api-spec
-        .mockResolvedValueOnce({ toString: () => 'documentation/openapi.yml' } as any) // git diff (spec changed)
+        .mockResolvedValueOnce({ toString: () => 'openapi/openapi.yml' } as any) // git diff (spec changed)
         .mockResolvedValueOnce({} as any) // generate html
         .mockResolvedValueOnce({} as any) // git add
         .mockResolvedValueOnce({} as any) // git diff (no staged changes)
@@ -126,7 +126,7 @@ describe('extras.ts', () => {
       vi.mocked(fs.pathExists).mockResolvedValue(true)
       vi.mocked(exec)
         .mockResolvedValueOnce({} as any) // generate-api-spec
-        .mockResolvedValueOnce({ toString: () => 'documentation/openapi.yml' } as any) // git diff
+        .mockResolvedValueOnce({ toString: () => 'openapi/openapi.yml' } as any) // git diff
         .mockRejectedValueOnce(new Error('html gen failed')) // generate html fails
 
       await expect(generateApiDocs()).rejects.toThrow('html gen failed')

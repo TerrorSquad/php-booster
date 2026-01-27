@@ -118,7 +118,7 @@ class TestOrchestrator:
         "psalm.xml",
         ".editorconfig",
         ".booster-version",
-        "documentation/openapi.yml",
+        "openapi/openapi.yml",
         ".husky/commit-msg",
         ".husky/shared/index.ts",
     ]

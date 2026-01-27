@@ -17,7 +17,7 @@
     "deptrac/deptrac": "^4.5.0"
   },
   "scripts": {
-    "generate-api-spec": "php documentation/api.php",
+    "generate-api-spec": "php openapi/api.php",
     "check-cs": "vendor/bin/ecs check --ansi",
     "fix-cs": "vendor/bin/ecs check --fix --ansi",
     "ecs": "vendor/bin/ecs check --ansi",

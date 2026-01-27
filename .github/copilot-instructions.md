@@ -49,7 +49,7 @@ If inside a DDEV project, prefix composer commands with `ddev`. Otherwise call `
 | Run all static checks (if aggregated) | Suggest existing combined script if present (inspect composer.json) |
 | Commit message lint | Git hook (do not manually run unless needed) |
 | Branch validation | `validate-branch-name` via hook or `node_modules/.bin/validate-branch-name -t <branch>` |
-| OpenAPI editing | Modify `documentation/openapi.yml` (do not generate large boilerplate) |
+| OpenAPI editing | Modify `openapi/openapi.yml` (do not generate large boilerplate) |
 
 Copilot SHOULD NOT generate raw php-cs-fixer, phpstan, rector, or psalm command lines if a composer script already exists.
 
@@ -79,7 +79,7 @@ Copilot SHOULD NOT generate raw php-cs-fixer, phpstan, rector, or psalm command 
 | `sonar-project.properties` | SonarQube settings |
 | `.editorconfig` | Base editor formatting |
 | `.vscode/` & `.phpstorm/` | Editor recommendations |
-| `documentation/openapi.yml` | API spec seed |
+| `openapi/openapi.yml` | API spec seed |
 
 Copilot SHOULD reference or extend these—NOT generate new parallel config files with different names.
 
@@ -171,7 +171,6 @@ Copilot SHOULD:
 The documentation is a **Nuxt 3** application using the **Docus** theme.
 - Content is in `docs/content/`.
 - Run `npm run dev` (or `pnpm dev`) inside `docs/` to preview.
-- Do not confuse `docs/` (the website) with `booster/documentation/` (the OpenAPI starter for consumers).
 
 ---
 End of repository-specific Copilot instructions.

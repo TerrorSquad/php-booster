@@ -49,7 +49,7 @@ export async function generateApiDocs(): Promise<void> {
       const diffResult = await exec(['git', 'diff', '--name-only'], { quiet: true })
       const modifiedFiles = diffResult.toString().trim().split('\n')
 
-      if (modifiedFiles.includes('documentation/openapi.yml')) {
+      if (modifiedFiles.includes('openapi/openapi.yml')) {
         log.info('API spec changed, regenerating HTML...')
 
         try {
@@ -58,7 +58,7 @@ export async function generateApiDocs(): Promise<void> {
 
           // Stage the generated files
           await exec(
-            ['git', 'add', 'documentation/openapi.html', 'documentation/openapi.yml'],
+            ['git', 'add', 'openapi/openapi.html', 'openapi/openapi.yml'],
             { quiet: true },
           )
 
