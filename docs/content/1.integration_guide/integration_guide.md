@@ -80,3 +80,52 @@ curl -sSL https://raw.githubusercontent.com/TerrorSquad/php-booster/main/booster
 ::note
 The wizard will display a summary of your choices before applying any changes.
 ::
+
+## Updating an Existing Installation
+
+For projects with an existing booster installation, use **partial update flags** to refresh specific components without a full reinstall:
+
+### Update Git Hooks Only
+
+```bash [Terminal]
+curl -sSL https://raw.githubusercontent.com/TerrorSquad/php-booster/main/booster/integrate_booster.sh | bash -s -- --update-hooks
+```
+
+This updates only the `.husky` directory with the latest hook scripts.
+
+### Update Config Files Only
+
+```bash [Terminal]
+curl -sSL https://raw.githubusercontent.com/TerrorSquad/php-booster/main/booster/integrate_booster.sh | bash -s -- --update-configs
+```
+
+This updates:
+- `commitlint.config.ts`
+- `validate-branch-name.config.cjs`
+- `renovate.json`
+- `.editorconfig`
+- PHP configs (if applicable): `ecs.php`, `rector.php`, `phpstan.neon.dist`, `psalm.xml`, `deptrac.yaml`
+
+### Update Dependencies Only
+
+```bash [Terminal]
+curl -sSL https://raw.githubusercontent.com/TerrorSquad/php-booster/main/booster/integrate_booster.sh | bash -s -- --update-deps
+```
+
+This runs the package manager commands to install/update dependencies (both npm and composer).
+
+### Combining Flags
+
+You can combine partial update flags:
+
+```bash [Terminal]
+# Update hooks and configs together
+curl -sSL https://raw.githubusercontent.com/TerrorSquad/php-booster/main/booster/integrate_booster.sh | bash -s -- --update-hooks --update-configs
+
+# For JS/TS projects, combine with -J
+curl -sSL https://raw.githubusercontent.com/TerrorSquad/php-booster/main/booster/integrate_booster.sh | bash -s -- -J --update-hooks
+```
+
+::tip
+Partial updates are faster than a full reinstall and preserve your custom configurations in files like `package.json` and `composer.json`.
+::
