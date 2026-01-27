@@ -74,6 +74,32 @@ describe('workflow.ts', () => {
       expect(result).toBe(false)
       expect(log.error).toHaveBeenCalled()
     })
+
+    it('should extract PHP parse errors with file and line', async () => {
+      const phpError = {
+        stderr: 'PHP Parse error:  syntax error, unexpected token "{" in /app/src/Test.php on line 42',
+        stdout: '',
+        message: 'Command failed'
+      }
+      const fn = vi.fn().mockRejectedValue(phpError)
+      await runStep('PHP Syntax Check', 'Checking syntax...', fn)
+
+      // Should log the extracted error with file and line
+      expect(log.error).toHaveBeenCalledWith(expect.stringContaining('Test.php'))
+      expect(log.error).toHaveBeenCalledWith(expect.stringContaining('line 42'))
+    })
+
+    it('should extract file:line:col format errors', async () => {
+      const eslintError = {
+        stderr: '',
+        stdout: 'src/index.ts:15:10: Unexpected token',
+        message: 'Command failed'
+      }
+      const fn = vi.fn().mockRejectedValue(eslintError)
+      await runStep('ESLint', 'Linting...', fn)
+
+      expect(log.error).toHaveBeenCalledWith(expect.stringContaining('src/index.ts:15:10'))
+    })
   })
 
   describe('runQualityChecks', () => {

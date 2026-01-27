@@ -18,6 +18,49 @@ const HOOK_ENV_MAPPING: Record<GitHook, string> = {
 }
 
 /**
+ * Extract meaningful error details from a command failure
+ * Parses stderr/stdout to find file paths, line numbers, and error messages
+ */
+function extractErrorDetails(error: unknown): string {
+  // zx ProcessOutput errors have stdout/stderr properties
+  const processError = error as { stdout?: string; stderr?: string; message?: string }
+  
+  // Combine all available output
+  const output = [
+    processError.stderr,
+    processError.stdout,
+    processError.message,
+    error instanceof Error ? error.message : String(error)
+  ].filter(Boolean).join('\n')
+
+  // Try to extract PHP-style errors: "in /path/file.php on line N"
+  const phpErrorMatch = output.match(/(?:Parse error|Fatal error|syntax error)[^]*?in\s+(\S+)\s+on\s+line\s+(\d+)/i)
+  if (phpErrorMatch) {
+    const [fullMatch] = phpErrorMatch
+    // Clean up and return the meaningful part
+    return fullMatch.trim()
+  }
+
+  // Try to extract generic "file:line" patterns (ESLint, TypeScript, etc.)
+  const fileLineMatch = output.match(/([^\s:]+\.[a-z]+):(\d+)(?::(\d+))?[:\s]+(.+)/i)
+  if (fileLineMatch) {
+    const [, file, line, col, message] = fileLineMatch
+    return col 
+      ? `${file}:${line}:${col} - ${message.trim()}`
+      : `${file}:${line} - ${message.trim()}`
+  }
+
+  // Return first non-empty line of output (most tools put the error first)
+  const firstLine = output.split('\n').find(line => line.trim())
+  if (firstLine && firstLine.length < 200) {
+    return firstLine.trim()
+  }
+
+  // Fallback to generic message
+  return error instanceof Error ? error.message : String(error)
+}
+
+/**
  * Run a tool with consistent error handling, logging, and performance monitoring
  * @param toolName Name of the tool being run
  * @param action Action being performed (e.g., 'Running static analysis...', 'Running code style fixes...')
@@ -42,8 +85,9 @@ export async function runStep(
   } catch (error) {
     const duration = Date.now() - startTime
     const formattedDuration = formatDuration(duration)
-    const errorMessage = error instanceof Error ? error.message : String(error)
-    log.error(`${toolName} failed after ${formattedDuration}: ${errorMessage}`)
+    const errorDetails = extractErrorDetails(error)
+    log.error(`${toolName} failed after ${formattedDuration}`)
+    log.error(`  → ${errorDetails}`)
 
     return false
   }
@@ -257,12 +301,12 @@ async function runToolBuffered(prepared: PreparedTool): Promise<ToolResult> {
     }
   } catch (error) {
     const duration = Date.now() - startTime
-    const errorMessage = error instanceof Error ? error.message : String(error)
+    const errorDetails = extractErrorDetails(error)
 
     return {
       name: tool.name,
       success: false,
-      output: errorMessage,
+      output: errorDetails,
       duration,
     }
   }
@@ -278,7 +322,8 @@ function printParallelResults(results: ToolResult[]): void {
     if (result.success) {
       log.success(`${result.name} completed successfully (${formattedDuration})`)
     } else {
-      log.error(`${result.name} failed after ${formattedDuration}: ${result.output}`)
+      log.error(`${result.name} failed after ${formattedDuration}`)
+      log.error(`  → ${result.output}`)
     }
   }
 }
