@@ -544,5 +544,118 @@ describe('workflow.ts', () => {
       // afterTool should NOT run since par-1 has onFailure: 'stop'
       expect(log.error).toHaveBeenCalledWith(expect.stringContaining('Stopping subsequent checks'))
     })
+
+    it('should skip tool when HOOKS_ONLY excludes its group', async () => {
+      const originalEnv = process.env.HOOKS_ONLY
+      process.env.HOOKS_ONLY = 'lint,format'
+
+      const analysisTool: ToolConfig = { ...mockTool, name: 'phpstan', group: 'analysis' }
+      const lintTool: ToolConfig = { ...mockTool, name: 'eslint', command: 'eslint', group: 'lint' }
+
+      vi.mocked(isSkipped).mockReturnValue(false)
+      vi.mocked(fs.pathExists).mockResolvedValue(true)
+      vi.mocked(exec).mockReset()
+
+      await runQualityChecks(['file.php'], [analysisTool, lintTool])
+
+      // analysisTool should be skipped, lintTool should run
+      expect(log.skip).toHaveBeenCalledWith(expect.stringContaining('not in HOOKS_ONLY'))
+      expect(exec).toHaveBeenCalledTimes(1)
+      expect(exec).toHaveBeenCalledWith(['eslint', 'file.php'], expect.any(Object))
+
+      process.env.HOOKS_ONLY = originalEnv
+    })
+
+    it('should run all tools when HOOKS_ONLY is not set', async () => {
+      const originalEnv = process.env.HOOKS_ONLY
+      delete process.env.HOOKS_ONLY
+
+      const tool1: ToolConfig = { ...mockTool, name: 'tool-1', group: 'analysis' }
+      const tool2: ToolConfig = { ...mockTool, name: 'tool-2', group: 'lint' }
+
+      vi.mocked(isSkipped).mockReturnValue(false)
+      vi.mocked(fs.pathExists).mockResolvedValue(true)
+      vi.mocked(exec).mockReset()
+
+      await runQualityChecks(['file.php'], [tool1, tool2])
+
+      expect(exec).toHaveBeenCalledTimes(2)
+
+      process.env.HOOKS_ONLY = originalEnv
+    })
+
+    it('should parse HOOKS_ONLY with spaces and mixed case', async () => {
+      const originalEnv = process.env.HOOKS_ONLY
+      process.env.HOOKS_ONLY = ' Lint , FORMAT '
+
+      const lintTool: ToolConfig = { ...mockTool, name: 'eslint', group: 'lint' }
+      const formatTool: ToolConfig = { ...mockTool, name: 'prettier', group: 'format' }
+      const analysisTool: ToolConfig = { ...mockTool, name: 'phpstan', group: 'analysis' }
+
+      vi.mocked(isSkipped).mockReturnValue(false)
+      vi.mocked(fs.pathExists).mockResolvedValue(true)
+      vi.mocked(exec).mockReset()
+
+      await runQualityChecks(['file.php'], [lintTool, formatTool, analysisTool])
+
+      // lint and format should run, analysis should be skipped
+      expect(exec).toHaveBeenCalledTimes(2)
+      expect(log.skip).toHaveBeenCalledWith(expect.stringContaining('phpstan'))
+
+      process.env.HOOKS_ONLY = originalEnv
+    })
+
+    it('should run tool without group when HOOKS_ONLY is set', async () => {
+      const originalEnv = process.env.HOOKS_ONLY
+      process.env.HOOKS_ONLY = 'lint'
+
+      const toolWithGroup: ToolConfig = { ...mockTool, name: 'with-group', group: 'analysis' }
+      const toolWithoutGroup: ToolConfig = { ...mockTool, name: 'no-group', command: 'no-group' }
+
+      vi.mocked(isSkipped).mockReturnValue(false)
+      vi.mocked(fs.pathExists).mockResolvedValue(true)
+      vi.mocked(exec).mockReset()
+
+      await runQualityChecks(['file.php'], [toolWithGroup, toolWithoutGroup])
+
+      // Tool without group should still run (not filtered)
+      expect(exec).toHaveBeenCalledTimes(1)
+      expect(exec).toHaveBeenCalledWith(['no-group', 'file.php'], expect.any(Object))
+
+      process.env.HOOKS_ONLY = originalEnv
+    })
+  })
+
+  describe('extractErrorDetails', () => {
+    it('should truncate very long error output', async () => {
+      const longError = {
+        stderr: 'A'.repeat(500), // Very long error
+        stdout: '',
+        message: 'Command failed'
+      }
+      const fn = vi.fn().mockRejectedValue(longError)
+      await runStep('Test Tool', 'Testing...', fn)
+
+      // Error should be logged but truncated to first line or generic message
+      expect(log.error).toHaveBeenCalled()
+      const errorCall = vi.mocked(log.error).mock.calls.find(
+        call => call[0].includes('→')
+      )
+      expect(errorCall).toBeDefined()
+      // Should not contain the full 500 char string
+      expect(errorCall![0].length).toBeLessThan(300)
+    })
+
+    it('should extract first non-empty line for generic errors', async () => {
+      const multilineError = {
+        stderr: '\n\n  First real error\nSecond line\nThird line',
+        stdout: '',
+        message: 'Command failed'
+      }
+      const fn = vi.fn().mockRejectedValue(multilineError)
+      await runStep('Test Tool', 'Testing...', fn)
+
+      expect(log.error).toHaveBeenCalledWith(expect.stringContaining('First real error'))
+    })
   })
 })
