@@ -85,12 +85,14 @@ export const TOOLS: ToolConfig[] = [
     args: ['analyse'],
     type: 'php',
     extensions: ['.php'],
+    parallelGroup: 'php-analysis',
   },
   {
     name: 'Psalm',
     command: 'psalm',
     type: 'php',
     extensions: ['.php'],
+    parallelGroup: 'php-analysis',
   },
   {
     name: 'Deptrac',
@@ -99,5 +101,6 @@ export const TOOLS: ToolConfig[] = [
     type: 'php',
     passFiles: false,
     extensions: ['.php'],
+    parallelGroup: 'php-analysis',
   },
 ]

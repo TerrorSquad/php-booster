@@ -41,6 +41,29 @@ export interface ToolConfig {
    * - 'stop': Log error, skip remaining tools (use for syntax checks that must pass first)
    */
   onFailure?: FailureMode
+  /**
+   * Optional group name for parallel execution.
+   * Tools with the same parallelGroup value will run concurrently.
+   * Tools without a parallelGroup run sequentially in order.
+   * Output is buffered and printed after all parallel tools complete.
+   */
+  parallelGroup?: string
+}
+
+/**
+ * Result of running a single tool (used for parallel execution)
+ */
+export interface ToolResult {
+  /** Tool name */
+  name: string
+  /** Whether the tool succeeded */
+  success: boolean
+  /** Buffered output (stdout + stderr) */
+  output: string
+  /** Execution duration in ms */
+  duration: number
+  /** Files that need to be staged after (if any) */
+  filesToStage?: string[]
 }
 
 /**

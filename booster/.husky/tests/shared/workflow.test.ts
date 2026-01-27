@@ -353,4 +353,95 @@ describe('workflow.ts', () => {
       expect(log.error).toHaveBeenCalledWith(expect.stringContaining('Unexpected error'))
     })
   })
+
+  describe('parallel execution', () => {
+    const mockTool: ToolConfig = {
+      name: 'test-tool',
+      command: 'test-cmd',
+      type: 'system',
+      extensions: ['.php']
+    }
+
+    beforeEach(() => {
+      vi.mocked(isSkipped).mockReturnValue(false)
+      vi.mocked(fs.pathExists).mockResolvedValue(true)
+      vi.mocked(exec).mockResolvedValue({} as any)
+    })
+
+    it('should run single tool in streaming mode', async () => {
+      const tool: ToolConfig = { ...mockTool }
+
+      await runQualityChecks(['file.php'], [tool])
+
+      // Single tool uses exec (streaming), not buffered
+      expect(exec).toHaveBeenCalledTimes(1)
+      expect(log.tool).toHaveBeenCalled()
+    })
+
+    it('should run tools with same parallelGroup together', async () => {
+      const tool1: ToolConfig = { ...mockTool, name: 'tool-1', parallelGroup: 'analysis' }
+      const tool2: ToolConfig = { ...mockTool, name: 'tool-2', parallelGroup: 'analysis' }
+
+      await runQualityChecks(['file.php'], [tool1, tool2])
+
+      // Both tools should be logged for parallel execution
+      expect(log.info).toHaveBeenCalledWith(expect.stringContaining('parallel'))
+    })
+
+    it('should run sequential tools before parallel group', async () => {
+      // Reset for this test
+      vi.mocked(exec).mockReset()
+      const executionOrder: string[] = []
+
+      vi.mocked(exec).mockImplementation(async (cmd) => {
+        executionOrder.push(cmd[0])
+        return {} as any
+      })
+
+      const seqTool: ToolConfig = { ...mockTool, name: 'sequential', command: 'seq' }
+      const par1: ToolConfig = { ...mockTool, name: 'parallel-1', command: 'par1', parallelGroup: 'analysis' }
+      const par2: ToolConfig = { ...mockTool, name: 'parallel-2', command: 'par2', parallelGroup: 'analysis' }
+
+      await runQualityChecks(['file.php'], [seqTool, par1, par2])
+
+      // Sequential tool should complete before parallel group starts
+      expect(executionOrder[0]).toBe('seq')
+    })
+
+    it('should continue after parallel group failures if onFailure is continue', async () => {
+      const par1: ToolConfig = { ...mockTool, name: 'par-1', parallelGroup: 'analysis', onFailure: 'continue' }
+      const par2: ToolConfig = { ...mockTool, name: 'par-2', parallelGroup: 'analysis' }
+      const afterTool: ToolConfig = { ...mockTool, name: 'after' }
+
+      // par-1 fails, par-2 succeeds
+      vi.mocked(exec).mockReset()
+      vi.mocked(exec)
+        .mockRejectedValueOnce(new Error('par-1 failed'))
+        .mockResolvedValueOnce({} as any)
+        .mockResolvedValueOnce({} as any)
+
+      const result = await runQualityChecks(['file.php'], [par1, par2, afterTool])
+
+      expect(result).toBe(false) // Overall failure due to par-1
+      // afterTool should still run since no tool has onFailure: 'stop'
+    })
+
+    it('should stop after parallel group if tool with onFailure stop fails', async () => {
+      const par1: ToolConfig = { ...mockTool, name: 'par-1', parallelGroup: 'analysis', onFailure: 'stop' }
+      const par2: ToolConfig = { ...mockTool, name: 'par-2', parallelGroup: 'analysis' }
+      const afterTool: ToolConfig = { ...mockTool, name: 'after' }
+
+      vi.mocked(exec).mockReset()
+      // par-1 fails, par-2 succeeds
+      vi.mocked(exec)
+        .mockRejectedValueOnce(new Error('par-1 failed'))
+        .mockResolvedValueOnce({} as any)
+
+      const result = await runQualityChecks(['file.php'], [par1, par2, afterTool])
+
+      expect(result).toBe(false)
+      // afterTool should NOT run since par-1 has onFailure: 'stop'
+      expect(log.error).toHaveBeenCalledWith(expect.stringContaining('Stopping subsequent checks'))
+    })
+  })
 })

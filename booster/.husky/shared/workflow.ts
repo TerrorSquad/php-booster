@@ -9,7 +9,7 @@ import {
   log,
 } from './core.ts'
 import { shouldSkipDuringMerge, stageFiles } from './git.ts'
-import { GitHook, type ToolConfig } from './types.ts'
+import { GitHook, type ToolConfig, type ToolResult } from './types.ts'
 
 const HOOK_ENV_MAPPING: Record<GitHook, string> = {
   [GitHook.PreCommit]: 'PRECOMMIT',
@@ -109,7 +109,7 @@ async function isToolAvailable(tool: ToolConfig): Promise<boolean> {
 }
 
 /**
- * Execute a tool command
+ * Execute a tool command (streaming output)
  */
 async function execTool(tool: ToolConfig, files: string[]): Promise<void> {
   const args = [...(tool.args || [])]
@@ -144,12 +144,194 @@ async function execTool(tool: ToolConfig, files: string[]): Promise<void> {
 }
 
 /**
+ * Execute a tool with buffered output (for parallel execution)
+ * Captures all output and returns it instead of streaming
+ */
+async function execToolBuffered(tool: ToolConfig, files: string[]): Promise<string> {
+  const args = [...(tool.args || [])]
+  const command = resolveCommandPath(tool)
+  const outputs: string[] = []
+
+  const runCommand = async (cmdArgs: string[]): Promise<string> => {
+    const finalCommand = await getBufferedCommand(command, cmdArgs, tool.type)
+    const result = await $({ stdio: 'pipe' })`${finalCommand}`
+    return result.stdout + result.stderr
+  }
+
+  if (tool.runForEachFile) {
+    const concurrency = 10
+    const chunks = []
+    for (let i = 0; i < files.length; i += concurrency) {
+      chunks.push(files.slice(i, i + concurrency))
+    }
+
+    for (const chunk of chunks) {
+      const chunkOutputs = await Promise.all(chunk.map((file) => runCommand([...args, file])))
+      outputs.push(...chunkOutputs)
+    }
+  } else {
+    const cmdArgs = [...args]
+    if (tool.passFiles !== false) {
+      cmdArgs.push(...files)
+    }
+    outputs.push(await runCommand(cmdArgs))
+  }
+
+  return outputs.filter(Boolean).join('\n')
+}
+
+/**
+ * Build command for buffered execution (handles DDEV wrapping)
+ */
+async function getBufferedCommand(
+  command: string,
+  args: string[],
+  type: string,
+): Promise<string[]> {
+  if (type !== 'php' || !(await isDdevProject())) {
+    return [command, ...args]
+  }
+
+  // Wrap in ddev exec for PHP tools
+  return ['ddev', 'exec', command, ...args]
+}
+
+/**
+ * Prepared tool ready to run (after skip/availability checks)
+ */
+interface PreparedTool {
+  tool: ToolConfig
+  files: string[]
+  description: string
+}
+
+/**
+ * Prepare a tool for execution (check skips, filter files, check availability)
+ * Returns null if tool should be skipped
+ */
+async function prepareTool(tool: ToolConfig, files: string[]): Promise<PreparedTool | null> {
+  // Check if tool is explicitly skipped via env var
+  if (isSkipped(tool.name)) {
+    log.skip(`${tool.name} skipped (SKIP_${tool.name.toUpperCase()} environment variable set)`)
+    return null
+  }
+
+  // Filter files based on tool extensions if specified
+  const filesToRun = tool.extensions
+    ? files.filter((file) => tool.extensions!.some((ext) => file.endsWith(ext)))
+    : files
+
+  if (filesToRun.length === 0) return null
+
+  // Check binary existence
+  if (!(await isToolAvailable(tool))) {
+    log.skip(`${tool.name} not found at ${tool.command}. Skipping...`)
+    return null
+  }
+
+  return {
+    tool,
+    files: filesToRun,
+    description: tool.description || `Running ${tool.name}...`,
+  }
+}
+
+/**
+ * Run a single tool and return result (for parallel execution)
+ */
+async function runToolBuffered(prepared: PreparedTool): Promise<ToolResult> {
+  const { tool, files, description } = prepared
+  const startTime = Date.now()
+
+  try {
+    log.tool(tool.name, description)
+    const output = await execToolBuffered(tool, files)
+    const duration = Date.now() - startTime
+
+    return {
+      name: tool.name,
+      success: true,
+      output,
+      duration,
+      filesToStage: tool.stagesFilesAfter && tool.passFiles !== false ? files : undefined,
+    }
+  } catch (error) {
+    const duration = Date.now() - startTime
+    const errorMessage = error instanceof Error ? error.message : String(error)
+
+    return {
+      name: tool.name,
+      success: false,
+      output: errorMessage,
+      duration,
+    }
+  }
+}
+
+/**
+ * Print results from parallel tool execution
+ */
+function printParallelResults(results: ToolResult[]): void {
+  for (const result of results) {
+    const formattedDuration = formatDuration(result.duration)
+
+    if (result.success) {
+      log.success(`${result.name} completed successfully (${formattedDuration})`)
+    } else {
+      log.error(`${result.name} failed after ${formattedDuration}: ${result.output}`)
+    }
+  }
+}
+
+/**
+ * Group tools by their parallelGroup property
+ * Tools without a group get their own single-item group
+ */
+function groupToolsByParallel(tools: ToolConfig[]): ToolConfig[][] {
+  const groups: ToolConfig[][] = []
+  let currentGroup: ToolConfig[] = []
+  let currentGroupName: string | undefined
+
+  for (const tool of tools) {
+    if (tool.parallelGroup) {
+      // Tool has a parallel group
+      if (currentGroupName === tool.parallelGroup) {
+        // Same group, add to current
+        currentGroup.push(tool)
+      } else {
+        // Different group, flush current and start new
+        if (currentGroup.length > 0) {
+          groups.push(currentGroup)
+        }
+        currentGroup = [tool]
+        currentGroupName = tool.parallelGroup
+      }
+    } else {
+      // No parallel group - flush any pending group and add as single-item group
+      if (currentGroup.length > 0) {
+        groups.push(currentGroup)
+        currentGroup = []
+        currentGroupName = undefined
+      }
+      groups.push([tool])
+    }
+  }
+
+  // Flush remaining group
+  if (currentGroup.length > 0) {
+    groups.push(currentGroup)
+  }
+
+  return groups
+}
+
+/**
  * Run all configured quality tools on the provided files
  *
  * Iterates through the provided tools and:
  * 1. Checks if the tool should run (not skipped, binary exists)
  * 2. Filters files based on tool extensions
- * 3. Runs the tool command
+ * 3. Runs the tool command (parallel for tools with same parallelGroup)
  * 4. Stages files if configured (for fixers)
  *
  * @param files List of staged files to check
@@ -158,44 +340,63 @@ async function execTool(tool: ToolConfig, files: string[]): Promise<void> {
  */
 export async function runQualityChecks(files: string[], tools: ToolConfig[]): Promise<boolean> {
   let allSuccessful = true
+  const toolGroups = groupToolsByParallel(tools)
 
-  for (const tool of tools) {
-    // Check if tool is explicitly skipped via env var
-    if (isSkipped(tool.name)) {
-      log.skip(`${tool.name} skipped (SKIP_${tool.name.toUpperCase()} environment variable set)`)
-      continue
-    }
+  for (const group of toolGroups) {
+    // Prepare all tools in the group
+    const preparedTools = await Promise.all(group.map((tool) => prepareTool(tool, files)))
+    const runnableTools = preparedTools.filter((p): p is PreparedTool => p !== null)
 
-    // Filter files based on tool extensions if specified
-    const filesToRun = tool.extensions
-      ? files.filter((file) => tool.extensions!.some((ext) => file.endsWith(ext)))
-      : files
+    if (runnableTools.length === 0) continue
 
-    if (filesToRun.length === 0) continue
+    if (runnableTools.length === 1) {
+      // Single tool - run with streaming output (better UX)
+      const { tool, files: filesToRun, description } = runnableTools[0]
 
-    // Check binary existence
-    if (!(await isToolAvailable(tool))) {
-      log.skip(`${tool.name} not found at ${tool.command}. Skipping...`)
-      continue
-    }
+      const success = await runStep(tool.name, description, () => execTool(tool, filesToRun))
 
-    const description = tool.description || `Running ${tool.name}...`
+      if (success && tool.stagesFilesAfter && tool.passFiles !== false) {
+        await ensureMutagenSync()
+        await stageFiles(filesToRun)
+      }
 
-    const success = await runStep(tool.name, description, () => execTool(tool, filesToRun))
+      if (!success) {
+        allSuccessful = false
+        if (tool.onFailure === 'stop') {
+          log.error(`${tool.name} failed. Stopping subsequent checks.`)
+          return false
+        }
+      }
+    } else {
+      // Multiple tools - run in parallel with buffered output
+      log.info(`Running ${runnableTools.length} tools in parallel: ${runnableTools.map((t) => t.tool.name).join(', ')}`)
 
-    if (success && tool.stagesFilesAfter && tool.passFiles !== false) {
-      // Ensure any changes made in the container are synced back to host before staging
-      await ensureMutagenSync()
-      await stageFiles(filesToRun)
-    }
+      const results = await Promise.all(runnableTools.map(runToolBuffered))
 
-    if (!success) {
-      allSuccessful = false
+      // Print results in order
+      printParallelResults(results)
 
-      // Check failure mode - 'stop' halts execution, 'continue' (default) keeps going
-      if (tool.onFailure === 'stop') {
-        log.error(`${tool.name} failed. Stopping subsequent checks.`)
-        return false
+      // Stage files for successful tools that need it
+      for (const result of results) {
+        if (result.success && result.filesToStage) {
+          await ensureMutagenSync()
+          await stageFiles(result.filesToStage)
+        }
+      }
+
+      // Check for failures
+      const failed = results.filter((r) => !r.success)
+      if (failed.length > 0) {
+        allSuccessful = false
+
+        // Check if any failed tool has onFailure: 'stop'
+        for (const result of failed) {
+          const tool = group.find((t) => t.name === result.name)
+          if (tool?.onFailure === 'stop') {
+            log.error(`${result.name} failed. Stopping subsequent checks.`)
+            return false
+          }
+        }
       }
     }
   }
