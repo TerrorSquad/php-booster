@@ -1,4 +1,46 @@
 # --- Updated merge_scripts Function ---
+
+# Helper function to check if a package is already declared in composer.json
+# Arguments:
+#   $1 - package name
+#   $2 - section ("require" or "require-dev", optional - checks both if omitted)
+#   $3 - composer.json file path (optional, defaults to "composer.json")
+function is_package_present() {
+    local package="$1"
+    local section="${2:-}"
+    local composer_file="${3:-composer.json}"
+
+    log "    Checking if package '$package' is present in section '${section:-both}'..."
+
+    # Check if package is declared in the appropriate section of composer.json
+    if [ "$section" = "require" ]; then
+        if jq -e --arg pkg "$package" '.require[$pkg] != null' "$composer_file" >/dev/null 2>&1; then
+            log "    Package '$package' found in require section."
+            return 0
+        else
+            log "    Package '$package' NOT found in require section."
+            return 1
+        fi
+    elif [ "$section" = "require-dev" ]; then
+        if jq -e --arg pkg "$package" '.["require-dev"][$pkg] != null' "$composer_file" >/dev/null 2>&1; then
+            log "    Package '$package' found in require-dev section."
+            return 0
+        else
+            log "    Package '$package' NOT found in require-dev section."
+            return 1
+        fi
+    else
+        # If no section specified, check both require and require-dev
+        if jq -e --arg pkg "$package" '(.require[$pkg] != null) or (.["require-dev"][$pkg] != null)' "$composer_file" >/dev/null 2>&1; then
+            log "    Package '$package' found in either require or require-dev section."
+            return 0
+        else
+            log "    Package '$package' NOT found in either section."
+            return 1
+        fi
+    fi
+}
+
 function merge_scripts() {
     local COMPOSER1="composer.json"                          # Project composer.json
     local COMPOSER2="${BOOSTER_INTERNAL_PATH}/composer.json" # Booster composer.json
@@ -131,42 +173,6 @@ function add_code_quality_tools() {
     else
         composer_cmd=(composer)
     fi
-
-    # Helper function to check if a package is already declared in composer.json
-    function is_package_present() {
-        local package="$1"
-        local section="$2"  # "require" or "require-dev"
-
-        log "    Checking if package '$package' is present in section '$section'..."
-
-        # Check if package is declared in the appropriate section of composer.json
-        if [ "$section" = "require" ]; then
-            if jq -e --arg pkg "$package" '.require[$pkg] != null' "$project_composer" >/dev/null 2>&1; then
-                log "    Package '$package' found in require section."
-                return 0
-            else
-                log "    Package '$package' NOT found in require section."
-                return 1
-            fi
-        elif [ "$section" = "require-dev" ]; then
-            if jq -e --arg pkg "$package" '.["require-dev"][$pkg] != null' "$project_composer" >/dev/null 2>&1; then
-                log "    Package '$package' found in require-dev section."
-                return 0
-            else
-                log "    Package '$package' NOT found in require-dev section."
-                return 1
-            fi
-        else
-            # If no section specified, check both require and require-dev
-            if jq -e --arg pkg "$package" '(.require[$pkg] != null) or (.["require-dev"][$pkg] != null)' "$project_composer" >/dev/null 2>&1; then
-                log "    Package '$package' found in either require or require-dev section."
-                return 0
-            else
-                log "    Package '$package' NOT found in either section."
-                return 1
-            fi
-        fi
-    }
 
     # Process production dependencies
     if jq -e '.require | type == "object"' "$booster_composer" >/dev/null; then
