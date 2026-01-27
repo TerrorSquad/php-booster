@@ -602,7 +602,8 @@ function copy_files() {
                     find "$src_path" -type f | while read -r file; do
                         local rel_path="${file#$src_path/}"
                         local dest_path="$item/$rel_path"
-                        local dest_dir=$(dirname "$dest_path")
+                        local dest_dir
+                        dest_dir=$(dirname "$dest_path")
 
                         mkdir -p "$dest_dir"
 
@@ -636,7 +637,8 @@ function copy_files() {
 
         # Copy everything except the 'tests' directory
         for item in "$husky_src"/*; do
-            local item_name=$(basename "$item")
+            local item_name
+            item_name=$(basename "$item")
             if [ "$item_name" != "tests" ]; then
                 cp -R "$item" .husky/
             fi
@@ -857,7 +859,8 @@ function update_tool_paths() {
         else
             log "  'openapi' directory exists. Copying missing files..."
             for doc_file in "$booster_doc_path"/*; do
-                local filename=$(basename "$doc_file")
+                local filename
+                filename=$(basename "$doc_file")
                 if [ ! -e "openapi/$filename" ]; then
                     cp -R "$doc_file" "openapi/"
                     log "    Copied '$filename'."
@@ -1143,7 +1146,7 @@ function update_nginx_config() {
 EOF
 
     # Use sed to add the content after the location ~ \.php$ line (cross-platform compatible)
-    sed -i.bak '/location ~ \\\.php\$ {/r '"$temp_insert_file" "$nginx_config" || warn "Failed to add XDEBUG_TRIGGER to nginx config."
+    sed -i.bak '/location ~ \\\.php\$ {/r '"\"$temp_insert_file\"" "$nginx_config" || warn "Failed to add XDEBUG_TRIGGER to nginx config."
 
     # Remove #ddev generated comment if it exists
     sed -i.bak '/# ddev generated/d' "$nginx_config" || warn "Failed to remove DDEV generated comment."
