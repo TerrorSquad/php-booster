@@ -1,0 +1,61 @@
+{
+  "$schema": ".git-hooks.config.schema.json",
+
+  "// Documentation": "Configuration file for PHP Booster Git hooks",
+  "// Location": "Place this file at the project root as .git-hooks.config.json or .githooks.json",
+
+  "verbose": false,
+
+  "skip": {
+    "// preCommit": "Skip entire pre-commit hook (useful during emergency hotfixes)",
+    "preCommit": false,
+
+    "// prePush": "Skip entire pre-push hook",
+    "prePush": false,
+
+    "// commitMsg": "Skip commit message validation",
+    "commitMsg": false,
+
+    "// tests": "Skip running tests during pre-push",
+    "tests": false,
+
+    "// artifacts": "Skip artifact generation (Deptrac image, API docs) during pre-push",
+    "artifacts": false
+  },
+
+  "tools": {
+    "// Disable a tool": {
+      "enabled": false
+    },
+
+    "// Override arguments": {
+      "args": ["analyse", "--level=max"]
+    },
+
+    "// Override extensions": {
+      "extensions": [".php", ".phtml"]
+    },
+
+    "// Change failure mode": {
+      "onFailure": "stop"
+    },
+
+    "// Example: Disable Psalm": {
+      "// Psalm": { "enabled": false }
+    },
+
+    "// Example: Increase PHPStan level": {
+      "// PHPStan": { "args": ["analyse", "--level=9"] }
+    },
+
+    "// Example: Add custom tool": {
+      "// CustomLinter": {
+        "command": "vendor/bin/custom-lint",
+        "args": ["--strict"],
+        "type": "php",
+        "extensions": [".php"],
+        "description": "Custom PHP linter"
+      }
+    }
+  }
+}

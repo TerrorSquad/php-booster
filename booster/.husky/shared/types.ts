@@ -76,3 +76,59 @@ export const GitHook = {
 } as const
 
 export type GitHook = (typeof GitHook)[keyof typeof GitHook]
+
+/**
+ * Tool override configuration (partial ToolConfig for customization)
+ */
+export interface ToolOverride {
+  /** Set to false to disable this tool */
+  enabled?: boolean
+  /** Override arguments */
+  args?: string[]
+  /** Override extensions */
+  extensions?: string[]
+  /** Override failure mode */
+  onFailure?: FailureMode
+  /** Override parallel group */
+  parallelGroup?: string
+  /** Override description */
+  description?: string
+}
+
+/**
+ * Custom tool definition (for adding new tools via config)
+ */
+export interface CustomToolConfig extends Omit<ToolConfig, 'name'> {
+  /** Set to false to disable this tool */
+  enabled?: boolean
+}
+
+/**
+ * Git hooks configuration file schema (.git-hooks.config.json)
+ */
+export interface HooksConfig {
+  /**
+   * Tool overrides - key is tool name (e.g., "PHPStan", "ESLint")
+   * Use existing tool names to override, or new names to add custom tools
+   */
+  tools?: Record<string, ToolOverride | CustomToolConfig>
+  /**
+   * Enable verbose logging (same as GIT_HOOKS_VERBOSE=1)
+   */
+  verbose?: boolean
+  /**
+   * Skip specific hooks or features entirely
+   */
+  skip?: {
+    /** Skip entire pre-commit hook */
+    preCommit?: boolean
+    /** Skip entire pre-push hook */
+    prePush?: boolean
+    /** Skip entire commit-msg hook */
+    commitMsg?: boolean
+    /** Skip tests in pre-push (Pest/PHPUnit) */
+    tests?: boolean
+    /** Skip artifact generation in pre-push */
+    artifacts?: boolean
+  }
+}

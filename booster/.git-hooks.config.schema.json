@@ -1,0 +1,151 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/php-booster/.git-hooks.config.schema.json",
+  "title": "PHP Booster Git Hooks Configuration",
+  "description": "Configuration file for customizing PHP Booster git hooks behavior",
+  "type": "object",
+  "properties": {
+    "verbose": {
+      "type": "boolean",
+      "description": "Enable verbose logging (same as GIT_HOOKS_VERBOSE=1 env var)",
+      "default": false
+    },
+    "skip": {
+      "type": "object",
+      "description": "Skip specific hooks or features",
+      "properties": {
+        "preCommit": {
+          "type": "boolean",
+          "description": "Skip entire pre-commit hook",
+          "default": false
+        },
+        "prePush": {
+          "type": "boolean",
+          "description": "Skip entire pre-push hook",
+          "default": false
+        },
+        "commitMsg": {
+          "type": "boolean",
+          "description": "Skip commit message validation hook",
+          "default": false
+        },
+        "tests": {
+          "type": "boolean",
+          "description": "Skip running tests during pre-push",
+          "default": false
+        },
+        "artifacts": {
+          "type": "boolean",
+          "description": "Skip artifact generation (Deptrac image, API docs) during pre-push",
+          "default": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "tools": {
+      "type": "object",
+      "description": "Tool-specific configuration overrides",
+      "additionalProperties": {
+        "oneOf": [
+          {
+            "type": "object",
+            "description": "Override existing tool settings",
+            "properties": {
+              "enabled": {
+                "type": "boolean",
+                "description": "Set to false to disable this tool",
+                "default": true
+              },
+              "args": {
+                "type": "array",
+                "items": { "type": "string" },
+                "description": "Override command arguments"
+              },
+              "extensions": {
+                "type": "array",
+                "items": { "type": "string" },
+                "description": "Override file extensions to process",
+                "examples": [[".php", ".phtml"]]
+              },
+              "onFailure": {
+                "type": "string",
+                "enum": ["continue", "stop"],
+                "description": "What to do when this tool fails: 'continue' to run other tools, 'stop' to halt immediately",
+                "default": "continue"
+              },
+              "parallelGroup": {
+                "type": "string",
+                "description": "Group name for parallel execution with other tools"
+              },
+              "description": {
+                "type": "string",
+                "description": "Override the tool description shown in logs"
+              }
+            },
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "description": "Add a custom tool",
+            "required": ["command", "type", "extensions"],
+            "properties": {
+              "enabled": {
+                "type": "boolean",
+                "description": "Set to false to disable this custom tool",
+                "default": true
+              },
+              "command": {
+                "type": "string",
+                "description": "Command to execute (e.g., 'vendor/bin/custom-lint')"
+              },
+              "args": {
+                "type": "array",
+                "items": { "type": "string" },
+                "description": "Command arguments"
+              },
+              "type": {
+                "type": "string",
+                "enum": ["php", "node"],
+                "description": "Tool type - 'php' uses DDEV/composer, 'node' uses npm/pnpm"
+              },
+              "extensions": {
+                "type": "array",
+                "items": { "type": "string" },
+                "description": "File extensions this tool processes",
+                "examples": [[".php"], [".js", ".ts"]]
+              },
+              "description": {
+                "type": "string",
+                "description": "Description shown in logs"
+              },
+              "onFailure": {
+                "type": "string",
+                "enum": ["continue", "stop"],
+                "description": "What to do when this tool fails",
+                "default": "continue"
+              },
+              "parallelGroup": {
+                "type": "string",
+                "description": "Group name for parallel execution with other tools"
+              }
+            },
+            "additionalProperties": false
+          }
+        ]
+      }
+    }
+  },
+  "additionalProperties": false,
+  "examples": [
+    {
+      "verbose": false,
+      "skip": {
+        "tests": true
+      },
+      "tools": {
+        "Psalm": { "enabled": false },
+        "PHPStan": { "args": ["analyse", "--level=9"] }
+      }
+    }
+  ]
+}

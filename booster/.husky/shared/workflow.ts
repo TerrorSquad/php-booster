@@ -8,6 +8,12 @@ import {
   isSkipped,
   log,
 } from './core.ts'
+import {
+  loadConfig,
+  applyConfigOverrides,
+  isHookSkippedByConfig,
+  applyVerboseSetting,
+} from './config.ts'
 import { shouldSkipDuringMerge, stageFiles } from './git.ts'
 import { GitHook, type ToolConfig, type ToolResult } from './types.ts'
 
@@ -15,6 +21,12 @@ const HOOK_ENV_MAPPING: Record<GitHook, string> = {
   [GitHook.PreCommit]: 'PRECOMMIT',
   [GitHook.PrePush]: 'PREPUSH',
   [GitHook.CommitMsg]: 'COMMITMSG',
+}
+
+const HOOK_CONFIG_MAPPING: Record<GitHook, 'preCommit' | 'prePush' | 'commitMsg'> = {
+  [GitHook.PreCommit]: 'preCommit',
+  [GitHook.PrePush]: 'prePush',
+  [GitHook.CommitMsg]: 'commitMsg',
 }
 
 /**
@@ -451,7 +463,7 @@ export async function runQualityChecks(files: string[], tools: ToolConfig[]): Pr
 
 /**
  * Standardized hook execution wrapper
- * Handles environment setup, error catching, and performance reporting
+ * Handles environment setup, config loading, error catching, and performance reporting
  */
 export async function runHook(hookName: GitHook, fn: () => Promise<boolean>): Promise<void> {
   // Fix locale issues that can occur in VS Code
@@ -461,16 +473,27 @@ export async function runHook(hookName: GitHook, fn: () => Promise<boolean>): Pr
   try {
     await initEnvironment()
 
+    // Load config and apply verbose setting
+    const config = await loadConfig()
+    applyVerboseSetting(config)
+
     // Configure zx verbose mode based on environment
     $.verbose = process.env.GIT_HOOKS_VERBOSE === '1' || process.env.GIT_HOOKS_VERBOSE === 'true'
 
     const startTime = Date.now()
     log.step(`Starting ${hookName} checks...`)
 
-    // Check if we should skip the entire hook
+    // Check if we should skip the entire hook via env var
     const skipVar = HOOK_ENV_MAPPING[hookName]
     if (isSkipped(skipVar)) {
       log.info(`Skipping ${hookName} checks (SKIP_${skipVar} environment variable set)`)
+      process.exit(0)
+    }
+
+    // Check if we should skip the entire hook via config
+    const configKey = HOOK_CONFIG_MAPPING[hookName]
+    if (isHookSkippedByConfig(configKey, config)) {
+      log.info(`Skipping ${hookName} checks (disabled in config)`)
       process.exit(0)
     }
 

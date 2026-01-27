@@ -5,6 +5,8 @@ const mocks = {
   getStagedFiles: vi.fn(),
   runQualityChecks: vi.fn(),
   logInfo: vi.fn(),
+  loadConfig: vi.fn().mockResolvedValue({}),
+  applyConfigOverrides: vi.fn((tools) => tools),
 }
 
 vi.mock('../shared/index.ts', () => ({
@@ -15,6 +17,8 @@ vi.mock('../shared/index.ts', () => ({
   },
   runHook: vi.fn((hook, callback) => callback()),
   runQualityChecks: mocks.runQualityChecks,
+  loadConfig: mocks.loadConfig,
+  applyConfigOverrides: mocks.applyConfigOverrides,
 }))
 
 vi.mock('../shared/tools.ts', () => ({
@@ -25,6 +29,8 @@ describe('Pre-commit Hook', () => {
   beforeEach(() => {
     vi.resetModules()
     vi.clearAllMocks()
+    mocks.loadConfig.mockResolvedValue({})
+    mocks.applyConfigOverrides.mockImplementation((tools) => tools)
   })
 
   it('should skip checks if no files are staged', async () => {

@@ -6,11 +6,16 @@
  * Runs checks before pushing:
  * - Tests (Pest/PHPUnit)
  * - Artifact generation (Deptrac image, API docs) - informational only
+ *
+ * Configuration File (.git-hooks.config.json):
+ * - Disable hooks, tests, or artifact generation
  */
 import { fs } from 'zx'
 import {
   GitHook,
+  isHookSkippedByConfig,
   isSkipped,
+  loadConfig,
   log,
   runHook,
   exec,
@@ -54,11 +59,21 @@ export async function handleArtifacts(): Promise<void> {
 }
 
 await runHook(GitHook.PrePush, async () => {
-  // Run tests - these ARE blocking
-  if (!(await runTests())) return false
+  const config = await loadConfig()
+
+  // Run tests - these ARE blocking (unless disabled in config)
+  if (!isHookSkippedByConfig('tests', config)) {
+    if (!(await runTests())) return false
+  } else {
+    log.info('Skipping tests (disabled in config)')
+  }
 
   // Generate artifacts - informational only, don't block push
-  await handleArtifacts()
+  if (!isHookSkippedByConfig('artifacts', config)) {
+    await handleArtifacts()
+  } else {
+    log.info('Skipping artifact generation (disabled in config)')
+  }
 
   return true
 })

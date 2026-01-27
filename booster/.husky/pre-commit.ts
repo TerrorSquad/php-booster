@@ -11,8 +11,19 @@
  * - SKIP_PRECOMMIT=1: Skip the entire pre-commit hook
  * - GIT_HOOKS_VERBOSE=1: Enable verbose output for debugging
  * - SKIP_<TOOL_NAME>=1: Skip specific tool (e.g. SKIP_RECTOR, SKIP_ESLINT)
+ *
+ * Configuration File (.git-hooks.config.json):
+ * - Disable tools, override arguments, or add custom tools
  */
-import { getStagedFiles, GitHook, log, runHook, runQualityChecks } from './shared/index.ts'
+import {
+  applyConfigOverrides,
+  getStagedFiles,
+  GitHook,
+  loadConfig,
+  log,
+  runHook,
+  runQualityChecks,
+} from './shared/index.ts'
 import { TOOLS } from './shared/tools.ts'
 
 await runHook(GitHook.PreCommit, async () => {
@@ -25,7 +36,11 @@ await runHook(GitHook.PreCommit, async () => {
 
   log.info(`Found ${files.length} staged file(s): ${files.join(', ')}`)
 
-  const success = await runQualityChecks(files, TOOLS)
+  // Load config and apply overrides to tools
+  const config = await loadConfig()
+  const tools = applyConfigOverrides(TOOLS, config)
+
+  const success = await runQualityChecks(files, tools)
 
   return success
 })
