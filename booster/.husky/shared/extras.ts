@@ -2,92 +2,86 @@ import { fs } from 'zx'
 import { exec, log } from './core.ts'
 
 /**
- * Generate Deptrac image and add to git
+ * Result of artifact generation
  */
-export async function generateDeptracImage(): Promise<void> {
+export interface ArtifactResult {
+  generated: boolean
+  changed: boolean
+  path?: string
+}
+
+/**
+ * Generate Deptrac architecture diagram
+ *
+ * Generates a PNG image showing the dependency graph.
+ * Does NOT auto-commit - leaves that to the developer or CI.
+ */
+export async function generateDeptracImage(): Promise<ArtifactResult> {
   // Check if deptrac is installed
   if (!(await fs.pathExists('./vendor/bin/deptrac'))) {
-    return
+    log.skip('Deptrac not installed, skipping image generation')
+    return { generated: false, changed: false }
   }
 
   try {
-    // Use graphviz-image formatter to generate PNG directly
+    log.tool('Deptrac', 'Generating architecture diagram...')
+
     await exec(
       ['./vendor/bin/deptrac', '--formatter=graphviz-image', '--output=deptrac.png'],
       { type: 'php' },
     )
-    if (await fs.pathExists('./deptrac.png')) {
-      await exec(['git', 'add', 'deptrac.png'], { quiet: true })
 
-      // Check if there are staged changes for the image
-      try {
-        await exec(['git', 'diff', '--cached', '--quiet', 'deptrac.png'], { quiet: true })
-      } catch {
-        // Changes detected, commit them
-        await exec(['git', 'commit', '-m', 'chore: update deptrac image'])
-        log.success('Deptrac image updated and committed')
-      }
+    if (await fs.pathExists('./deptrac.png')) {
+      log.success('Deptrac image generated: deptrac.png')
+      return { generated: true, changed: true, path: 'deptrac.png' }
     }
+
+    return { generated: false, changed: false }
   } catch (error: unknown) {
-    // Image generation is optional, don't fail if it doesn't work
     const errorMessage = error instanceof Error ? error.message : String(error)
     log.warn(`Deptrac image generation failed: ${errorMessage}`)
+    return { generated: false, changed: false }
   }
 }
 
 /**
- * Generate API documentation if OpenAPI spec has changed
+ * Generate API documentation from OpenAPI annotations
+ *
+ * Generates both the YAML spec and HTML documentation.
+ * Does NOT auto-commit - leaves that to the developer or CI.
  */
-export async function generateApiDocs(): Promise<void> {
+export async function generateApiDocs(): Promise<ArtifactResult> {
+  // Check if swagger-php is installed
+  if (!(await fs.pathExists('./vendor/bin/openapi'))) {
+    log.skip('swagger-php not installed, skipping API docs generation')
+    return { generated: false, changed: false }
+  }
+
   log.tool('API Documentation', 'Generating OpenAPI specification...')
+
   try {
-    // Check if swagger-php is installed by looking for the binary
-    // This avoids reading/parsing composer.lock
-    if (await fs.pathExists('./vendor/bin/openapi')) {
-      await exec(['composer', 'generate-api-spec'], { type: 'php' })
+    await exec(['composer', 'generate-api-spec'], { type: 'php' })
+    log.success('OpenAPI specification generated')
 
-      const diffResult = await exec(['git', 'diff', '--name-only'], { quiet: true })
-      const modifiedFiles = diffResult.toString().trim().split('\n')
+    // Check if spec changed
+    const diffResult = await exec(['git', 'diff', '--name-only'], { quiet: true })
+    const modifiedFiles = diffResult.toString().trim().split('\n')
 
-      if (modifiedFiles.includes('openapi/openapi.yml')) {
-        log.info('API spec changed, regenerating HTML...')
+    if (modifiedFiles.includes('openapi/openapi.yml')) {
+      log.info('API spec changed, regenerating HTML...')
 
-        try {
-          await exec(['pnpm', 'generate:api-doc:html'])
-          log.success('HTML documentation generated')
+      await exec(['pnpm', 'generate:api-doc:html'])
+      log.success('HTML documentation generated')
 
-          // Stage the generated files
-          await exec(
-            ['git', 'add', 'openapi/openapi.html', 'openapi/openapi.yml'],
-            { quiet: true },
-          )
-
-          // Check if there are staged changes and commit them
-          try {
-            await exec(['git', 'diff', '--cached', '--quiet'], { quiet: true })
-            // If we get here, there are no staged changes
-            log.info('No staged changes for API documentation')
-          } catch {
-            // There are staged changes, commit them
-            await exec(['git', 'commit', '-m', 'chore: update API documentation'])
-            log.success('API documentation committed')
-          }
-        } catch (error: unknown) {
-          const errorMessage = error instanceof Error ? error.message : String(error)
-          log.error(`HTML documentation generation failed: ${errorMessage}`)
-          throw error
-        }
-      } else {
-        log.info('No changes to OpenAPI specification, skipping HTML generation')
-      }
-    } else {
-      log.info('swagger-php not installed -> skipping API docs.')
+      log.info('Artifacts generated. Remember to commit: openapi/openapi.yml, openapi/openapi.html')
+      return { generated: true, changed: true, path: 'openapi/openapi.yml' }
     }
+
+    log.info('No changes to OpenAPI specification')
+    return { generated: true, changed: false }
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : String(error)
-    log.error(`API spec generation failed: ${errorMessage}`)
-    // Don't throw, just log error, as this might be optional?
-    // Original pre-push returned false on error.
+    log.error(`API documentation generation failed: ${errorMessage}`)
     throw error
   }
 }

@@ -11,7 +11,8 @@ vi.mock('../../shared/core', () => ({
     success: vi.fn(),
     warn: vi.fn(),
     info: vi.fn(),
-    error: vi.fn()
+    error: vi.fn(),
+    skip: vi.fn()
   }
 }))
 
@@ -27,99 +28,104 @@ describe('extras.ts', () => {
   })
 
   describe('generateDeptracImage', () => {
-    it('should skip if deptrac not installed', async () => {
+    it('should return not generated if deptrac not installed', async () => {
       vi.mocked(fs.pathExists).mockResolvedValue(false)
-      await generateDeptracImage()
+
+      const result = await generateDeptracImage()
+
+      expect(result).toEqual({ generated: false, changed: false })
       expect(exec).not.toHaveBeenCalled()
+      expect(log.skip).toHaveBeenCalled()
     })
 
-    it('should generate image if installed', async () => {
+    it('should generate image and return success if installed', async () => {
       vi.mocked(fs.pathExists).mockResolvedValue(true)
       vi.mocked(exec).mockResolvedValue({ toString: () => '' } as any)
 
-      await generateDeptracImage()
+      const result = await generateDeptracImage()
 
       expect(exec).toHaveBeenCalledWith(
         ['./vendor/bin/deptrac', '--formatter=graphviz-image', '--output=deptrac.png'],
         { type: 'php' }
       )
+      expect(result).toEqual({ generated: true, changed: true, path: 'deptrac.png' })
+      expect(log.success).toHaveBeenCalledWith(expect.stringContaining('deptrac.png'))
     })
 
-    it('should commit if image changed', async () => {
+    it('should NOT auto-commit (removed behavior)', async () => {
       vi.mocked(fs.pathExists).mockResolvedValue(true)
-      // Mock exec sequence:
-      // 1. generate image
-      // 2. git add
-      // 3. git diff (throws if changes exist)
-      // 4. git commit
-      vi.mocked(exec)
-        .mockResolvedValueOnce({} as any) // generate
-        .mockResolvedValueOnce({} as any) // add
-        .mockRejectedValueOnce(new Error('diff failed')) // diff (changes exist)
-        .mockResolvedValueOnce({} as any) // commit
+      vi.mocked(exec).mockResolvedValue({} as any)
 
       await generateDeptracImage()
 
-      expect(exec).toHaveBeenCalledWith(['git', 'commit', '-m', 'chore: update deptrac image'])
-      expect(log.success).toHaveBeenCalled()
+      // Verify no git add or git commit calls
+      const execCalls = vi.mocked(exec).mock.calls
+      const gitCalls = execCalls.filter(call => call[0][0] === 'git')
+      expect(gitCalls).toHaveLength(0)
     })
 
-    it('should handle errors gracefully', async () => {
+    it('should handle errors gracefully and return not generated', async () => {
       vi.mocked(fs.pathExists).mockResolvedValue(true)
       vi.mocked(exec).mockRejectedValue(new Error('generation failed'))
 
-      await generateDeptracImage()
+      const result = await generateDeptracImage()
 
+      expect(result).toEqual({ generated: false, changed: false })
       expect(log.warn).toHaveBeenCalledWith(expect.stringContaining('generation failed'))
     })
   })
 
   describe('generateApiDocs', () => {
-    it('should skip if swagger-php not installed', async () => {
+    it('should return not generated if swagger-php not installed', async () => {
       vi.mocked(fs.pathExists).mockResolvedValue(false)
-      await generateApiDocs()
-      expect(log.info).toHaveBeenCalledWith(expect.stringContaining('not installed'))
+
+      const result = await generateApiDocs()
+
+      expect(result).toEqual({ generated: false, changed: false })
+      expect(log.skip).toHaveBeenCalledWith(expect.stringContaining('not installed'))
     })
 
-    it('should skip HTML generation if spec not changed', async () => {
+    it('should return generated but not changed if spec unchanged', async () => {
       vi.mocked(fs.pathExists).mockResolvedValue(true)
       vi.mocked(exec)
         .mockResolvedValueOnce({} as any) // generate-api-spec
         .mockResolvedValueOnce({ toString: () => 'other-file.php' } as any) // git diff
 
-      await generateApiDocs()
+      const result = await generateApiDocs()
 
+      expect(result).toEqual({ generated: true, changed: false })
       expect(log.info).toHaveBeenCalledWith(expect.stringContaining('No changes'))
     })
 
-    it('should generate HTML and commit if spec changed', async () => {
+    it('should generate HTML and return changed if spec changed', async () => {
       vi.mocked(fs.pathExists).mockResolvedValue(true)
       vi.mocked(exec)
         .mockResolvedValueOnce({} as any) // generate-api-spec
         .mockResolvedValueOnce({ toString: () => 'openapi/openapi.yml' } as any) // git diff
         .mockResolvedValueOnce({} as any) // generate html
-        .mockResolvedValueOnce({} as any) // git add
-        .mockRejectedValueOnce(new Error('diff failed')) // git diff (changes exist)
-        .mockResolvedValueOnce({} as any) // git commit
 
-      await generateApiDocs()
+      const result = await generateApiDocs()
 
       expect(exec).toHaveBeenCalledWith(['pnpm', 'generate:api-doc:html'])
-      expect(exec).toHaveBeenCalledWith(['git', 'commit', '-m', 'chore: update API documentation'])
+      expect(result).toEqual({ generated: true, changed: true, path: 'openapi/openapi.yml' })
+      expect(log.info).toHaveBeenCalledWith(expect.stringContaining('Remember to commit'))
     })
 
-    it('should log info if no staged changes after generation', async () => {
+    it('should NOT auto-commit (removed behavior)', async () => {
       vi.mocked(fs.pathExists).mockResolvedValue(true)
       vi.mocked(exec)
         .mockResolvedValueOnce({} as any) // generate-api-spec
-        .mockResolvedValueOnce({ toString: () => 'openapi/openapi.yml' } as any) // git diff (spec changed)
+        .mockResolvedValueOnce({ toString: () => 'openapi/openapi.yml' } as any) // git diff
         .mockResolvedValueOnce({} as any) // generate html
-        .mockResolvedValueOnce({} as any) // git add
-        .mockResolvedValueOnce({} as any) // git diff (no staged changes)
 
       await generateApiDocs()
 
-      expect(log.info).toHaveBeenCalledWith(expect.stringContaining('No staged changes'))
+      // Verify no git add or git commit calls
+      const execCalls = vi.mocked(exec).mock.calls
+      const gitCommitCalls = execCalls.filter(call =>
+        call[0][0] === 'git' && call[0][1] === 'commit'
+      )
+      expect(gitCommitCalls).toHaveLength(0)
     })
 
     it('should throw if HTML generation fails', async () => {
@@ -130,10 +136,10 @@ describe('extras.ts', () => {
         .mockRejectedValueOnce(new Error('html gen failed')) // generate html fails
 
       await expect(generateApiDocs()).rejects.toThrow('html gen failed')
-      expect(log.error).toHaveBeenCalledWith(expect.stringContaining('HTML documentation generation failed'))
+      expect(log.error).toHaveBeenCalledWith(expect.stringContaining('failed'))
     })
 
-    it('should throw on error', async () => {
+    it('should throw on spec generation error', async () => {
       vi.mocked(fs.pathExists).mockResolvedValue(true)
       vi.mocked(exec).mockRejectedValue(new Error('fatal error'))
 

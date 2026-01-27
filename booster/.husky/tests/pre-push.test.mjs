@@ -2,7 +2,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 // Mock dependencies
 vi.mock('zx', () => ({
-  $: vi.fn(),
   fs: {
     pathExists: vi.fn(),
   },
@@ -16,6 +15,7 @@ vi.mock('../shared/index.ts', () => ({
     tool: vi.fn(),
     success: vi.fn(),
     error: vi.fn(),
+    warn: vi.fn(),
   },
   runHook: vi.fn(), // Prevent automatic execution
   exec: vi.fn(),
@@ -24,28 +24,15 @@ vi.mock('../shared/index.ts', () => ({
 }))
 
 // Import dependencies for mocking return values
-import { $ } from 'zx'
 import { fs } from 'zx'
 import { exec, generateApiDocs, isSkipped, generateDeptracImage } from '../shared/index.ts'
 
 // Import functions to test
-import { shouldSkip, runTests, handleApiDocs } from '../pre-push.ts'
+import { runTests, handleArtifacts } from '../pre-push.ts'
 
 describe('Pre-push Hook', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-  })
-
-  describe('shouldSkip', () => {
-    it('should skip if commit message contains skip tag', async () => {
-      $.mockResolvedValue({ stdout: 'chore: update API documentation' })
-      expect(await shouldSkip()).toBe(true)
-    })
-
-    it('should not skip for normal commits', async () => {
-      $.mockResolvedValue({ stdout: 'feat: new feature' })
-      expect(await shouldSkip()).toBe(false)
-    })
   })
 
   describe('runTests', () => {
@@ -78,39 +65,45 @@ describe('Pre-push Hook', () => {
     })
   })
 
-  describe('handleApiDocs', () => {
-    it('should generate api docs', async () => {
+  describe('handleArtifacts', () => {
+    it('should generate both deptrac image and api docs', async () => {
       isSkipped.mockReturnValue(false)
-      generateApiDocs.mockResolvedValue(true)
+      generateDeptracImage.mockResolvedValue({ generated: true, changed: true })
+      generateApiDocs.mockResolvedValue({ generated: true, changed: false })
 
-      const result = await handleApiDocs()
+      await handleArtifacts()
 
-      expect(result).toBe(true)
+      expect(generateDeptracImage).toHaveBeenCalled()
       expect(generateApiDocs).toHaveBeenCalled()
     })
 
-    it('should skip if env var is set', async () => {
-      isSkipped.mockReturnValue(true)
+    it('should skip deptrac if env var is set', async () => {
+      isSkipped.mockImplementation((name) => name === 'deptrac_image')
+      generateApiDocs.mockResolvedValue({ generated: true, changed: false })
 
-      const result = await handleApiDocs()
+      await handleArtifacts()
 
-      expect(result).toBe(true)
+      expect(generateDeptracImage).not.toHaveBeenCalled()
+      expect(generateApiDocs).toHaveBeenCalled()
+    })
+
+    it('should skip api docs if env var is set', async () => {
+      isSkipped.mockImplementation((name) => name === 'api_docs')
+      generateDeptracImage.mockResolvedValue({ generated: true, changed: false })
+
+      await handleArtifacts()
+
+      expect(generateDeptracImage).toHaveBeenCalled()
       expect(generateApiDocs).not.toHaveBeenCalled()
     })
 
-    it('should return false if generation fails', async () => {
+    it('should not throw if api docs generation fails', async () => {
       isSkipped.mockReturnValue(false)
+      generateDeptracImage.mockResolvedValue({ generated: true, changed: false })
       generateApiDocs.mockRejectedValue(new Error('Failed'))
 
-      const result = await handleApiDocs()
-
-      expect(result).toBe(false)
-    })
-  })
-
-  describe('Integration', () => {
-    it('should generate deptrac image', async () => {
-      expect(generateDeptracImage).toBeDefined()
+      // Should not throw
+      await expect(handleArtifacts()).resolves.not.toThrow()
     })
   })
 })

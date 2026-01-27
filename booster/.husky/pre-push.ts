@@ -4,11 +4,10 @@
  * Pre-push hook - ZX TypeScript implementation
  *
  * Runs checks before pushing:
- * - Deptrac (Architecture check)
- * - PHPUnit (Tests)
- * - API Documentation generation
+ * - Tests (Pest/PHPUnit)
+ * - Artifact generation (Deptrac image, API docs) - informational only
  */
-import { $, fs } from 'zx'
+import { fs } from 'zx'
 import {
   GitHook,
   isSkipped,
@@ -18,18 +17,6 @@ import {
   generateApiDocs,
   generateDeptracImage,
 } from './shared/index.ts'
-
-const SKIP_COMMIT_MSG = 'chore: update API documentation'
-const SKIP_DEPTRAC_MSG = 'chore: update deptrac image'
-
-export async function shouldSkip(): Promise<boolean> {
-  const lastCommitMsg = (await $`git log -1 --pretty=%B`).stdout.trim()
-  if (lastCommitMsg.includes(SKIP_COMMIT_MSG) || lastCommitMsg.includes(SKIP_DEPTRAC_MSG)) {
-    log.info('Skipping pre-push hook for auto-generated commit.')
-    return true
-  }
-  return false
-}
 
 export async function runTests(): Promise<boolean> {
   if (await fs.pathExists('vendor/bin/pest')) {
@@ -45,32 +32,33 @@ export async function runTests(): Promise<boolean> {
   return true
 }
 
-export async function handleApiDocs(): Promise<boolean> {
-  // Allow skipping API docs generation explicitly via env var
-  if (isSkipped('api_docs')) {
-    log.info('Skipping API docs generation (SKIP_API_DOCS environment variable set)')
-    return true
+export async function handleArtifacts(): Promise<void> {
+  // Generate artifacts - these are informational and don't block the push
+  // Developers should commit these manually if needed
+
+  if (!isSkipped('deptrac_image')) {
+    await generateDeptracImage()
   }
 
-  try {
-    await generateApiDocs()
-    return true
-  } catch {
-    log.error('API spec generation failed')
-    return false
+  if (!isSkipped('api_docs')) {
+    try {
+      const result = await generateApiDocs()
+      if (result.changed) {
+        log.warn('API documentation has changed. Consider committing the changes.')
+      }
+    } catch {
+      // API docs generation is optional, don't fail the push
+      log.warn('API docs generation failed, but continuing with push')
+    }
   }
 }
 
 await runHook(GitHook.PrePush, async () => {
-  if (await shouldSkip()) return true
-
-  // Deptrac check is currently disabled
-
+  // Run tests - these ARE blocking
   if (!(await runTests())) return false
 
-  // Generate artifacts (non-blocking failures)
-  await generateDeptracImage()
-  if (!(await handleApiDocs())) return false
+  // Generate artifacts - informational only, don't block push
+  await handleArtifacts()
 
   return true
 })
