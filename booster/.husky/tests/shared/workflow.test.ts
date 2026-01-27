@@ -192,6 +192,37 @@ describe('workflow.ts', () => {
       expect(result).toBe(false)
     })
 
+    it('should stop subsequent tools if blocking tool fails', async () => {
+      vi.mocked(isSkipped).mockReturnValue(false)
+      vi.mocked(fs.pathExists).mockResolvedValue(true)
+      vi.mocked(exec).mockRejectedValue(new Error('syntax error'))
+
+      const blockingTool: ToolConfig = { ...mockTool, blocking: true, required: false }
+      const subsequentTool: ToolConfig = { ...mockTool, name: 'subsequent-tool' }
+
+      const result = await runQualityChecks(['file.php'], [blockingTool, subsequentTool])
+
+      expect(result).toBe(false)
+      expect(exec).toHaveBeenCalledTimes(1) // Only blocking tool ran
+      expect(log.error).toHaveBeenCalledWith(expect.stringContaining('Stopping subsequent checks'))
+    })
+
+    it('should continue to next tool if non-blocking tool fails', async () => {
+      vi.mocked(isSkipped).mockReturnValue(false)
+      vi.mocked(fs.pathExists).mockResolvedValue(true)
+      vi.mocked(exec)
+        .mockRejectedValueOnce(new Error('first tool failed'))
+        .mockResolvedValueOnce({} as any)
+
+      const firstTool: ToolConfig = { ...mockTool, blocking: false, required: false }
+      const secondTool: ToolConfig = { ...mockTool, name: 'second-tool', required: false }
+
+      const result = await runQualityChecks(['file.php'], [firstTool, secondTool])
+
+      expect(result).toBe(false)
+      expect(exec).toHaveBeenCalledTimes(2) // Both tools ran
+    })
+
     it('should handle runForEachFile option', async () => {
       vi.mocked(isSkipped).mockReturnValue(false)
       vi.mocked(fs.pathExists).mockResolvedValue(true)

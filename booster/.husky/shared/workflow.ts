@@ -190,6 +190,10 @@ export async function runQualityChecks(files: string[], tools: ToolConfig[]): Pr
 
     if (!success) {
       allSuccessful = false
+      if (tool.blocking) {
+        log.error(`${tool.name} failed. Stopping subsequent checks.`)
+        return false
+      }
       if (tool.required) {
         log.error(`${tool.name} is required but failed`)
         return false

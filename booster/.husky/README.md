@@ -38,6 +38,7 @@ To add a new tool, simply add a `ToolConfig` object to the `TOOLS` array.
 | `stagesFilesAfter` | `boolean`         | (Optional) If `true`, re-stages files after execution (useful for fixers).                                                      |
 | `passFiles`        | `boolean`         | (Optional) If `false`, does not pass the list of staged files to the command. Default is `true`.                                |
 | `required`         | `boolean`         | (Optional) If `true`, the hook will fail if this tool fails. Default is `false` (but usually the hook fails if any tool fails). |
+| `blocking`         | `boolean`         | (Optional) If `true`, stops running subsequent tools if this tool fails. Useful for syntax checks that must pass first.         |
 
 ### Example
 

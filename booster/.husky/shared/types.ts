@@ -30,6 +30,8 @@ export interface ToolConfig {
   description?: string
   /** If true, the hook will fail if this tool fails. Default is false (but usually the hook fails if any tool fails). */
   required?: boolean
+  /** If true, stops running subsequent tools if this tool fails. Useful for syntax checks that must pass before analysis. */
+  blocking?: boolean
 }
 
 /**
