@@ -7,6 +7,15 @@
 export type ToolType = 'node' | 'php' | 'system'
 
 /**
+ * Tool group for selective execution via HOOKS_ONLY env var
+ * - 'format': Formatting tools (Prettier, ECS)
+ * - 'lint': Linting tools (ESLint, Stylelint)
+ * - 'analysis': Static analysis (PHPStan, Psalm, Deptrac)
+ * - 'refactor': Code refactoring (Rector)
+ */
+export type ToolGroup = 'format' | 'lint' | 'analysis' | 'refactor'
+
+/**
  * Failure mode for a tool
  * - 'continue': Log error, keep running other tools, report failure at end
  * - 'stop': Log error, skip remaining tools, report failure immediately
@@ -48,6 +57,11 @@ export interface ToolConfig {
    * Output is buffered and printed after all parallel tools complete.
    */
   parallelGroup?: string
+  /**
+   * Tool category for selective execution.
+   * Use HOOKS_ONLY=format,lint to run only specific groups.
+   */
+  group?: ToolGroup
 }
 
 /**

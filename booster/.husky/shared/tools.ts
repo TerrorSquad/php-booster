@@ -7,6 +7,12 @@ import type { ToolConfig } from './types.ts'
  * 1. Add a new object to the TOOLS array
  * 2. Configure the tool properties (name, command, args, etc.)
  * 3. Ensure the tool is installed in your project (package.json or composer.json)
+ *
+ * Tool groups for selective execution (HOOKS_ONLY env var):
+ * - 'format': Formatting tools (Prettier, ECS)
+ * - 'lint': Linting tools (ESLint, Stylelint, PHP Syntax)
+ * - 'analysis': Static analysis (PHPStan, Psalm, Deptrac)
+ * - 'refactor': Code refactoring (Rector)
  */
 
 /**
@@ -21,6 +27,7 @@ export const TOOLS: ToolConfig[] = [
     type: 'node',
     stagesFilesAfter: true,
     extensions: ['.js', '.jsx', '.ts', '.tsx', '.vue', '.mjs', '.cjs'],
+    group: 'lint',
   },
   {
     name: 'Prettier',
@@ -43,14 +50,16 @@ export const TOOLS: ToolConfig[] = [
       '.css',
       '.scss',
     ],
+    group: 'format',
   },
   {
     name: 'Stylelint',
     command: 'stylelint',
-    args: ['--fix', '--allow-empty-input'],
+    args: ['--fix', '--allow-empty-input', '--cache'],
     type: 'node',
     stagesFilesAfter: true,
     extensions: ['.vue', '.css', '.scss', '.sass', '.less'],
+    group: 'lint',
   },
 
   // PHP Tools
@@ -62,6 +71,7 @@ export const TOOLS: ToolConfig[] = [
     runForEachFile: true,
     extensions: ['.php'],
     onFailure: 'stop', // Stop subsequent tools if syntax check fails
+    group: 'lint',
   },
   {
     name: 'Rector',
@@ -70,6 +80,7 @@ export const TOOLS: ToolConfig[] = [
     type: 'php',
     stagesFilesAfter: true,
     extensions: ['.php'],
+    group: 'refactor',
   },
   {
     name: 'ECS',
@@ -78,6 +89,7 @@ export const TOOLS: ToolConfig[] = [
     type: 'php',
     stagesFilesAfter: true,
     extensions: ['.php'],
+    group: 'format',
   },
   {
     name: 'PHPStan',
@@ -86,6 +98,7 @@ export const TOOLS: ToolConfig[] = [
     type: 'php',
     extensions: ['.php'],
     parallelGroup: 'php-analysis',
+    group: 'analysis',
   },
   {
     name: 'Psalm',
@@ -93,6 +106,7 @@ export const TOOLS: ToolConfig[] = [
     type: 'php',
     extensions: ['.php'],
     parallelGroup: 'php-analysis',
+    group: 'analysis',
   },
   {
     name: 'Deptrac',
@@ -102,5 +116,6 @@ export const TOOLS: ToolConfig[] = [
     passFiles: false,
     extensions: ['.php'],
     parallelGroup: 'php-analysis',
+    group: 'analysis',
   },
 ]

@@ -253,6 +253,18 @@ async function getBufferedCommand(
 }
 
 /**
+ * Parse HOOKS_ONLY environment variable into list of allowed groups
+ * Returns undefined if all groups are allowed
+ */
+function getAllowedGroups(): Set<string> | undefined {
+  const hooksOnly = process.env.HOOKS_ONLY
+  if (!hooksOnly) return undefined
+  
+  const groups = hooksOnly.split(',').map(g => g.trim().toLowerCase())
+  return new Set(groups)
+}
+
+/**
  * Prepared tool ready to run (after skip/availability checks)
  */
 interface PreparedTool {
@@ -269,6 +281,13 @@ async function prepareTool(tool: ToolConfig, files: string[]): Promise<PreparedT
   // Check if tool is explicitly skipped via env var
   if (isSkipped(tool.name)) {
     log.skip(`${tool.name} skipped (SKIP_${tool.name.toUpperCase()} environment variable set)`)
+    return null
+  }
+
+  // Check if tool is filtered out by HOOKS_ONLY
+  const allowedGroups = getAllowedGroups()
+  if (allowedGroups && tool.group && !allowedGroups.has(tool.group)) {
+    log.skip(`${tool.name} skipped (not in HOOKS_ONLY=${process.env.HOOKS_ONLY})`)
     return null
   }
 

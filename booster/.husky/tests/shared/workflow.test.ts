@@ -22,7 +22,8 @@ vi.mock('../../shared/core', () => ({
     skip: vi.fn(),
     step: vi.fn(),
     celebrate: vi.fn(),
-    info: vi.fn()
+    info: vi.fn(),
+    warn: vi.fn()
   },
   isSkipped: vi.fn(),
   isDdevProject: vi.fn(),
@@ -324,6 +325,80 @@ describe('workflow.ts', () => {
       // Should skip because pathExists returns false
       // We need to verify it was skipped, so exec shouldn't be called again
       expect(exec).toHaveBeenCalledTimes(1) // Only for the first call
+    })
+
+    it('should skip tools not in HOOKS_ONLY groups', async () => {
+      vi.mocked(isSkipped).mockReturnValue(false)
+      vi.mocked(fs.pathExists).mockResolvedValue(true)
+      vi.mocked(exec).mockResolvedValue({} as any)
+
+      // Set HOOKS_ONLY to only run lint tools
+      process.env.HOOKS_ONLY = 'lint'
+
+      const lintTool: ToolConfig = { ...mockTool, name: 'lint-tool', group: 'lint' }
+      const formatTool: ToolConfig = { ...mockTool, name: 'format-tool', group: 'format' }
+
+      await runQualityChecks(['file.php'], [lintTool, formatTool])
+
+      // Only lint tool should run
+      expect(exec).toHaveBeenCalledTimes(1)
+      expect(log.skip).toHaveBeenCalledWith(expect.stringContaining('format-tool'))
+      expect(log.skip).toHaveBeenCalledWith(expect.stringContaining('HOOKS_ONLY'))
+
+      delete process.env.HOOKS_ONLY
+    })
+
+    it('should run tools in multiple HOOKS_ONLY groups', async () => {
+      vi.mocked(isSkipped).mockReturnValue(false)
+      vi.mocked(fs.pathExists).mockResolvedValue(true)
+      vi.mocked(exec).mockResolvedValue({} as any)
+
+      process.env.HOOKS_ONLY = 'lint,format'
+
+      const lintTool: ToolConfig = { ...mockTool, name: 'lint-tool', group: 'lint' }
+      const formatTool: ToolConfig = { ...mockTool, name: 'format-tool', group: 'format' }
+      const analysisTool: ToolConfig = { ...mockTool, name: 'analysis-tool', group: 'analysis' }
+
+      await runQualityChecks(['file.php'], [lintTool, formatTool, analysisTool])
+
+      // Lint and format tools should run, analysis should be skipped
+      expect(exec).toHaveBeenCalledTimes(2)
+      expect(log.skip).toHaveBeenCalledWith(expect.stringContaining('analysis-tool'))
+
+      delete process.env.HOOKS_ONLY
+    })
+
+    it('should run tools without group when HOOKS_ONLY is set', async () => {
+      vi.mocked(isSkipped).mockReturnValue(false)
+      vi.mocked(fs.pathExists).mockResolvedValue(true)
+      vi.mocked(exec).mockResolvedValue({} as any)
+
+      process.env.HOOKS_ONLY = 'lint'
+
+      const lintTool: ToolConfig = { ...mockTool, name: 'lint-tool', group: 'lint' }
+      const noGroupTool: ToolConfig = { ...mockTool, name: 'no-group-tool' } // no group
+
+      await runQualityChecks(['file.php'], [lintTool, noGroupTool])
+
+      // Both should run - tools without group are not filtered
+      expect(exec).toHaveBeenCalledTimes(2)
+
+      delete process.env.HOOKS_ONLY
+    })
+
+    it('should run all tools when HOOKS_ONLY is not set', async () => {
+      vi.mocked(isSkipped).mockReturnValue(false)
+      vi.mocked(fs.pathExists).mockResolvedValue(true)
+      vi.mocked(exec).mockResolvedValue({} as any)
+
+      delete process.env.HOOKS_ONLY
+
+      const lintTool: ToolConfig = { ...mockTool, name: 'lint-tool', group: 'lint' }
+      const formatTool: ToolConfig = { ...mockTool, name: 'format-tool', group: 'format' }
+
+      await runQualityChecks(['file.php'], [lintTool, formatTool])
+
+      expect(exec).toHaveBeenCalledTimes(2)
     })
   })
 
