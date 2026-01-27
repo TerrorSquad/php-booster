@@ -1,5 +1,39 @@
 # Changelog
 
+## [2.0.0](https://github.com/TerrorSquad/php-booster/compare/v1.18.0...v2.0.0) (2026-01-27)
+
+
+### ⚠ BREAKING CHANGES
+
+* **hooks:** ToolConfig interface changed
+
+### Features
+
+* add blocking option to tools for improved error handling ([c56b7f2](https://github.com/TerrorSquad/php-booster/commit/c56b7f27840151a31936188af6cecda83f1cc065))
+* add hooks-only mode for JavaScript/TypeScript projects ([3cba3ad](https://github.com/TerrorSquad/php-booster/commit/3cba3ad13ba6abf4bab16f952f4b9be87c60f410))
+* **hooks:** add config file support for per-project customization ([4f59eeb](https://github.com/TerrorSquad/php-booster/commit/4f59eebbe9eece3ca17558b3862a376292cddfe2))
+* **hooks:** add parallel execution for analysis tools ([0db3c33](https://github.com/TerrorSquad/php-booster/commit/0db3c33ffeb897cf621764109a0bd914c5d7616e))
+* **hooks:** add tool groups and HOOKS_ONLY filtering ([15685ce](https://github.com/TerrorSquad/php-booster/commit/15685ce787a67e09a7f35cb0eee160645f72760e))
+* **integration:** add partial update flags for existing installations ([8f9a16d](https://github.com/TerrorSquad/php-booster/commit/8f9a16d9acf0679f99a4a90f0a477df17ea825ac))
+
+
+### Bug Fixes
+
+* **bash:** quote command substitutions for paths with spaces ([8c36a72](https://github.com/TerrorSquad/php-booster/commit/8c36a725eb3fd21bba85ab14c23ebd51ac292941))
+* **hooks:** improve DDEV config error messages ([5d42d3d](https://github.com/TerrorSquad/php-booster/commit/5d42d3dbe8b80a6edd120bccd87b73ea84aba13a))
+* **hooks:** improve error messages with file and line extraction ([f0e9cf5](https://github.com/TerrorSquad/php-booster/commit/f0e9cf530c246eedf245a54ad4f3c95690690d5c))
+* update OpenAPI paths and documentation references ([4b03f31](https://github.com/TerrorSquad/php-booster/commit/4b03f317da9400ec35148e70ac3a045088cd0ed4))
+
+
+### Performance Improvements
+
+* **hooks:** cache DDEV project detection ([a3b1c81](https://github.com/TerrorSquad/php-booster/commit/a3b1c8183681c344898190e10b51b4932decf8db))
+
+
+### Code Refactoring
+
+* **hooks:** replace blocking/required with onFailure property ([123147b](https://github.com/TerrorSquad/php-booster/commit/123147b3f346ee843b4bb637837c5e140f69cfd9))
+
 ## [1.18.0](https://github.com/TerrorSquad/php-booster/compare/v1.17.2...v1.18.0) (2026-01-12)
 
 
