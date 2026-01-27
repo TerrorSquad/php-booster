@@ -123,25 +123,47 @@ export function isSkipped(name: string): boolean {
   return process.env[skipEnvVar] === '1' || process.env[skipEnvVar] === 'true'
 }
 
+// Cache for DDEV detection to avoid repeated filesystem checks
+let _ddevProjectCache: boolean | null = null
+
 /**
  * Check if the current project is a DDEV project
+ * Result is cached after first call for performance.
  * @returns True if .ddev/config.yaml exists and ddev binary is available
  */
 export async function isDdevProject(): Promise<boolean> {
+  // Return cached result if available
+  if (_ddevProjectCache !== null) {
+    return _ddevProjectCache
+  }
+
   // Allow explicit disable via env var
   if (process.env.DDEV_PHP === 'false' || process.env.DDEV_PHP === '0') {
+    _ddevProjectCache = false
     return false
   }
 
   const hasConfig = await fs.pathExists('.ddev/config.yaml')
-  if (!hasConfig) return false
+  if (!hasConfig) {
+    _ddevProjectCache = false
+    return false
+  }
 
   try {
     await which('ddev')
+    _ddevProjectCache = true
     return true
   } catch {
+    _ddevProjectCache = false
     return false
   }
+}
+
+/**
+ * Reset DDEV detection cache (useful for testing)
+ */
+export function resetDdevCache(): void {
+  _ddevProjectCache = null
 }
 
 /**

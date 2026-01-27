@@ -5,6 +5,7 @@ import {
   formatDuration,
   isSkipped,
   isDdevProject,
+  resetDdevCache,
   exec,
   ensureMutagenSync
 } from '../../shared/core'
@@ -42,6 +43,7 @@ describe('core.ts', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     vi.resetModules()
+    resetDdevCache() // Reset DDEV cache between tests
     process.env = { ...process.env } // Clone env
     delete process.env.DDEV_PHP // Ensure this doesn't interfere
   })
