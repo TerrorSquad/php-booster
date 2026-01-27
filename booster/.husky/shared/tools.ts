@@ -10,7 +10,7 @@ import type { ToolConfig } from './types.ts'
  *
  * Tool groups for selective execution (HOOKS_ONLY env var):
  * - 'format': Formatting tools (Prettier, ECS)
- * - 'lint': Linting tools (ESLint, Stylelint, PHP Syntax)
+ * - 'lint': Linting tools (ESLint, Stylelint, PHP Syntax, TypeScript)
  * - 'analysis': Static analysis (PHPStan, Psalm, Deptrac)
  * - 'refactor': Code refactoring (Rector)
  */
@@ -60,6 +60,16 @@ export const TOOLS: ToolConfig[] = [
     stagesFilesAfter: true,
     extensions: ['.vue', '.css', '.scss', '.sass', '.less'],
     group: 'lint',
+  },
+  {
+    name: 'TypeScript',
+    command: 'tsc',
+    args: ['--noEmit', '--skipLibCheck'],
+    type: 'node',
+    passFiles: false, // tsc uses tsconfig.json, not file list
+    extensions: ['.ts', '.tsx'],
+    group: 'lint',
+    description: 'Type-checking TypeScript files...',
   },
 
   // PHP Tools

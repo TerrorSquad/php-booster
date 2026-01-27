@@ -35,6 +35,7 @@ function get_installed_version() {
 # Create or update the version stamp file
 function create_version_stamp() {
     local version="$1"
+    local install_mode="${2:-full}"
     local version_file=".booster-version"
     local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
 
@@ -46,9 +47,10 @@ function create_version_stamp() {
 VERSION=$version
 INSTALLED_DATE=$timestamp
 INTEGRATION_METHOD=script
+INSTALL_MODE=$install_mode
 EOF
 
-    log "Created version stamp: $version (installed $timestamp)"
+    log "Created version stamp: $version (installed $timestamp, mode: $install_mode)"
 }
 
 # Show version information and upgrade status

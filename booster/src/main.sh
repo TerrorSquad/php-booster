@@ -8,6 +8,7 @@ function show_help() {
     echo "OPTIONS:"
     echo "  -I          Run in interactive mode (recommended for first-time setup)"
     echo "  -N          Non-interactive mode (skip all prompts, use defaults)"
+    echo "  -J          JavaScript/TypeScript only mode (hooks only, no PHP tools)"
     echo "  -v          Enable verbose logging"
     echo "  -c          Skip cleanup (preserve temporary files for debugging)"
     echo "  -i          Show version information and exit"
@@ -16,10 +17,12 @@ function show_help() {
     echo "DESCRIPTION:"
     echo "  Integrates PHP Booster tooling into an existing PHP project."
     echo "  Supports both standard PHP projects and DDEV environments."
+    echo "  Use -J flag for JavaScript/TypeScript projects without PHP."
     echo ""
     echo "EXAMPLES:"
     echo "  $0              # Run integration with default settings"
     echo "  $0 -I           # Run in interactive mode (guided setup)"
+    echo "  $0 -J           # Install hooks only (for JS/TS projects)"
     echo "  $0 -v           # Run with verbose output"
     echo "  $0 -i           # Show version information"
     echo ""
@@ -67,7 +70,7 @@ function show_version_info_and_exit() {
 
 function main() {
     # Process command line arguments
-    while getopts ":vchiIN" opt; do
+    while getopts ":vchiINJ" opt; do
         case $opt in
         v) VERBOSE=true ;;
         c) NO_CLEANUP=true ;;
@@ -75,22 +78,38 @@ function main() {
         i) show_version_info_and_exit ;;
         I) INTERACTIVE_MODE=true ;;
         N) SKIP_INTERACTIVE=true ;;
+        J) HOOKS_ONLY_MODE=true ;;
         \?) error "Invalid option: -$OPTARG. Use -h for help." ;;
         :) error "Option -$OPTARG requires an argument." ;;
         esac
     done
     shift $((OPTIND - 1))
 
-    log "Starting php-booster integration..."
+    # Determine installation mode
+    if [ "$HOOKS_ONLY_MODE" = true ]; then
+        log "Starting php-booster integration (hooks-only mode for JS/TS projects)..."
+    else
+        log "Starting php-booster integration..."
+    fi
+
     IS_DDEV_PROJECT=$(is_ddev_project)
 
-    if [ $IS_DDEV_PROJECT -eq 1 ]; then
+    # Auto-detect hooks-only mode if no composer.json and not explicitly set
+    if [ ! -f "composer.json" ] && [ "$HOOKS_ONLY_MODE" != true ] && [ "$INTERACTIVE_MODE" != true ]; then
+        info "No composer.json found. Assuming JavaScript/TypeScript project."
+        info "Use -J flag explicitly or -I for interactive mode to customize."
+        HOOKS_ONLY_MODE=true
+    fi
+
+    if [ "$HOOKS_ONLY_MODE" = true ]; then
+        log "Hooks-only mode: PHP tools will be skipped."
+    elif [ $IS_DDEV_PROJECT -eq 1 ]; then
         log "DDEV project detected."
     else
         log "Standard PHP project detected (no .ddev directory found)."
     fi
 
-    if [ ! -f "composer.json" ] && [ ! -d ".git" ]; then
+    if [ ! -f "composer.json" ] && [ ! -d ".git" ] && [ "$HOOKS_ONLY_MODE" != true ]; then
         warn "Script might not be running from the project root (composer.json or .git not found). Results may be unexpected."
     fi
 
@@ -111,43 +130,57 @@ function main() {
     update_package_json
     update_readme
     update_gitignore
-    update_tool_paths
 
-    # Apply interactive configuration if mode was enabled
-    if [ "$INTERACTIVE_MODE" = true ]; then
-        apply_interactive_configuration
+    # Skip PHP-specific steps in hooks-only mode
+    if [ "$HOOKS_ONLY_MODE" != true ]; then
+        update_tool_paths
+
+        # Apply interactive configuration if mode was enabled
+        if [ "$INTERACTIVE_MODE" = true ]; then
+            apply_interactive_configuration
+        fi
+
+        if [ $IS_DDEV_PROJECT -eq 1 ]; then
+            log "Updating DDEV files..."
+
+            local attempts=0
+            local max_attempts=3
+            while [ $attempts -lt $max_attempts ]; do
+                if ddev start; then
+                    break
+                else
+                    warn "ddev start failed. Retrying... ($((attempts + 1))/$max_attempts)"
+                    ((attempts++))
+                    sleep 5
+                fi
+            done
+            update_ddev_files
+            update_ddev_config
+            update_nginx_config
+            ddev restart
+        fi
+
+        add_code_quality_tools # Merges composer scripts & installs deps
+        init_deptrac
+    else
+        log "Skipping PHP tools installation (hooks-only mode)."
     fi
 
-    if [ $IS_DDEV_PROJECT -eq 1 ]; then
-        log "Updating DDEV files..."
-
-        local attempts=0
-        local max_attempts=3
-        while [ $attempts -lt $max_attempts ]; do
-            if ddev start; then
-                break
-            else
-                warn "ddev start failed. Retrying... ($((attempts + 1))/$max_attempts)"
-                ((attempts++))
-                sleep 5
-            fi
-        done
-        update_ddev_files
-        update_ddev_config
-        update_nginx_config
-        ddev restart
-    fi
-
-    add_code_quality_tools # Merges composer scripts & installs deps
-    init_deptrac
     install_node_dependencies
 
     # --- Create Version Stamp ---
-    create_version_stamp "$current_version"
+    local install_mode="full"
+    if [ "$HOOKS_ONLY_MODE" = true ]; then
+        install_mode="hooks-only"
+    fi
+    create_version_stamp "$current_version" "$install_mode"
 
     success "Integration process completed."
 
-    if [ $IS_DDEV_PROJECT -eq 1 ]; then
+    if [ "$HOOKS_ONLY_MODE" = true ]; then
+        success "Hooks-only installation complete. Git hooks are now active for JS/TS projects."
+        info "Available tools: ESLint, Prettier, Stylelint, TypeScript (if tsconfig.json exists)"
+    elif [ $IS_DDEV_PROJECT -eq 1 ]; then
         success "Please run 'ddev restart' to apply the DDEV configuration changes."
     fi
 

@@ -11,7 +11,7 @@ Follow these steps to integrate the PHP Development Booster into your existing P
 
 ::steps
   ### Prepare Your Project
-  - Ensure your PHP project is under version control (e.g., Git).
+  - Ensure your project is under version control (e.g., Git).
   - Check out a new branch and ensure there are no uncommitted changes.
 
   ### Run the Integration Script
@@ -33,6 +33,23 @@ Follow these steps to integrate the PHP Development Booster into your existing P
   - Push the branch to your repository and create a pull request for review.
 ::
 
+## JavaScript/TypeScript Projects
+
+For JavaScript or TypeScript projects without PHP, use the **hooks-only mode** (`-J`):
+
+```bash [Terminal]
+curl -sSL https://raw.githubusercontent.com/TerrorSquad/php-booster/main/booster/integrate_booster.sh | bash -s -- -J
+```
+
+This installs:
+- **Git hooks**: Pre-commit, commit-msg, pre-push
+- **JS/TS tools**: ESLint, Prettier, Stylelint, TypeScript type-checking
+- **Commit conventions**: CommitLint, branch name validation
+
+::tip
+The script auto-detects JS/TS projects (no `composer.json` found) and suggests hooks-only mode.
+::
+
 ## Interactive Mode
 
 ::tip
@@ -46,7 +63,10 @@ curl -sSL https://raw.githubusercontent.com/TerrorSquad/php-booster/main/booster
 ### Configuration Steps
 
 ::steps
-  ### Select Code Quality Tools
+  ### Select Project Type
+  Choose between PHP (full tooling) or JavaScript/TypeScript (hooks only).
+
+  ### Select Code Quality Tools (PHP only)
   Choose to install ECS, Rector, PHPStan, or Psalm individually or all at once.
 
   ### Configure Git Workflow

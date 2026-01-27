@@ -4,14 +4,18 @@ function check_dependencies() {
     log "Checking dependencies..."
     local missing_deps=()
     command -v jq >/dev/null 2>&1 || missing_deps+=("jq")
-    command -v yq >/dev/null 2>&1 || missing_deps+=("yq") # Still needed for ddev config
     command -v curl >/dev/null 2>&1 || missing_deps+=("curl")
     command -v unzip >/dev/null 2>&1 || missing_deps+=("unzip")
 
-    if [ $IS_DDEV_PROJECT -eq 1 ]; then
-        command -v ddev >/dev/null 2>&1 || missing_deps+=("ddev")
-    else
-        command -v composer >/dev/null 2>&1 || missing_deps+=("composer")
+    # Skip PHP-related dependency checks in hooks-only mode
+    if [ "$HOOKS_ONLY_MODE" != true ]; then
+        command -v yq >/dev/null 2>&1 || missing_deps+=("yq") # Needed for ddev config
+
+        if [ $IS_DDEV_PROJECT -eq 1 ]; then
+            command -v ddev >/dev/null 2>&1 || missing_deps+=("ddev")
+        else
+            command -v composer >/dev/null 2>&1 || missing_deps+=("composer")
+        fi
     fi
 
     if [ ${#missing_deps[@]} -ne 0 ]; then

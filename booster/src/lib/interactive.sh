@@ -35,7 +35,50 @@ function confirm_action() {
     fi
 }
 
+function select_project_type() {
+    echo ""
+    echo ""
+    echo "═══════════════════════════════════════════════════════════════"
+    info "Step 0: Select Project Type"
+    echo "═══════════════════════════════════════════════════════════════"
+    echo ""
+    echo ""
+    echo "What type of project is this?"
+    echo ""
+    echo "  1. PHP Project (full tooling: ECS, Rector, PHPStan, Psalm, etc.)"
+    echo "  2. JavaScript/TypeScript Project (hooks only: ESLint, Prettier, TypeScript)"
+    echo ""
+
+    # Auto-detect based on files present
+    local default_type="1"
+    if [ ! -f "composer.json" ] && [ -f "package.json" ]; then
+        default_type="2"
+        info "Detected: No composer.json, but package.json exists. Suggesting JS/TS mode."
+    elif [ -f "composer.json" ]; then
+        info "Detected: composer.json exists. Suggesting PHP mode."
+    fi
+
+    prompt "Select project type [1/2] (default: $default_type): "
+    read -r project_choice
+    project_choice=${project_choice:-$default_type}
+
+    if [ "$project_choice" = "2" ]; then
+        HOOKS_ONLY_MODE=true
+        success "JavaScript/TypeScript mode selected (hooks only)"
+    else
+        HOOKS_ONLY_MODE=false
+        success "PHP mode selected (full tooling)"
+    fi
+    echo ""
+}
+
 function select_tools_to_install() {
+    # Skip PHP tool selection in hooks-only mode
+    if [ "$HOOKS_ONLY_MODE" = true ]; then
+        log "Skipping PHP tool selection (hooks-only mode)"
+        return
+    fi
+
     echo ""
     echo ""
     echo "═══════════════════════════════════════════════════════════════"
@@ -148,11 +191,20 @@ function show_configuration_summary() {
     echo "═══════════════════════════════════════════════════════════════"
     echo ""
     echo ""
-    echo "📦 Tools to install:"
-    echo ""
-    for tool in "${INTERACTIVE_TOOLS_SELECTED[@]}"; do
-        echo "   ✓ $tool"
-    done
+
+    echo "🏗️  Project Type:"
+    if [ "$HOOKS_ONLY_MODE" = true ]; then
+        echo "   ✓ JavaScript/TypeScript (hooks only)"
+        echo "   ✓ Tools: ESLint, Prettier, Stylelint, TypeScript"
+    else
+        echo "   ✓ PHP (full tooling)"
+        echo ""
+        echo "📦 PHP Tools to install:"
+        echo ""
+        for tool in "${INTERACTIVE_TOOLS_SELECTED[@]}"; do
+            echo "   ✓ $tool"
+        done
+    fi
     echo ""
     echo ""
 
@@ -271,6 +323,7 @@ function show_post_installation_summary() {
 
 function run_interactive_mode() {
     show_welcome_banner
+    select_project_type
     select_tools_to_install
     configure_git_workflow
     configure_ide_settings
