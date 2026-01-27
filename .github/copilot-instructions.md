@@ -28,6 +28,19 @@ The script:
 - Adds missing dependencies only (checks installed state).
 - Dynamically updates tool config paths based on actual PHP directories.
 - Optionally updates DDEV config, nginx, Xdebug trigger.
+- Creates `.booster-version` stamp file for upgrade tracking.
+
+**Command-Line Flags:**
+| Flag | Description |
+|------|-------------|
+| `-I` | Interactive mode (guided setup wizard) |
+| `-N` | Non-interactive mode (skip prompts, use defaults) |
+| `-J` | JavaScript/TypeScript only (hooks-only, no PHP tools) |
+| `-v` | Verbose logging |
+| `-i` | Show version info and exit |
+| `--update-hooks` | Partial update: refresh only `.husky` directory |
+| `--update-configs` | Partial update: refresh only config files |
+| `--update-deps` | Partial update: refresh only dependencies |
 
 Copilot SHOULD:
 - Prefer invoking or referencing existing scripts instead of reinventing logic.
@@ -68,6 +81,27 @@ Copilot SHOULD NOT generate raw php-cs-fixer, phpstan, rector, or psalm command 
 - `commit-msg` hook validates branch, lints message, appends footer if needed - all functionality integrated natively.
 - Copilot SHOULD reference the ZX-based hook system and shared utilities instead of legacy scripts.
 
+**Tool Groups & Filtering:**
+Tools are organized into groups: `lint`, `format`, `analysis`, `refactor`. Use the `HOOKS_ONLY` environment variable to run only specific groups:
+```bash
+HOOKS_ONLY=lint,format git commit -m "..."  # Only run lint and format tools
+```
+
+**Per-Project Configuration:**
+Create `.git-hooks.config.json` in project root to customize hook behavior:
+```json
+{
+  "ticketIdRequired": true,
+  "ticketPrefix": "PRJ",
+  "footerLabel": "Closes",
+  "verbose": false,
+  "hooks": {
+    "preCommit": { "skip": false },
+    "prePush": { "skip": false }
+  }
+}
+```
+
 ---
 ## 6. Configuration Files (Do Not Duplicate)
 | File | Purpose |
@@ -80,6 +114,8 @@ Copilot SHOULD NOT generate raw php-cs-fixer, phpstan, rector, or psalm command 
 | `.editorconfig` | Base editor formatting |
 | `.vscode/` & `.phpstorm/` | Editor recommendations |
 | `openapi/openapi.yml` | API spec seed |
+| `.git-hooks.config.json` | Per-project hook configuration |
+| `.booster-version` | Installation version stamp |
 
 Copilot SHOULD reference or extend these—NOT generate new parallel config files with different names.
 
@@ -127,8 +163,8 @@ Copilot SHOULD NOT:
 ## 12. Future-Friendly Suggestions (Allowed if asked)
 If user asks about improvements, Copilot may propose:
 - Dry-run mode for integration script.
-- Version stamp file for upgrade tracking (e.g., `.php-booster-version`).
 - Test harness for hooks (use `tools/internal-test/test-integration.py`).
+- Additional tool integrations (new linters, formatters).
 
 ---
 ## 13. Quick Reference Snippets
@@ -143,6 +179,18 @@ Validate branch manually:
 Run all analyzers (example if combined script exists, otherwise run individually):
 ```
 composer phpstan && composer psalm && composer ecs
+```
+Run specific tool groups only:
+```
+HOOKS_ONLY=lint git commit -m "fix: quick lint check"
+```
+Partial update (refresh hooks only):
+```
+curl -sSL https://raw.githubusercontent.com/TerrorSquad/php-booster/main/booster/integrate_booster.sh | bash -s -- --update-hooks
+```
+JS/TS project integration (hooks only, no PHP):
+```
+curl -sSL https://raw.githubusercontent.com/TerrorSquad/php-booster/main/booster/integrate_booster.sh | bash -s -- -J
 ```
 
 ---
@@ -170,7 +218,7 @@ Copilot SHOULD:
 ## 16. Documentation Site (`docs/`)
 The documentation is a **Nuxt 3** application using the **Docus** theme.
 - Content is in `docs/content/`.
-- Run `npm run dev` (or `pnpm dev`) inside `docs/` to preview.
+- Run `bun dev` inside `docs/` to preview.
 
 ---
 End of repository-specific Copilot instructions.
