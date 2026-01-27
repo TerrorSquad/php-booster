@@ -61,7 +61,7 @@ export const TOOLS: ToolConfig[] = [
     type: 'php',
     runForEachFile: true,
     extensions: ['.php'],
-    blocking: true, // Stop subsequent tools if syntax check fails
+    onFailure: 'stop', // Stop subsequent tools if syntax check fails
   },
   {
     name: 'Rector',

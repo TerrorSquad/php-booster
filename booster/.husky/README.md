@@ -28,17 +28,16 @@ To add a new tool, simply add a `ToolConfig` object to the `TOOLS` array.
 
 ### Configuration Object (`ToolConfig`)
 
-| Property           | Type              | Description                                                                                                                     |
-| ------------------ | ----------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| `name`             | `string`          | Display name of the tool (used in logs).                                                                                        |
-| `command`          | `string`          | The binary command to run (e.g., `eslint`, `rector`).                                                                           |
-| `type`             | `'node' \| 'php'` | Determines where to look for the binary (`node_modules/.bin` or `vendor/bin`).                                                  |
-| `args`             | `string[]`        | (Optional) Arguments to pass to the command.                                                                                    |
-| `extensions`       | `string[]`        | (Optional) Only run on files with these extensions.                                                                             |
-| `stagesFilesAfter` | `boolean`         | (Optional) If `true`, re-stages files after execution (useful for fixers).                                                      |
-| `passFiles`        | `boolean`         | (Optional) If `false`, does not pass the list of staged files to the command. Default is `true`.                                |
-| `required`         | `boolean`         | (Optional) If `true`, the hook will fail if this tool fails. Default is `false` (but usually the hook fails if any tool fails). |
-| `blocking`         | `boolean`         | (Optional) If `true`, stops running subsequent tools if this tool fails. Useful for syntax checks that must pass first.         |
+| Property           | Type                        | Description                                                                                      |
+| ------------------ | --------------------------- | ------------------------------------------------------------------------------------------------ |
+| `name`             | `string`                    | Display name of the tool (used in logs).                                                         |
+| `command`          | `string`                    | The binary command to run (e.g., `eslint`, `rector`).                                            |
+| `type`             | `'node' \| 'php'`           | Determines where to look for the binary (`node_modules/.bin` or `vendor/bin`).                   |
+| `args`             | `string[]`                  | (Optional) Arguments to pass to the command.                                                     |
+| `extensions`       | `string[]`                  | (Optional) Only run on files with these extensions.                                              |
+| `stagesFilesAfter` | `boolean`                   | (Optional) If `true`, re-stages files after execution (useful for fixers).                       |
+| `passFiles`        | `boolean`                   | (Optional) If `false`, does not pass the list of staged files to the command. Default is `true`. |
+| `onFailure`        | `'continue' \| 'stop'`      | (Optional) What happens when this tool fails. Default is `'continue'`. Use `'stop'` for syntax checks that must pass before other tools run. |
 
 ### Example
 
@@ -49,7 +48,8 @@ To add a new tool, simply add a `ToolConfig` object to the `TOOLS` array.
   args: ['--check'],
   type: 'node',
   extensions: ['.ts', '.js'],
-  stagesFilesAfter: false
+  stagesFilesAfter: false,
+  onFailure: 'continue'  // or 'stop' for critical checks
 }
 ```
 

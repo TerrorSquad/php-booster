@@ -7,6 +7,13 @@
 export type ToolType = 'node' | 'php' | 'system'
 
 /**
+ * Failure mode for a tool
+ * - 'continue': Log error, keep running other tools, report failure at end
+ * - 'stop': Log error, skip remaining tools, report failure immediately
+ */
+export type FailureMode = 'continue' | 'stop'
+
+/**
  * Configuration for a quality tool
  */
 export interface ToolConfig {
@@ -28,10 +35,12 @@ export interface ToolConfig {
   runForEachFile?: boolean
   /** Custom description to show in logs while running */
   description?: string
-  /** If true, the hook will fail if this tool fails. Default is false (but usually the hook fails if any tool fails). */
-  required?: boolean
-  /** If true, stops running subsequent tools if this tool fails. Useful for syntax checks that must pass before analysis. */
-  blocking?: boolean
+  /**
+   * What happens when this tool fails. Default is 'continue'.
+   * - 'continue': Log error, keep running other tools
+   * - 'stop': Log error, skip remaining tools (use for syntax checks that must pass first)
+   */
+  onFailure?: FailureMode
 }
 
 /**

@@ -39,10 +39,11 @@ export async function runStep(
     log.success(`${toolName} completed successfully (${formattedDuration})`)
 
     return true
-  } catch {
+  } catch (error) {
     const duration = Date.now() - startTime
     const formattedDuration = formatDuration(duration)
-    log.error(`${toolName} failed after ${formattedDuration}`)
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    log.error(`${toolName} failed after ${formattedDuration}: ${errorMessage}`)
 
     return false
   }
@@ -190,12 +191,10 @@ export async function runQualityChecks(files: string[], tools: ToolConfig[]): Pr
 
     if (!success) {
       allSuccessful = false
-      if (tool.blocking) {
+
+      // Check failure mode - 'stop' halts execution, 'continue' (default) keeps going
+      if (tool.onFailure === 'stop') {
         log.error(`${tool.name} failed. Stopping subsequent checks.`)
-        return false
-      }
-      if (tool.required) {
-        log.error(`${tool.name} is required but failed`)
         return false
       }
     }

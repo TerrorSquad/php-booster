@@ -81,8 +81,7 @@ describe('workflow.ts', () => {
       name: 'test-tool',
       command: 'test-cmd',
       type: 'system',
-      extensions: ['.php'],
-      required: true
+      extensions: ['.php']
     }
 
     it('should skip if tool is skipped via env', async () => {
@@ -171,7 +170,7 @@ describe('workflow.ts', () => {
       expect(stageFiles).toHaveBeenCalledWith(['file.php'])
     })
 
-    it('should fail if required tool fails', async () => {
+    it('should fail if tool fails', async () => {
       vi.mocked(isSkipped).mockReturnValue(false)
       vi.mocked(fs.pathExists).mockResolvedValue(true)
       vi.mocked(exec).mockRejectedValue(new Error('fail'))
@@ -181,41 +180,46 @@ describe('workflow.ts', () => {
       expect(result).toBe(false)
     })
 
-    it('should not fail if optional tool fails', async () => {
-      vi.mocked(isSkipped).mockReturnValue(false)
-      vi.mocked(fs.pathExists).mockResolvedValue(true)
-      vi.mocked(exec).mockRejectedValue(new Error('fail'))
-
-      const optionalTool: ToolConfig = { ...mockTool, required: false }
-      const result = await runQualityChecks(['file.php'], [optionalTool])
-
-      expect(result).toBe(false)
-    })
-
-    it('should stop subsequent tools if blocking tool fails', async () => {
-      vi.mocked(isSkipped).mockReturnValue(false)
-      vi.mocked(fs.pathExists).mockResolvedValue(true)
-      vi.mocked(exec).mockRejectedValue(new Error('syntax error'))
-
-      const blockingTool: ToolConfig = { ...mockTool, blocking: true, required: false }
-      const subsequentTool: ToolConfig = { ...mockTool, name: 'subsequent-tool' }
-
-      const result = await runQualityChecks(['file.php'], [blockingTool, subsequentTool])
-
-      expect(result).toBe(false)
-      expect(exec).toHaveBeenCalledTimes(1) // Only blocking tool ran
-      expect(log.error).toHaveBeenCalledWith(expect.stringContaining('Stopping subsequent checks'))
-    })
-
-    it('should continue to next tool if non-blocking tool fails', async () => {
+    it('should continue to next tool if tool with default onFailure fails', async () => {
       vi.mocked(isSkipped).mockReturnValue(false)
       vi.mocked(fs.pathExists).mockResolvedValue(true)
       vi.mocked(exec)
         .mockRejectedValueOnce(new Error('first tool failed'))
         .mockResolvedValueOnce({} as any)
 
-      const firstTool: ToolConfig = { ...mockTool, blocking: false, required: false }
-      const secondTool: ToolConfig = { ...mockTool, name: 'second-tool', required: false }
+      const firstTool: ToolConfig = { ...mockTool }
+      const secondTool: ToolConfig = { ...mockTool, name: 'second-tool' }
+
+      const result = await runQualityChecks(['file.php'], [firstTool, secondTool])
+
+      expect(result).toBe(false)
+      expect(exec).toHaveBeenCalledTimes(2) // Both tools ran
+    })
+
+    it('should stop subsequent tools if onFailure is stop', async () => {
+      vi.mocked(isSkipped).mockReturnValue(false)
+      vi.mocked(fs.pathExists).mockResolvedValue(true)
+      vi.mocked(exec).mockRejectedValue(new Error('syntax error'))
+
+      const stoppingTool: ToolConfig = { ...mockTool, onFailure: 'stop' }
+      const subsequentTool: ToolConfig = { ...mockTool, name: 'subsequent-tool' }
+
+      const result = await runQualityChecks(['file.php'], [stoppingTool, subsequentTool])
+
+      expect(result).toBe(false)
+      expect(exec).toHaveBeenCalledTimes(1) // Only stopping tool ran
+      expect(log.error).toHaveBeenCalledWith(expect.stringContaining('Stopping subsequent checks'))
+    })
+
+    it('should continue to next tool if onFailure is continue', async () => {
+      vi.mocked(isSkipped).mockReturnValue(false)
+      vi.mocked(fs.pathExists).mockResolvedValue(true)
+      vi.mocked(exec)
+        .mockRejectedValueOnce(new Error('first tool failed'))
+        .mockResolvedValueOnce({} as any)
+
+      const firstTool: ToolConfig = { ...mockTool, onFailure: 'continue' }
+      const secondTool: ToolConfig = { ...mockTool, name: 'second-tool' }
 
       const result = await runQualityChecks(['file.php'], [firstTool, secondTool])
 
