@@ -176,7 +176,7 @@ describe('core.ts', () => {
       // Return empty config or config without name
       vi.mocked(fs.readFile).mockResolvedValue('invalid: config\n')
 
-      await expect(exec(['php', '-v'], { type: 'php' })).rejects.toThrow('Could not determine DDEV project name')
+      await expect(exec(['php', '-v'], { type: 'php' })).rejects.toThrow('Could not find "name:" field')
     })
 
     it('should throw error if ddev config read fails', async () => {
@@ -186,7 +186,7 @@ describe('core.ts', () => {
       // fs.readFile throws
       vi.mocked(fs.readFile).mockRejectedValue(new Error('read failed'))
 
-      await expect(exec(['php', '-v'], { type: 'php' })).rejects.toThrow('Could not determine DDEV project name')
+      await expect(exec(['php', '-v'], { type: 'php' })).rejects.toThrow('Failed to read DDEV config')
     })
   })
 

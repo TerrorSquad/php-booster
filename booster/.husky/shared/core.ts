@@ -168,16 +168,41 @@ export function resetDdevCache(): void {
 
 /**
  * Get the DDEV project name from .ddev/config.yaml
- * @returns The project name or null if not found
+ * @returns The project name
+ * @throws Error if config cannot be read or parsed
  */
-async function getDdevProjectName(): Promise<string | null> {
+async function getDdevProjectName(): Promise<string> {
+  const configPath = '.ddev/config.yaml'
+  
   try {
-    // isDdevProject() already confirmed .ddev/config.yaml exists in CWD
-    const configContent = await fs.readFile('.ddev/config.yaml', 'utf-8')
+    const configContent = await fs.readFile(configPath, 'utf-8')
     const match = configContent.match(/^name:\s*(.+)$/m)
-    return match ? match[1].trim() : null
-  } catch {
-    return null
+    
+    if (!match) {
+      throw new Error(
+        `Could not find "name:" field in ${configPath}. ` +
+        'Ensure the file contains a valid "name: your-project-name" entry.'
+      )
+    }
+    
+    const projectName = match[1].trim()
+    if (!projectName) {
+      throw new Error(
+        `Empty project name in ${configPath}. ` +
+        'The "name:" field must have a non-empty value.'
+      )
+    }
+    
+    return projectName
+  } catch (error) {
+    if (error instanceof Error && error.message.includes(configPath)) {
+      // Re-throw our custom errors
+      throw error
+    }
+    // File read error
+    throw new Error(
+      `Failed to read DDEV config at ${configPath}: ${error instanceof Error ? error.message : String(error)}`
+    )
   }
 }
 
@@ -196,10 +221,8 @@ async function getExecCommand(command: string[], type: string): Promise<string[]
     return command
   }
 
+  // getDdevProjectName() throws with specific error if config is invalid
   const projectName = await getDdevProjectName()
-  if (!projectName) {
-    throw new Error('Could not determine DDEV project name from .ddev/config.yaml')
-  }
 
   // Since isDdevProject() confirms we are at the project root (where .ddev exists),
   // we map directly to the container's web root.
