@@ -1,5 +1,18 @@
 # Changelog
 
+## [2.1.0](https://github.com/TerrorSquad/php-booster/compare/v2.0.0...v2.1.0) (2026-01-28)
+
+
+### Features
+
+* **tools:** enhance tool configuration with additional tools and detailed descriptions ([72836c0](https://github.com/TerrorSquad/php-booster/commit/72836c0b2d9c868df782a2046549a1d17ce81336))
+
+
+### Bug Fixes
+
+* **hooks:** make config tool names case-insensitive ([3faadc0](https://github.com/TerrorSquad/php-booster/commit/3faadc0dd1fdaba1f8425f83c29f38d15015ae3a))
+* **hooks:** respect Deptrac config in pre-push artifact generation ([c84b712](https://github.com/TerrorSquad/php-booster/commit/c84b712b47c9e6580f82f03a53d79975b460937b))
+
 ## [2.0.0](https://github.com/TerrorSquad/php-booster/compare/v1.18.0...v2.0.0) (2026-01-27)
 
 
