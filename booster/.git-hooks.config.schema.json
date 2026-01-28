@@ -127,10 +127,6 @@
           "description": "What to do when this tool fails: 'continue' to run other tools, 'stop' to halt immediately",
           "default": "continue"
         },
-        "parallelGroup": {
-          "type": "string",
-          "description": "Group name for parallel execution with other tools"
-        },
         "description": {
           "type": "string",
           "description": "Override the tool description shown in logs"
@@ -177,10 +173,6 @@
           "enum": ["continue", "stop"],
           "description": "What to do when this tool fails",
           "default": "continue"
-        },
-        "parallelGroup": {
-          "type": "string",
-          "description": "Group name for parallel execution with other tools"
         }
       },
       "additionalProperties": false

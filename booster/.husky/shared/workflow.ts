@@ -37,7 +37,7 @@ const HOOK_CONFIG_MAPPING: Record<GitHook, 'preCommit' | 'prePush' | 'commitMsg'
 function extractErrorDetails(error: unknown): string {
   // zx ProcessOutput errors have stdout/stderr properties
   const processError = error as { stdout?: string; stderr?: string; message?: string }
-  
+
   // Combine all available output
   const output = [
     processError.stderr,
@@ -58,7 +58,7 @@ function extractErrorDetails(error: unknown): string {
   const fileLineMatch = output.match(/([^\s:]+\.[a-z]+):(\d+)(?::(\d+))?[:\s]+(.+)/i)
   if (fileLineMatch) {
     const [, file, line, col, message] = fileLineMatch
-    return col 
+    return col
       ? `${file}:${line}:${col} - ${message.trim()}`
       : `${file}:${line} - ${message.trim()}`
   }
@@ -260,7 +260,7 @@ async function getBufferedCommand(
 function getAllowedGroups(): Set<string> | undefined {
   const hooksOnly = process.env.HOOKS_ONLY
   if (!hooksOnly) return undefined
-  
+
   const groups = hooksOnly.split(',').map(g => g.trim().toLowerCase())
   return new Set(groups)
 }
@@ -312,95 +312,6 @@ async function prepareTool(tool: ToolConfig, files: string[]): Promise<PreparedT
   }
 }
 
-/**
- * Run a single tool and return result (for parallel execution)
- */
-async function runToolBuffered(prepared: PreparedTool): Promise<ToolResult> {
-  const { tool, files, description } = prepared
-  const startTime = Date.now()
-
-  try {
-    log.tool(tool.name, description)
-    const output = await execToolBuffered(tool, files)
-    const duration = Date.now() - startTime
-
-    return {
-      name: tool.name,
-      success: true,
-      output,
-      duration,
-      filesToStage: tool.stagesFilesAfter && tool.passFiles !== false ? files : undefined,
-    }
-  } catch (error) {
-    const duration = Date.now() - startTime
-    const errorDetails = extractErrorDetails(error)
-
-    return {
-      name: tool.name,
-      success: false,
-      output: errorDetails,
-      duration,
-    }
-  }
-}
-
-/**
- * Print results from parallel tool execution
- */
-function printParallelResults(results: ToolResult[]): void {
-  for (const result of results) {
-    const formattedDuration = formatDuration(result.duration)
-
-    if (result.success) {
-      log.success(`${result.name} completed successfully (${formattedDuration})`)
-    } else {
-      log.error(`${result.name} failed after ${formattedDuration}`)
-      log.error(`  → ${result.output}`)
-    }
-  }
-}
-
-/**
- * Group tools by their parallelGroup property
- * Tools without a group get their own single-item group
- */
-function groupToolsByParallel(tools: ToolConfig[]): ToolConfig[][] {
-  const groups: ToolConfig[][] = []
-  let currentGroup: ToolConfig[] = []
-  let currentGroupName: string | undefined
-
-  for (const tool of tools) {
-    if (tool.parallelGroup) {
-      // Tool has a parallel group
-      if (currentGroupName === tool.parallelGroup) {
-        // Same group, add to current
-        currentGroup.push(tool)
-      } else {
-        // Different group, flush current and start new
-        if (currentGroup.length > 0) {
-          groups.push(currentGroup)
-        }
-        currentGroup = [tool]
-        currentGroupName = tool.parallelGroup
-      }
-    } else {
-      // No parallel group - flush any pending group and add as single-item group
-      if (currentGroup.length > 0) {
-        groups.push(currentGroup)
-        currentGroup = []
-        currentGroupName = undefined
-      }
-      groups.push([tool])
-    }
-  }
-
-  // Flush remaining group
-  if (currentGroup.length > 0) {
-    groups.push(currentGroup)
-  }
-
-  return groups
-}
 
 /**
  * Run all configured quality tools on the provided files
@@ -408,72 +319,34 @@ function groupToolsByParallel(tools: ToolConfig[]): ToolConfig[][] {
  * Iterates through the provided tools and:
  * 1. Checks if the tool should run (not skipped, binary exists)
  * 2. Filters files based on tool extensions
- * 3. Runs the tool command (parallel for tools with same parallelGroup)
+ * 3. Runs the tool command
  * 4. Stages files if configured (for fixers)
  *
  * @param files List of staged files to check
  * @param tools List of tool configurations to run
  * @returns true if all tools passed, false otherwise
  */
+
 export async function runQualityChecks(files: string[], tools: ToolConfig[]): Promise<boolean> {
   let allSuccessful = true
-  const toolGroups = groupToolsByParallel(tools)
 
-  for (const group of toolGroups) {
-    // Prepare all tools in the group
-    const preparedTools = await Promise.all(group.map((tool) => prepareTool(tool, files)))
-    const runnableTools = preparedTools.filter((p): p is PreparedTool => p !== null)
+  for (const tool of tools) {
+    const prepared = await prepareTool(tool, files)
+    if (!prepared) continue
 
-    if (runnableTools.length === 0) continue
+    const { tool: preparedTool, files: filesToRun, description } = prepared
+    const success = await runStep(preparedTool.name, description, () => execTool(preparedTool, filesToRun))
 
-    if (runnableTools.length === 1) {
-      // Single tool - run with streaming output (better UX)
-      const { tool, files: filesToRun, description } = runnableTools[0]
+    if (success && preparedTool.stagesFilesAfter && preparedTool.passFiles !== false) {
+      await ensureMutagenSync()
+      await stageFiles(filesToRun)
+    }
 
-      const success = await runStep(tool.name, description, () => execTool(tool, filesToRun))
-
-      if (success && tool.stagesFilesAfter && tool.passFiles !== false) {
-        await ensureMutagenSync()
-        await stageFiles(filesToRun)
-      }
-
-      if (!success) {
-        allSuccessful = false
-        if (tool.onFailure === 'stop') {
-          log.error(`${tool.name} failed. Stopping subsequent checks.`)
-          return false
-        }
-      }
-    } else {
-      // Multiple tools - run in parallel with buffered output
-      log.info(`Running ${runnableTools.length} tools in parallel: ${runnableTools.map((t) => t.tool.name).join(', ')}`)
-
-      const results = await Promise.all(runnableTools.map(runToolBuffered))
-
-      // Print results in order
-      printParallelResults(results)
-
-      // Stage files for successful tools that need it
-      for (const result of results) {
-        if (result.success && result.filesToStage) {
-          await ensureMutagenSync()
-          await stageFiles(result.filesToStage)
-        }
-      }
-
-      // Check for failures
-      const failed = results.filter((r) => !r.success)
-      if (failed.length > 0) {
-        allSuccessful = false
-
-        // Check if any failed tool has onFailure: 'stop'
-        for (const result of failed) {
-          const tool = group.find((t) => t.name === result.name)
-          if (tool?.onFailure === 'stop') {
-            log.error(`${result.name} failed. Stopping subsequent checks.`)
-            return false
-          }
-        }
+    if (!success) {
+      allSuccessful = false
+      if (preparedTool.onFailure === 'stop') {
+        log.error(`${preparedTool.name} failed. Stopping subsequent checks.`)
+        return false
       }
     }
   }
@@ -497,8 +370,7 @@ export async function runHook(hookName: GitHook, fn: () => Promise<boolean>): Pr
     const config = await loadConfig()
     applyVerboseSetting(config)
 
-    // Configure zx verbose mode based on environment
-    $.verbose = process.env.GIT_HOOKS_VERBOSE === '1' || process.env.GIT_HOOKS_VERBOSE === 'true'
+    // Do not set $.verbose here; always show tool output regardless of verbose flag
 
     const startTime = Date.now()
     log.step(`Starting ${hookName} checks...`)

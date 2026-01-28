@@ -38,7 +38,6 @@ To add a new tool, simply add a `ToolConfig` object to the `TOOLS` array.
 | `stagesFilesAfter` | `boolean`                   | (Optional) If `true`, re-stages files after execution (useful for fixers).                       |
 | `passFiles`        | `boolean`                   | (Optional) If `false`, does not pass the list of staged files to the command. Default is `true`. |
 | `onFailure`        | `'continue' \| 'stop'`      | (Optional) What happens when this tool fails. Default is `'continue'`. Use `'stop'` for syntax checks that must pass before other tools run. |
-| `parallelGroup`    | `string`                    | (Optional) Group name for parallel execution. Tools with the same group run concurrently with buffered output. |
 
 ### Example
 
@@ -52,27 +51,6 @@ To add a new tool, simply add a `ToolConfig` object to the `TOOLS` array.
   stagesFilesAfter: false,
   onFailure: 'continue'  // or 'stop' for critical checks
 }
-```
-
-## Parallel Execution
-
-Tools can be configured to run in parallel by assigning them the same `parallelGroup` value. This is useful for read-only analysis tools that don't modify files.
-
-**Built-in parallel groups:**
-- `php-analysis`: PHPStan, Psalm, Deptrac
-
-**How it works:**
-1. Sequential tools (no `parallelGroup`) run one at a time with streaming output
-2. When a parallel group is encountered, all tools in that group run concurrently
-3. Output is buffered and printed after all parallel tools complete (prevents interleaving)
-4. File staging happens after each successful tool
-
-**Example:**
-```typescript
-// These three tools run in parallel
-{ name: 'PHPStan', command: 'phpstan', parallelGroup: 'php-analysis' },
-{ name: 'Psalm', command: 'psalm', parallelGroup: 'php-analysis' },
-{ name: 'Deptrac', command: 'deptrac', parallelGroup: 'php-analysis' },
 ```
 
 ## Hook Specifics

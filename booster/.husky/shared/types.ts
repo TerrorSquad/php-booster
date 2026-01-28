@@ -51,13 +51,6 @@ export interface ToolConfig {
    */
   onFailure?: FailureMode
   /**
-   * Optional group name for parallel execution.
-   * Tools with the same parallelGroup value will run concurrently.
-   * Tools without a parallelGroup run sequentially in order.
-   * Output is buffered and printed after all parallel tools complete.
-   */
-  parallelGroup?: string
-  /**
    * Tool category for selective execution.
    * Use HOOKS_ONLY=format,lint to run only specific groups.
    */
@@ -103,8 +96,6 @@ export interface ToolOverride {
   extensions?: string[]
   /** Override failure mode */
   onFailure?: FailureMode
-  /** Override parallel group */
-  parallelGroup?: string
   /** Override description */
   description?: string
 }

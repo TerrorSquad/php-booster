@@ -192,18 +192,18 @@ export function resetDdevCache(): void {
  */
 async function getDdevProjectName(): Promise<string> {
   const configPath = '.ddev/config.yaml'
-  
+
   try {
     const configContent = await fs.readFile(configPath, 'utf-8')
     const match = configContent.match(/^name:\s*(.+)$/m)
-    
+
     if (!match) {
       throw new Error(
         `Could not find "name:" field in ${configPath}. ` +
         'Ensure the file contains a valid "name: your-project-name" entry.'
       )
     }
-    
+
     const projectName = match[1].trim()
     if (!projectName) {
       throw new Error(
@@ -211,7 +211,7 @@ async function getDdevProjectName(): Promise<string> {
         'The "name:" field must have a non-empty value.'
       )
     }
-    
+
     return projectName
   } catch (error) {
     if (error instanceof Error && error.message.includes(configPath)) {

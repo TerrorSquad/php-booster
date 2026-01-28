@@ -134,7 +134,9 @@ export function applyConfigOverrides(
       continue
     }
 
-    processedOverrides.add(configKey)
+    if (configKey) {
+      processedOverrides.add(configKey)
+    }
 
     // Check if tool is disabled
     if (override.enabled === false) {
@@ -154,7 +156,6 @@ export function applyConfigOverrides(
         ...(override.args !== undefined && { args: override.args }),
         ...(override.extensions !== undefined && { extensions: override.extensions }),
         ...(override.onFailure !== undefined && { onFailure: override.onFailure }),
-        ...(override.parallelGroup !== undefined && { parallelGroup: override.parallelGroup }),
         ...(override.description !== undefined && { description: override.description }),
       })
     }

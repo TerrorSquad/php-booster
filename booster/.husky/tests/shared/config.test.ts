@@ -202,18 +202,6 @@ describe('config.ts', () => {
       expect(phpstan?.onFailure).toBe('stop')
     })
 
-    it('should override parallel group', () => {
-      const config: HooksConfig = {
-        tools: {
-          ESLint: { parallelGroup: 'js-tools' },
-        },
-      }
-
-      const result = applyConfigOverrides(baseTools, config)
-      const eslint = result.find((t) => t.name === 'ESLint')
-
-      expect(eslint?.parallelGroup).toBe('js-tools')
-    })
 
     it('should add custom tools', () => {
       const config: HooksConfig = {

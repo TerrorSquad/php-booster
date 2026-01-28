@@ -42,12 +42,12 @@ export async function runTests(): Promise<boolean> {
  */
 function isToolDisabled(toolName: string, config: Awaited<ReturnType<typeof loadConfig>>): boolean {
   if (!config.tools) return false
-  
+
   // Case-insensitive lookup
   const configKey = Object.keys(config.tools).find(
     key => key.toLowerCase() === toolName.toLowerCase()
   )
-  
+
   if (!configKey) return false
   return config.tools[configKey]?.enabled === false
 }

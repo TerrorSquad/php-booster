@@ -107,7 +107,6 @@ export const TOOLS: ToolConfig[] = [
     args: ['analyse'],
     type: 'php',
     extensions: ['.php'],
-    parallelGroup: 'php-analysis',
     group: 'analysis',
   },
   {
@@ -115,7 +114,6 @@ export const TOOLS: ToolConfig[] = [
     command: 'psalm',
     type: 'php',
     extensions: ['.php'],
-    parallelGroup: 'php-analysis',
     group: 'analysis',
   },
   {
@@ -125,7 +123,6 @@ export const TOOLS: ToolConfig[] = [
     type: 'php',
     passFiles: false,
     extensions: ['.php'],
-    parallelGroup: 'php-analysis',
     group: 'analysis',
   },
 ]
