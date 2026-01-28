@@ -16,6 +16,7 @@ vi.mock('../shared/index.ts', () => ({
     success: vi.fn(),
     error: vi.fn(),
     warn: vi.fn(),
+    skip: vi.fn(),
   },
   runHook: vi.fn(), // Prevent automatic execution
   exec: vi.fn(),
@@ -66,22 +67,24 @@ describe('Pre-push Hook', () => {
   })
 
   describe('handleArtifacts', () => {
+    const emptyConfig = {}
+
     it('should generate both deptrac image and api docs', async () => {
       isSkipped.mockReturnValue(false)
       generateDeptracImage.mockResolvedValue({ generated: true, changed: true })
       generateApiDocs.mockResolvedValue({ generated: true, changed: false })
 
-      await handleArtifacts()
+      await handleArtifacts(emptyConfig)
 
       expect(generateDeptracImage).toHaveBeenCalled()
       expect(generateApiDocs).toHaveBeenCalled()
     })
 
     it('should skip deptrac if env var is set', async () => {
-      isSkipped.mockImplementation((name) => name === 'deptrac_image')
+      isSkipped.mockImplementation((name) => name === 'deptrac_image' || name === 'deptrac')
       generateApiDocs.mockResolvedValue({ generated: true, changed: false })
 
-      await handleArtifacts()
+      await handleArtifacts(emptyConfig)
 
       expect(generateDeptracImage).not.toHaveBeenCalled()
       expect(generateApiDocs).toHaveBeenCalled()
@@ -91,7 +94,7 @@ describe('Pre-push Hook', () => {
       isSkipped.mockImplementation((name) => name === 'api_docs')
       generateDeptracImage.mockResolvedValue({ generated: true, changed: false })
 
-      await handleArtifacts()
+      await handleArtifacts(emptyConfig)
 
       expect(generateDeptracImage).toHaveBeenCalled()
       expect(generateApiDocs).not.toHaveBeenCalled()
@@ -103,7 +106,39 @@ describe('Pre-push Hook', () => {
       generateApiDocs.mockRejectedValue(new Error('Failed'))
 
       // Should not throw
-      await expect(handleArtifacts()).resolves.not.toThrow()
+      await expect(handleArtifacts(emptyConfig)).resolves.not.toThrow()
+    })
+
+    it('should skip deptrac if disabled in config', async () => {
+      isSkipped.mockReturnValue(false)
+      generateApiDocs.mockResolvedValue({ generated: true, changed: false })
+
+      const configWithDeptracDisabled = {
+        tools: {
+          Deptrac: { enabled: false }
+        }
+      }
+
+      await handleArtifacts(configWithDeptracDisabled)
+
+      expect(generateDeptracImage).not.toHaveBeenCalled()
+      expect(generateApiDocs).toHaveBeenCalled()
+    })
+
+    it('should skip deptrac if disabled with lowercase name in config', async () => {
+      isSkipped.mockReturnValue(false)
+      generateApiDocs.mockResolvedValue({ generated: true, changed: false })
+
+      const configWithDeptracDisabled = {
+        tools: {
+          deptrac: { enabled: false }
+        }
+      }
+
+      await handleArtifacts(configWithDeptracDisabled)
+
+      expect(generateDeptracImage).not.toHaveBeenCalled()
+      expect(generateApiDocs).toHaveBeenCalled()
     })
   })
 })
