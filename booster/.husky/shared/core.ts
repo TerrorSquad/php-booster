@@ -42,6 +42,9 @@ export async function initEnvironment(): Promise<void> {
   if (!envFile) return
 
   try {
+    // Capture env vars before loading
+    const envBefore = new Set(Object.keys(process.env))
+
     log.info(`Loading environment variables from: ${envFile}`)
 
     process.loadEnvFile(envFile)
@@ -52,6 +55,14 @@ export async function initEnvironment(): Promise<void> {
 
     if (isVerbose) {
       log.success(`Successfully loaded environment variables from ${envFile}`)
+
+      // Log any SKIP_* variables that were loaded
+      const skipVars = Object.keys(process.env)
+        .filter((key) => key.startsWith('SKIP_') && !envBefore.has(key))
+        .map((key) => `${key}=${process.env[key]}`)
+      if (skipVars.length > 0) {
+        log.info(`Found skip variables: ${skipVars.join(', ')}`)
+      }
     }
   } catch (error) {
     log.warn(
@@ -109,17 +120,25 @@ export function formatDuration(ms: number): string {
 }
 
 /**
+ * Get the normalized skip environment variable name for a tool
+ * @param name Name of the tool/check
+ * @returns The environment variable name (e.g., "SKIP_DEPTRAC")
+ */
+export function getSkipEnvVar(name: string): string {
+  const normalized = String(name)
+    .toUpperCase()
+    .replace(/[^A-Z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '')
+  return `SKIP_${normalized}`
+}
+
+/**
  * Check if a tool or check is explicitly skipped via environment variable
  * @param name Name of the tool/check (will be converted to SKIP_<NAME>)
  * @returns True if the tool should be skipped
  */
 export function isSkipped(name: string): boolean {
-  // Normalize name -> uppercase, replace non-alphanum with underscore, collapse multiple underscores
-  const normalized = String(name)
-    .toUpperCase()
-    .replace(/[^A-Z0-9]+/g, '_')
-    .replace(/^_+|_+$/g, '')
-  const skipEnvVar = `SKIP_${normalized}`
+  const skipEnvVar = getSkipEnvVar(name)
   return process.env[skipEnvVar] === '1' || process.env[skipEnvVar] === 'true'
 }
 

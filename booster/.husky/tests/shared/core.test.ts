@@ -4,6 +4,7 @@ import {
   initEnvironment,
   formatDuration,
   isSkipped,
+  getSkipEnvVar,
   isDdevProject,
   resetDdevCache,
   exec,
@@ -103,6 +104,29 @@ describe('core.ts', () => {
       process.env.SKIP_MY_COOL_TOOL = '1'
       expect(isSkipped('my-cool-tool')).toBe(true)
       expect(isSkipped('my_cool_tool')).toBe(true)
+    })
+  })
+
+  describe('getSkipEnvVar', () => {
+    it('should return correct env var name for simple tool names', () => {
+      expect(getSkipEnvVar('Deptrac')).toBe('SKIP_DEPTRAC')
+      expect(getSkipEnvVar('PHPStan')).toBe('SKIP_PHPSTAN')
+      expect(getSkipEnvVar('ESLint')).toBe('SKIP_ESLINT')
+    })
+
+    it('should handle tool names with spaces', () => {
+      expect(getSkipEnvVar('PHP Syntax Check')).toBe('SKIP_PHP_SYNTAX_CHECK')
+    })
+
+    it('should handle tool names with special characters', () => {
+      expect(getSkipEnvVar('my-tool')).toBe('SKIP_MY_TOOL')
+      expect(getSkipEnvVar('my_tool')).toBe('SKIP_MY_TOOL')
+      expect(getSkipEnvVar('my.tool')).toBe('SKIP_MY_TOOL')
+    })
+
+    it('should uppercase all characters', () => {
+      expect(getSkipEnvVar('rector')).toBe('SKIP_RECTOR')
+      expect(getSkipEnvVar('psalm')).toBe('SKIP_PSALM')
     })
   })
 

@@ -5,6 +5,7 @@ import {
   exec,
   log,
   isSkipped,
+  getSkipEnvVar,
   isDdevProject,
   ensureMutagenSync,
   initEnvironment
@@ -26,6 +27,13 @@ vi.mock('../../shared/core', () => ({
     warn: vi.fn()
   },
   isSkipped: vi.fn(),
+  getSkipEnvVar: vi.fn((name: string) => {
+    const normalized = String(name)
+      .toUpperCase()
+      .replace(/[^A-Z0-9]+/g, '_')
+      .replace(/^_+|_+$/g, '')
+    return `SKIP_${normalized}`
+  }),
   isDdevProject: vi.fn(),
   ensureMutagenSync: vi.fn(),
   initEnvironment: vi.fn(),

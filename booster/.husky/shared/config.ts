@@ -89,6 +89,20 @@ function isCustomTool(override: ToolOverride | CustomToolConfig): override is Cu
 }
 
 /**
+ * Create a case-insensitive lookup map for config tools
+ * Maps lowercase names to original config keys
+ */
+function createToolLookupMap(tools: HooksConfig['tools']): Map<string, string> {
+  const map = new Map<string, string>()
+  if (tools) {
+    for (const key of Object.keys(tools)) {
+      map.set(key.toLowerCase(), key)
+    }
+  }
+  return map
+}
+
+/**
  * Apply config overrides to the default tools array
  * @param defaultTools The default TOOLS array
  * @param config The loaded configuration
@@ -105,9 +119,14 @@ export function applyConfigOverrides(
   const result: ToolConfig[] = []
   const processedOverrides = new Set<string>()
 
+  // Create case-insensitive lookup map
+  const toolLookup = createToolLookupMap(config.tools)
+
   // Process existing tools with overrides
   for (const tool of defaultTools) {
-    const override = config.tools[tool.name]
+    // Case-insensitive lookup: find the config key that matches (ignoring case)
+    const configKey = toolLookup.get(tool.name.toLowerCase())
+    const override = configKey ? config.tools[configKey] : undefined
 
     if (!override) {
       // No override - keep original
@@ -115,7 +134,7 @@ export function applyConfigOverrides(
       continue
     }
 
-    processedOverrides.add(tool.name)
+    processedOverrides.add(configKey)
 
     // Check if tool is disabled
     if (override.enabled === false) {

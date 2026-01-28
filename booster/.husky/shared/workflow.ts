@@ -3,6 +3,7 @@ import {
   ensureMutagenSync,
   exec,
   formatDuration,
+  getSkipEnvVar,
   initEnvironment,
   isDdevProject,
   isSkipped,
@@ -280,7 +281,7 @@ interface PreparedTool {
 async function prepareTool(tool: ToolConfig, files: string[]): Promise<PreparedTool | null> {
   // Check if tool is explicitly skipped via env var
   if (isSkipped(tool.name)) {
-    log.skip(`${tool.name} skipped (SKIP_${tool.name.toUpperCase()} environment variable set)`)
+    log.skip(`${tool.name} skipped (${getSkipEnvVar(tool.name)} environment variable set)`)
     return null
   }
 

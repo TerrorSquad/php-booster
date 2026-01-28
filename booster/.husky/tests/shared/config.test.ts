@@ -267,6 +267,45 @@ describe('config.ts', () => {
       expect(consoleSpy).toHaveBeenCalled()
       consoleSpy.mockRestore()
     })
+
+    it('should apply config override with case-insensitive tool name lookup (lowercase)', () => {
+      const config: HooksConfig = {
+        tools: {
+          phpstan: { enabled: false },  // lowercase instead of 'PHPStan'
+        },
+      }
+
+      const result = applyConfigOverrides(baseTools, config)
+
+      expect(result.find((t) => t.name === 'PHPStan')).toBeUndefined()
+      expect(result.find((t) => t.name === 'ESLint')).toBeDefined()
+    })
+
+    it('should apply config override with case-insensitive tool name lookup (mixed case)', () => {
+      const config: HooksConfig = {
+        tools: {
+          Phpstan: { args: ['analyse', '--level=max'] },  // mixed case
+        },
+      }
+
+      const result = applyConfigOverrides(baseTools, config)
+      const phpstan = result.find((t) => t.name === 'PHPStan')
+
+      expect(phpstan?.args).toEqual(['analyse', '--level=max'])
+    })
+
+    it('should apply config override with case-insensitive tool name lookup (all caps)', () => {
+      const config: HooksConfig = {
+        tools: {
+          ESLINT: { extensions: ['.vue'] },  // all caps instead of 'ESLint'
+        },
+      }
+
+      const result = applyConfigOverrides(baseTools, config)
+      const eslint = result.find((t) => t.name === 'ESLint')
+
+      expect(eslint?.extensions).toEqual(['.vue'])
+    })
   })
 
   describe('isHookSkippedByConfig', () => {
