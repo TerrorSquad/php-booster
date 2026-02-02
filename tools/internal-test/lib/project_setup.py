@@ -93,7 +93,7 @@ class ProjectSetup:
         # Use docker exec for performance
         env = os.environ.copy()
         env["TERM"] = "xterm-256color"
-        
+
         self.cmd.run_command(
             [
                 "docker",
@@ -111,7 +111,7 @@ class ProjectSetup:
 
         # Initialize git repository
         self.log.info("Initializing git repository...")
-        self.cmd.run_command(["git", "init"], cwd=self.config.target_dir)
+        self.cmd.run_command(["git", "init", "-b", "main"], cwd=self.config.target_dir)
 
         # Set git user for the repository (required for commits)
         self.cmd.run_command(
@@ -167,7 +167,7 @@ class ProjectSetup:
 
         # Initialize git repository
         self.log.info("Initializing git repository...")
-        self.cmd.run_command(["git", "init"], cwd=self.config.target_dir)
+        self.cmd.run_command(["git", "init", "-b", "main"], cwd=self.config.target_dir)
 
         # Set git user for the repository (required for commits)
         self.cmd.run_command(

@@ -82,6 +82,13 @@ class HookTester:
                 capture_output=not self.config.verbose,
             )
             self.log.success("Successfully committed booster integration")
+        except subprocess.CalledProcessError as e:
+            self.log.error(f"Failed to commit booster integration: {e}")
+            if e.stdout:
+                self.log.error(f"Stdout: {e.stdout}")
+            if e.stderr:
+                self.log.error(f"Stderr: {e.stderr}")
+            sys.exit(1)
         except Exception as e:
             self.log.error(f"Failed to commit booster integration: {e}")
             sys.exit(1)
