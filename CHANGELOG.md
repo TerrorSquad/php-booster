@@ -1,5 +1,18 @@
 # Changelog
 
+## [2.2.0](https://github.com/TerrorSquad/php-booster/compare/v2.1.0...v2.2.0) (2026-02-02)
+
+
+### Features
+
+* add functionality to update ignore files for .husky in tsconfig, prettier, and eslint ([e2fd7a7](https://github.com/TerrorSquad/php-booster/commit/e2fd7a7218bdfd26a9c20944a330819787b650ff))
+
+
+### Bug Fixes
+
+* enhance error handling during booster integration commit ([9574ef8](https://github.com/TerrorSquad/php-booster/commit/9574ef8bf43f7ad8e1056d1ea5378486322e458c))
+* skip typescript check if tsconfig.json is missing & cleanup unused code ([c89a06e](https://github.com/TerrorSquad/php-booster/commit/c89a06e4f6712acd27c353ddf0c13b9fb796f87d))
+
 ## [2.1.0](https://github.com/TerrorSquad/php-booster/compare/v2.0.0...v2.1.0) (2026-01-28)
 
 
