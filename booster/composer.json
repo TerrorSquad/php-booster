@@ -9,11 +9,11 @@
     }
   ],
   "require-dev": {
-    "rector/rector": "^2.3.4",
-    "phpstan/phpstan": "^2.1.37",
+    "rector/rector": "^2.3.5",
+    "phpstan/phpstan": "^2.1.38",
     "symplify/easy-coding-standard": "^13.0.4",
     "zircote/swagger-php": "^6.0.3",
-    "psalm/phar": "^6.14.3",
+    "psalm/phar": "^6.15.0",
     "deptrac/deptrac": "^4.5.0"
   },
   "scripts": {
