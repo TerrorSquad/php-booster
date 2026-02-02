@@ -1,4 +1,4 @@
-import { $, which, fs } from 'zx'
+import { which, fs } from 'zx'
 import {
   ensureMutagenSync,
   exec,
@@ -9,14 +9,9 @@ import {
   isSkipped,
   log,
 } from './core.ts'
-import {
-  loadConfig,
-  applyConfigOverrides,
-  isHookSkippedByConfig,
-  applyVerboseSetting,
-} from './config.ts'
+import { loadConfig, isHookSkippedByConfig, applyVerboseSetting } from './config.ts'
 import { shouldSkipDuringMerge, stageFiles } from './git.ts'
-import { GitHook, type ToolConfig, type ToolResult } from './types.ts'
+import { GitHook, type ToolConfig } from './types.ts'
 
 const HOOK_ENV_MAPPING: Record<GitHook, string> = {
   [GitHook.PreCommit]: 'PRECOMMIT',
@@ -43,11 +38,15 @@ function extractErrorDetails(error: unknown): string {
     processError.stderr,
     processError.stdout,
     processError.message,
-    error instanceof Error ? error.message : String(error)
-  ].filter(Boolean).join('\n')
+    error instanceof Error ? error.message : String(error),
+  ]
+    .filter(Boolean)
+    .join('\n')
 
   // Try to extract PHP-style errors: "in /path/file.php on line N"
-  const phpErrorMatch = output.match(/(?:Parse error|Fatal error|syntax error)[^]*?in\s+(\S+)\s+on\s+line\s+(\d+)/i)
+  const phpErrorMatch = output.match(
+    /(?:Parse error|Fatal error|syntax error)[^]*?in\s+(\S+)\s+on\s+line\s+(\d+)/i,
+  )
   if (phpErrorMatch) {
     const [fullMatch] = phpErrorMatch
     // Clean up and return the meaningful part
@@ -64,7 +63,7 @@ function extractErrorDetails(error: unknown): string {
   }
 
   // Return first non-empty line of output (most tools put the error first)
-  const firstLine = output.split('\n').find(line => line.trim())
+  const firstLine = output.split('\n').find((line) => line.trim())
   if (firstLine && firstLine.length < 200) {
     return firstLine.trim()
   }
@@ -201,59 +200,6 @@ async function execTool(tool: ToolConfig, files: string[]): Promise<void> {
 }
 
 /**
- * Execute a tool with buffered output (for parallel execution)
- * Captures all output and returns it instead of streaming
- */
-async function execToolBuffered(tool: ToolConfig, files: string[]): Promise<string> {
-  const args = [...(tool.args || [])]
-  const command = resolveCommandPath(tool)
-  const outputs: string[] = []
-
-  const runCommand = async (cmdArgs: string[]): Promise<string> => {
-    const finalCommand = await getBufferedCommand(command, cmdArgs, tool.type)
-    const result = await $({ stdio: 'pipe' })`${finalCommand}`
-    return result.stdout + result.stderr
-  }
-
-  if (tool.runForEachFile) {
-    const concurrency = 10
-    const chunks = []
-    for (let i = 0; i < files.length; i += concurrency) {
-      chunks.push(files.slice(i, i + concurrency))
-    }
-
-    for (const chunk of chunks) {
-      const chunkOutputs = await Promise.all(chunk.map((file) => runCommand([...args, file])))
-      outputs.push(...chunkOutputs)
-    }
-  } else {
-    const cmdArgs = [...args]
-    if (tool.passFiles !== false) {
-      cmdArgs.push(...files)
-    }
-    outputs.push(await runCommand(cmdArgs))
-  }
-
-  return outputs.filter(Boolean).join('\n')
-}
-
-/**
- * Build command for buffered execution (handles DDEV wrapping)
- */
-async function getBufferedCommand(
-  command: string,
-  args: string[],
-  type: string,
-): Promise<string[]> {
-  if (type !== 'php' || !(await isDdevProject())) {
-    return [command, ...args]
-  }
-
-  // Wrap in ddev exec for PHP tools
-  return ['ddev', 'exec', command, ...args]
-}
-
-/**
  * Parse HOOKS_ONLY environment variable into list of allowed groups
  * Returns undefined if all groups are allowed
  */
@@ -261,7 +207,7 @@ function getAllowedGroups(): Set<string> | undefined {
   const hooksOnly = process.env.HOOKS_ONLY
   if (!hooksOnly) return undefined
 
-  const groups = hooksOnly.split(',').map(g => g.trim().toLowerCase())
+  const groups = hooksOnly.split(',').map((g) => g.trim().toLowerCase())
   return new Set(groups)
 }
 
@@ -282,6 +228,12 @@ async function prepareTool(tool: ToolConfig, files: string[]): Promise<PreparedT
   // Check if tool is explicitly skipped via env var
   if (isSkipped(tool.name)) {
     log.skip(`${tool.name} skipped (${getSkipEnvVar(tool.name)} environment variable set)`)
+    return null
+  }
+
+  // TypeScript specific check: only run if tsconfig.json exists
+  if (tool.name === 'TypeScript' && !(await fs.pathExists('tsconfig.json'))) {
+    log.skip('TypeScript skipped (no tsconfig.json found)')
     return null
   }
 
@@ -312,7 +264,6 @@ async function prepareTool(tool: ToolConfig, files: string[]): Promise<PreparedT
   }
 }
 
-
 /**
  * Run all configured quality tools on the provided files
  *
@@ -335,7 +286,9 @@ export async function runQualityChecks(files: string[], tools: ToolConfig[]): Pr
     if (!prepared) continue
 
     const { tool: preparedTool, files: filesToRun, description } = prepared
-    const success = await runStep(preparedTool.name, description, () => execTool(preparedTool, filesToRun))
+    const success = await runStep(preparedTool.name, description, () =>
+      execTool(preparedTool, filesToRun),
+    )
 
     if (success && preparedTool.stagesFilesAfter && preparedTool.passFiles !== false) {
       await ensureMutagenSync()
