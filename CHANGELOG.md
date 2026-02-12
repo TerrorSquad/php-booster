@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.3.0](https://github.com/TerrorSquad/php-booster/compare/v2.2.0...v2.3.0) (2026-02-10)
+
+
+### Features
+
+* enhance deptrac image generation with change detection ([0653f68](https://github.com/TerrorSquad/php-booster/commit/0653f6895e52b755b0cb35e8920a60da301aa212))
+
 ## [2.2.0](https://github.com/TerrorSquad/php-booster/compare/v2.1.0...v2.2.0) (2026-02-02)
 
 
