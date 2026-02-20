@@ -4,6 +4,7 @@
     "git stash": true,
     "git apply": true,
     "patch": true,
-    "npm test": true
+    "npm test": true,
+    "mise": true
   }
 }

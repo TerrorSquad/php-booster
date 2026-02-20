@@ -10,18 +10,21 @@
     "lint": "eslint ."
   },
   "devDependencies": {
-    "@nuxt/devtools": "^3.1.1",
-    "@nuxt/eslint-config": "^1.12.1",
-    "@nuxtjs/plausible": "^2.0.1",
-    "@types/node": "^20.17.47",
-    "docus": "^5.4.1",
-    "eslint": "^9.27.0",
-    "nuxt": "^4.2.2"
+    "@nuxt/devtools": "^3.2.1",
+    "@nuxt/eslint-config": "^1.15.1",
+    "@nuxtjs/plausible": "^3.0.1",
+    "@types/node": "^22.19.11",
+    "docus": "^5.6.1",
+    "eslint": "^10.0.0",
+    "nuxt": "^4.3.1"
   },
-  "trustedDependencies": [
-    "better-sqlite3",
-    "esbuild",
-    "unrs-resolver",
-    "vue-demi"
-  ]
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "better-sqlite3",
+      "esbuild",
+      "sharp",
+      "unrs-resolver",
+      "vue-demi"
+    ]
+  }
 }

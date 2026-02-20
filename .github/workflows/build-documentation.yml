@@ -13,23 +13,30 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: corepack enable
 
-      - uses: actions/setup-node@v3
+      - name: Read versions from docs/mise.toml
+        id: mise
+        run: |
+          echo "pnpm=$(sed -n 's/^pnpm *= *"\(.*\)"/\1/p' docs/mise.toml)" >> "$GITHUB_OUTPUT"
+          echo "node=$(sed -n 's/^node *= *"\(.*\)"/\1/p' docs/mise.toml)" >> "$GITHUB_OUTPUT"
+
+      - uses: pnpm/action-setup@v4
         with:
-          node-version: "22"
+          version: ${{ steps.mise.outputs.pnpm }}
 
-      - name: Install bun
-        run: curl -fsSL https://bun.sh/install | bash
-
-      - name: Add bun to PATH
-        run: echo "$HOME/.bun/bin" >> $GITHUB_PATH
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ steps.mise.outputs.node }}
+          cache: pnpm
+          cache-dependency-path: docs/pnpm-lock.yaml
 
       - name: Install dependencies
-        run: cd docs && bun install
+        run: pnpm install --frozen-lockfile
+        working-directory: docs
 
       - name: Build the documentation
-        run: cd docs && npx nuxt build --preset github_pages
+        run: pnpm nuxt build --preset github_pages
+        working-directory: docs
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
