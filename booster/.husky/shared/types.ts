@@ -30,6 +30,8 @@ export interface ToolConfig {
   name: string
   /** The binary command to run (e.g., 'eslint', 'rector') */
   command: string
+  /** Alternative command names to try if the primary is not found (e.g., ['psalm.phar']) */
+  commandAlternatives?: string[]
   /** Arguments to pass to the command */
   args?: string[]
   /** Determines where to look for the binary */

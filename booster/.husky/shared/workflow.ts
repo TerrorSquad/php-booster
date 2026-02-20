@@ -26,53 +26,6 @@ const HOOK_CONFIG_MAPPING: Record<GitHook, 'preCommit' | 'prePush' | 'commitMsg'
 }
 
 /**
- * Extract meaningful error details from a command failure
- * Parses stderr/stdout to find file paths, line numbers, and error messages
- */
-function extractErrorDetails(error: unknown): string {
-  // zx ProcessOutput errors have stdout/stderr properties
-  const processError = error as { stdout?: string; stderr?: string; message?: string }
-
-  // Combine all available output
-  const output = [
-    processError.stderr,
-    processError.stdout,
-    processError.message,
-    error instanceof Error ? error.message : String(error),
-  ]
-    .filter(Boolean)
-    .join('\n')
-
-  // Try to extract PHP-style errors: "in /path/file.php on line N"
-  const phpErrorMatch = output.match(
-    /(?:Parse error|Fatal error|syntax error)[^]*?in\s+(\S+)\s+on\s+line\s+(\d+)/i,
-  )
-  if (phpErrorMatch) {
-    const [fullMatch] = phpErrorMatch
-    // Clean up and return the meaningful part
-    return fullMatch.trim()
-  }
-
-  // Try to extract generic "file:line" patterns (ESLint, TypeScript, etc.)
-  const fileLineMatch = output.match(/([^\s:]+\.[a-z]+):(\d+)(?::(\d+))?[:\s]+(.+)/i)
-  if (fileLineMatch) {
-    const [, file, line, col, message] = fileLineMatch
-    return col
-      ? `${file}:${line}:${col} - ${message.trim()}`
-      : `${file}:${line} - ${message.trim()}`
-  }
-
-  // Return first non-empty line of output (most tools put the error first)
-  const firstLine = output.split('\n').find((line) => line.trim())
-  if (firstLine && firstLine.length < 200) {
-    return firstLine.trim()
-  }
-
-  // Fallback to generic message
-  return error instanceof Error ? error.message : String(error)
-}
-
-/**
  * Run a tool with consistent error handling, logging, and performance monitoring
  * @param toolName Name of the tool being run
  * @param action Action being performed (e.g., 'Running static analysis...', 'Running code style fixes...')
@@ -94,12 +47,10 @@ export async function runStep(
     log.success(`${toolName} completed successfully (${formattedDuration})`)
 
     return true
-  } catch (error) {
+  } catch {
     const duration = Date.now() - startTime
     const formattedDuration = formatDuration(duration)
-    const errorDetails = extractErrorDetails(error)
     log.error(`${toolName} failed after ${formattedDuration}`)
-    log.error(`  → ${errorDetails}`)
 
     return false
   }
@@ -137,31 +88,53 @@ function resolveCommandPath(tool: ToolConfig): string {
 }
 
 /**
- * Check if a tool is available to run
+ * Check if a single command path exists (file or in PATH)
  */
-async function isToolAvailable(tool: ToolConfig): Promise<boolean> {
-  const commandPath = resolveCommandPath(tool)
-
-  if (tool.type === 'php' && (await isDdevProject())) {
-    // For standard PHP tools (php, composer), assume they exist in the container
-    if (tool.command === 'php' || tool.command === 'composer') {
+async function commandExists(commandPath: string, command: string, type: string): Promise<boolean> {
+  if (type === 'php' && (await isDdevProject())) {
+    if (command === 'php' || command === 'composer') {
       return true
     }
-    // For other tools (phpstan, ecs, rector), check if they exist
-    // This prevents trying to run tools that aren't installed
     return await fs.pathExists(commandPath)
   }
 
-  // For node tools or system tools, check if the command exists as a file
-  // (e.g. node_modules/.bin/eslint)
   if (await fs.pathExists(commandPath)) {
     return true
   }
 
-  // Fallback to checking PATH (for system tools like git)
-  return await which(tool.command)
+  return await which(command)
     .then(() => true)
     .catch(() => false)
+}
+
+/**
+ * Check if a tool is available to run.
+ * If the primary command is not found but a commandAlternative exists,
+ * updates tool.command in place so subsequent calls use the resolved binary.
+ */
+async function isToolAvailable(tool: ToolConfig): Promise<boolean> {
+  const commandPath = resolveCommandPath(tool)
+
+  if (await commandExists(commandPath, tool.command, tool.type)) {
+    return true
+  }
+
+  // Try alternative commands (e.g., psalm.phar when psalm is not found)
+  if (tool.commandAlternatives) {
+    const originalCommand = tool.command
+    for (const alt of tool.commandAlternatives) {
+      tool.command = alt
+      const altPath = resolveCommandPath(tool)
+      if (await commandExists(altPath, alt, tool.type)) {
+        log.info(`${tool.name}: using alternative "${alt}" (primary "${originalCommand}" not found)`)
+        return true
+      }
+    }
+    // Restore original command if no alternative found
+    tool.command = originalCommand
+  }
+
+  return false
 }
 
 /**
