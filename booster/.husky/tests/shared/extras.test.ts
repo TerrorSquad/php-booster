@@ -18,13 +18,15 @@ vi.mock('../../shared/core', () => ({
 
 vi.mock('zx', () => ({
   fs: {
-    pathExists: vi.fn()
+    pathExists: vi.fn(),
+    stat: vi.fn().mockResolvedValue({ mtimeMs: 0 })
   }
 }))
 
 describe('extras.ts', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
+    vi.resetAllMocks()
+    vi.mocked(fs.stat).mockResolvedValue({ mtimeMs: 0 } as any)
   })
 
   describe('generateDeptracImage', () => {
@@ -40,7 +42,13 @@ describe('extras.ts', () => {
 
     it('should generate image and return success if installed', async () => {
       vi.mocked(fs.pathExists).mockResolvedValue(true)
-      vi.mocked(exec).mockResolvedValue({ toString: () => '' } as any)
+      // First stat call (mtimeBefore) returns 0, second (mtimeAfter) returns a later time
+      vi.mocked(fs.stat)
+        .mockResolvedValueOnce({ mtimeMs: 0 } as any)
+        .mockResolvedValueOnce({ mtimeMs: 1000 } as any)
+      vi.mocked(exec)
+        .mockResolvedValueOnce(undefined as any)  // deptrac run
+        .mockResolvedValueOnce({ toString: () => 'deptrac.png' } as any)  // git diff
 
       const result = await generateDeptracImage()
 
@@ -54,19 +62,28 @@ describe('extras.ts', () => {
 
     it('should NOT auto-commit (removed behavior)', async () => {
       vi.mocked(fs.pathExists).mockResolvedValue(true)
-      vi.mocked(exec).mockResolvedValue({} as any)
+      vi.mocked(fs.stat)
+        .mockResolvedValueOnce({ mtimeMs: 0 } as any)
+        .mockResolvedValueOnce({ mtimeMs: 1000 } as any)
+      vi.mocked(exec)
+        .mockResolvedValueOnce(undefined as any)
+        .mockResolvedValueOnce({ toString: () => '' } as any)
 
       await generateDeptracImage()
 
       // Verify no git add or git commit calls
       const execCalls = vi.mocked(exec).mock.calls
-      const gitCalls = execCalls.filter(call => call[0][0] === 'git')
+      const gitCalls = execCalls.filter(call => call[0][0] === 'git' && (call[0][1] === 'add' || call[0][1] === 'commit'))
       expect(gitCalls).toHaveLength(0)
     })
 
     it('should handle errors gracefully and return not generated', async () => {
       vi.mocked(fs.pathExists).mockResolvedValue(true)
-      vi.mocked(exec).mockRejectedValue(new Error('generation failed'))
+      // mtimeBefore stat call succeeds, then exec throws, then mtimeAfter stat also returns same value (no change)
+      vi.mocked(fs.stat).mockResolvedValue({ mtimeMs: 0 } as any)
+      vi.mocked(exec)
+        .mockRejectedValueOnce(new Error('generation failed'))  // deptrac run fails
+        .mockResolvedValueOnce({ toString: () => '' } as any)  // git diff in error handler
 
       const result = await generateDeptracImage()
 

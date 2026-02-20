@@ -61,7 +61,6 @@ Runs quality tools (linters, static analysis) on staged files.
 
 - **Caching**: ESLint and Prettier use caching to speed up repeated runs.
 - **Auto-fix**: Tools like ESLint, Prettier, Rector, and ECS will automatically fix issues and re-stage the changes.
-- **Parallel Analysis**: PHPStan, Psalm, and Deptrac run in parallel for faster feedback.
 
 ### `commit-msg`
 

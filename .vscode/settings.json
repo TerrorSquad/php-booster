@@ -1,0 +1,9 @@
+{
+  "chat.tools.terminal.autoApprove": {
+    "npm run test": true,
+    "git stash": true,
+    "git apply": true,
+    "patch": true,
+    "npm test": true
+  }
+}

@@ -60,22 +60,6 @@ export interface ToolConfig {
 }
 
 /**
- * Result of running a single tool (used for parallel execution)
- */
-export interface ToolResult {
-  /** Tool name */
-  name: string
-  /** Whether the tool succeeded */
-  success: boolean
-  /** Buffered output (stdout + stderr) */
-  output: string
-  /** Execution duration in ms */
-  duration: number
-  /** Files that need to be staged after (if any) */
-  filesToStage?: string[]
-}
-
-/**
  * Supported Git hooks
  */
 export const GitHook = {

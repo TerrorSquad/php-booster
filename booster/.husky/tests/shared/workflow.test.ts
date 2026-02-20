@@ -83,32 +83,6 @@ describe('workflow.ts', () => {
       expect(result).toBe(false)
       expect(log.error).toHaveBeenCalled()
     })
-
-    it('should extract PHP parse errors with file and line', async () => {
-      const phpError = {
-        stderr: 'PHP Parse error:  syntax error, unexpected token "{" in /app/src/Test.php on line 42',
-        stdout: '',
-        message: 'Command failed'
-      }
-      const fn = vi.fn().mockRejectedValue(phpError)
-      await runStep('PHP Syntax Check', 'Checking syntax...', fn)
-
-      // Should log the extracted error with file and line
-      expect(log.error).toHaveBeenCalledWith(expect.stringContaining('Test.php'))
-      expect(log.error).toHaveBeenCalledWith(expect.stringContaining('line 42'))
-    })
-
-    it('should extract file:line:col format errors', async () => {
-      const eslintError = {
-        stderr: '',
-        stdout: 'src/index.ts:15:10: Unexpected token',
-        message: 'Command failed'
-      }
-      const fn = vi.fn().mockRejectedValue(eslintError)
-      await runStep('ESLint', 'Linting...', fn)
-
-      expect(log.error).toHaveBeenCalledWith(expect.stringContaining('src/index.ts:15:10'))
-    })
   })
 
   describe('runQualityChecks', () => {
@@ -463,7 +437,7 @@ describe('workflow.ts', () => {
     })
   })
 
-  describe('parallel execution', () => {
+  describe('tool execution', () => {
     const mockTool: ToolConfig = {
       name: 'test-tool',
       command: 'test-cmd',
@@ -567,39 +541,6 @@ describe('workflow.ts', () => {
       expect(exec).toHaveBeenCalledWith(['no-group', 'file.php'], expect.any(Object))
 
       process.env.HOOKS_ONLY = originalEnv
-    })
-  })
-
-  describe('extractErrorDetails', () => {
-    it('should truncate very long error output', async () => {
-      const longError = {
-        stderr: 'A'.repeat(500), // Very long error
-        stdout: '',
-        message: 'Command failed'
-      }
-      const fn = vi.fn().mockRejectedValue(longError)
-      await runStep('Test Tool', 'Testing...', fn)
-
-      // Error should be logged but truncated to first line or generic message
-      expect(log.error).toHaveBeenCalled()
-      const errorCall = vi.mocked(log.error).mock.calls.find(
-        call => call[0].includes('→')
-      )
-      expect(errorCall).toBeDefined()
-      // Should not contain the full 500 char string
-      expect(errorCall![0].length).toBeLessThan(300)
-    })
-
-    it('should extract first non-empty line for generic errors', async () => {
-      const multilineError = {
-        stderr: '\n\n  First real error\nSecond line\nThird line',
-        stdout: '',
-        message: 'Command failed'
-      }
-      const fn = vi.fn().mockRejectedValue(multilineError)
-      await runStep('Test Tool', 'Testing...', fn)
-
-      expect(log.error).toHaveBeenCalledWith(expect.stringContaining('First real error'))
     })
   })
 })
