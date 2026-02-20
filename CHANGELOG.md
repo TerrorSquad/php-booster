@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.4.0](https://github.com/TerrorSquad/php-booster/compare/v2.3.0...v2.4.0) (2026-02-20)
+
+
+### Features
+
+* add command alternatives for tools and improve availability checks ([05b6b97](https://github.com/TerrorSquad/php-booster/commit/05b6b97c61ce34d58d60d37fa3291f6c46788bde))
+* add VSCode settings for terminal auto-approval and clean up unused types and tests ([1b65173](https://github.com/TerrorSquad/php-booster/commit/1b6517325c9adcd605d2559966b3e6aa9aa9a39b))
+
 ## [2.3.0](https://github.com/TerrorSquad/php-booster/compare/v2.2.0...v2.3.0) (2026-02-10)
 
 
