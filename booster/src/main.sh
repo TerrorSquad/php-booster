@@ -206,9 +206,9 @@ function main() {
                 ;;
             --update-deps)
                 UPDATE_DEPS_ONLY=true
+                ;;
             --ignore-platform-reqs)
                 IGNORE_PLATFORM_REQS=true
-                ;;
                 ;;
             *)
                 args+=("$arg")

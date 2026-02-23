@@ -5,6 +5,15 @@
     "git apply": true,
     "patch": true,
     "npm test": true,
-    "mise": true
+    "mise": true,
+    "make": true,
+    "/^bash -n booster/integrate_booster\\.sh$/": {
+      "approve": true,
+      "matchCommandLine": true
+    },
+    "/^bash -n booster/src/main\\.sh$/": {
+      "approve": true,
+      "matchCommandLine": true
+    }
   }
 }
