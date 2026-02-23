@@ -174,6 +174,11 @@ function add_code_quality_tools() {
         composer_cmd=(composer)
     fi
 
+    local extra_composer_flags=()
+    if [ "${IGNORE_PLATFORM_REQS:-false}" = true ]; then
+        extra_composer_flags+=("--ignore-platform-reqs")
+    fi
+
     # Process production dependencies
     if jq -e '.require | type == "object"' "$booster_composer" >/dev/null; then
     local prod_deps
@@ -199,7 +204,7 @@ function add_code_quality_tools() {
 
                 for dep in "${missing_prod_deps[@]}"; do
                     log "Installing production dependency: $dep"
-                    if "${composer_cmd[@]}" require --no-scripts --no-interaction "$dep"; then
+                    if "${composer_cmd[@]}" require --no-scripts --no-interaction "${extra_composer_flags[@]}" "$dep"; then
                         success "Successfully installed: $dep"
                     else
                         error "Failed to install critical production dependency: $dep"
@@ -251,7 +256,7 @@ function add_code_quality_tools() {
 
                 for dep in "${missing_dev_deps[@]}"; do
                     log "Installing dev dependency: $dep"
-                    if "${composer_cmd[@]}" require --dev --no-interaction "$dep"; then
+                    if "${composer_cmd[@]}" require --dev --no-interaction "${extra_composer_flags[@]}" "$dep"; then
                         success "Successfully installed: $dep"
                     else
                         warn "Failed to install: $dep"

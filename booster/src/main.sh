@@ -18,6 +18,7 @@ function show_help() {
     echo "  --update-hooks    Update only Git hooks (.husky directory)"
     echo "  --update-configs  Update only config files (commitlint, validate-branch-name, etc.)"
     echo "  --update-deps     Update only dependencies (composer/npm packages)"
+    echo "  --ignore-platform-reqs Ignore platform requirements (for composer)"
     echo ""
     echo "DESCRIPTION:"
     echo "  Integrates PHP Booster tooling into an existing PHP project."
@@ -80,28 +81,29 @@ function show_version_info_and_exit() {
 # Partial update mode flags
 UPDATE_HOOKS_ONLY=false
 UPDATE_CONFIGS_ONLY=false
+IGNORE_PLATFORM_REQS=false
 UPDATE_DEPS_ONLY=false
 
 # --- Partial Update Functions ---
 
 function update_hooks_only() {
     log "Starting partial update: Git hooks only..."
-    
+
     download_php_booster
-    
+
     local husky_src="${BOOSTER_INTERNAL_PATH}/.husky"
     if [ -d "$husky_src" ]; then
         log "Updating .husky directory..."
-        
+
         # Backup existing husky if it exists
         if [ -d ".husky" ]; then
             rm -rf ".husky.bak"
             mv ".husky" ".husky.bak"
             log "  Backed up existing .husky to .husky.bak"
         fi
-        
+
         mkdir -p .husky
-        
+
         # Copy everything except the 'tests' directory
         for item in "$husky_src"/*; do
             local item_name=$(basename "$item")
@@ -109,13 +111,13 @@ function update_hooks_only() {
                 cp -R "$item" .husky/
             fi
         done
-        
+
         # Set execute permissions for scripts and hooks
         find ".husky" -type f \( -name "*.sh" -o -name "*.bash" -o -name "*.mjs" -o -name "pre-commit" -o -name "commit-msg" -o -name "pre-push" \) -exec chmod +x {} \;
-        
+
         # Remove backup on success
         rm -rf ".husky.bak"
-        
+
         success "Git hooks updated successfully."
     else
         error "Could not find .husky directory in booster."
@@ -124,18 +126,18 @@ function update_hooks_only() {
 
 function update_configs_only() {
     log "Starting partial update: Config files only..."
-    
+
     download_php_booster
-    
+
     local updated_count=0
-    
+
     # Config files to update (always overwrite)
     local config_files=(
         "commitlint.config.ts"
         "validate-branch-name.config.cjs"
         "renovate.json"
     )
-    
+
     for config in "${config_files[@]}"; do
         local src="${BOOSTER_INTERNAL_PATH}/${config}"
         if [ -f "$src" ]; then
@@ -146,7 +148,7 @@ function update_configs_only() {
             log "  $config not found in booster, skipping."
         fi
     done
-    
+
     # Update .editorconfig
     local editorconfig_src="${BOOSTER_INTERNAL_PATH}/.editorconfig"
     if [ -f "$editorconfig_src" ]; then
@@ -154,7 +156,7 @@ function update_configs_only() {
         log "  Updated .editorconfig"
         ((updated_count++))
     fi
-    
+
     # PHP-specific configs (only if not hooks-only mode and files exist)
     if [ "$HOOKS_ONLY_MODE" != true ] && [ -f "composer.json" ]; then
         local php_configs=("ecs.php" "rector.php" "phpstan.neon.dist" "psalm.xml" "deptrac.yaml" "sonar-project.properties")
@@ -167,27 +169,27 @@ function update_configs_only() {
             fi
         done
     fi
-    
+
     success "Config files updated ($updated_count files)."
 }
 
 function update_deps_only() {
     log "Starting partial update: Dependencies only..."
-    
+
     download_php_booster
-    
+
     IS_DDEV_PROJECT=$(is_ddev_project)
-    
+
     # Update node dependencies
     log "Updating Node.js dependencies..."
     install_node_dependencies
-    
+
     # Update PHP dependencies (only if not hooks-only mode)
     if [ "$HOOKS_ONLY_MODE" != true ] && [ -f "composer.json" ]; then
         log "Updating PHP dependencies..."
         add_code_quality_tools
     fi
-    
+
     success "Dependencies updated."
 }
 
@@ -204,6 +206,9 @@ function main() {
                 ;;
             --update-deps)
                 UPDATE_DEPS_ONLY=true
+            --ignore-platform-reqs)
+                IGNORE_PLATFORM_REQS=true
+                ;;
                 ;;
             *)
                 args+=("$arg")
@@ -211,7 +216,7 @@ function main() {
         esac
     done
     set -- "${args[@]}"
-    
+
     # Process command line arguments
     while getopts ":vchiINJ" opt; do
         case $opt in
@@ -231,33 +236,33 @@ function main() {
     # --- Handle Partial Update Modes ---
     if [ "$UPDATE_HOOKS_ONLY" = true ] || [ "$UPDATE_CONFIGS_ONLY" = true ] || [ "$UPDATE_DEPS_ONLY" = true ]; then
         log "Running in partial update mode..."
-        
+
         # Check for existing booster installation
         if [ ! -f ".booster-version" ] && [ ! -d ".husky" ]; then
             warn "No existing booster installation detected. Running partial update anyway..."
         fi
-        
+
         check_dependencies
-        
+
         if [ "$UPDATE_HOOKS_ONLY" = true ]; then
             update_hooks_only
         fi
-        
+
         if [ "$UPDATE_CONFIGS_ONLY" = true ]; then
             update_configs_only
         fi
-        
+
         if [ "$UPDATE_DEPS_ONLY" = true ]; then
             update_deps_only
         fi
-        
+
         # Update version stamp with partial update info
         local current_version
         current_version=$(get_booster_version 2>/dev/null || echo "unknown")
         if [ "$current_version" != "unknown" ]; then
             create_version_stamp "$current_version" "partial-update"
         fi
-        
+
         success "Partial update completed."
         exit 0
     fi

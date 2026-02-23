@@ -129,3 +129,18 @@ curl -sSL https://raw.githubusercontent.com/TerrorSquad/php-booster/main/booster
 ::tip
 Partial updates are faster than a full reinstall and preserve your custom configurations in files like `package.json` and `composer.json`.
 ::
+
+## Command Line Reference
+
+The integration script supports several flags to customize its behavior:
+
+| Flag | Description |
+| :--- | :--- |
+| `-I` | Run in interactive mode (guided setup wizard). |
+| `-N` | Non-interactive mode (skip prompts, use defaults). |
+| `-J` | **JavaScript/TypeScript only** mode (hooks only, no PHP tools). |
+| `-v` | Enable verbose logging for debugging. |
+| `--ignore-platform-reqs` | Ignore platform requirements when installing PHP dependencies (useful if your local PHP version differs from production). |
+| `--update-hooks` | **Partial Update**: Refresh only Git hooks in `.husky`. |
+| `--update-configs` | **Partial Update**: Refresh configuration files. |
+| `--update-deps` | **Partial Update**: Refresh dependencies (composer/npm). |
