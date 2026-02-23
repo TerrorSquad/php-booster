@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.5.0](https://github.com/TerrorSquad/php-booster/compare/v2.4.0...v2.5.0) (2026-02-23)
+
+
+### Features
+
+* add support for --ignore-platform-reqs flag in integration script and update documentation ([fb56818](https://github.com/TerrorSquad/php-booster/commit/fb5681815b7352b735016a79fbaea58a799735af))
+
+
+### Bug Fixes
+
+* --ignore-platform-reqs flag and update settings ([21e4ff1](https://github.com/TerrorSquad/php-booster/commit/21e4ff16a5d8fe2b8a03b7b4cf40d27484f3efbd))
+
 ## [2.4.0](https://github.com/TerrorSquad/php-booster/compare/v2.3.0...v2.4.0) (2026-02-20)
 
 
