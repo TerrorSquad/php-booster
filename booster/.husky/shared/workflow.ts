@@ -231,7 +231,7 @@ async function prepareTool(tool: ToolConfig, files: string[]): Promise<PreparedT
 
             // Use Node.js built-in globbing matching (requires Node.js 22+)
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            return (path as any).matchesGlob(file, pattern);
+            return path.matchesGlob(file, pattern);
           });
         })
     : filesToRun;
