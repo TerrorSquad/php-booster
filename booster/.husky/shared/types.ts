@@ -11,9 +11,10 @@ export type ToolType = 'node' | 'php' | 'system'
  * - 'format': Formatting tools (Prettier, ECS)
  * - 'lint': Linting tools (ESLint, Stylelint)
  * - 'analysis': Static analysis (PHPStan, Psalm, Deptrac)
+ * - 'security': Security tools (PHP Security Checker)
  * - 'refactor': Code refactoring (Rector)
  */
-export type ToolGroup = 'format' | 'lint' | 'analysis' | 'refactor'
+export type ToolGroup = 'format' | 'lint' | 'analysis' | 'security' | 'refactor'
 
 /**
  * Failure mode for a tool

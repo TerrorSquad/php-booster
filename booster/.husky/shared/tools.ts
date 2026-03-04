@@ -12,6 +12,7 @@ import type { ToolConfig } from './types.ts'
  * - 'format': Formatting tools (Prettier, ECS)
  * - 'lint': Linting tools (ESLint, Stylelint, PHP Syntax, TypeScript)
  * - 'analysis': Static analysis (PHPStan, Psalm, Deptrac)
+ * - 'security': Security tools (PHP Security Checker)
  * - 'refactor': Code refactoring (Rector)
  */
 
@@ -81,6 +82,31 @@ export const TOOLS: ToolConfig[] = [
     group: 'lint',
     description: 'Type-checking TypeScript files...',
   },
+  {
+    name: 'Markdownlint',
+    command: 'markdownlint-cli2',
+    args: [],
+    type: 'node',
+    extensions: ['.md'],
+    group: 'lint',
+  },
+  {
+    name: 'jscpd',
+    command: 'jscpd',
+    args: ['--ignore', '"**/*.d.ts,**/node_modules/**"'],
+    type: 'node',
+    extensions: ['.js', '.jsx', '.ts', '.tsx', '.vue', '.css', '.scss'],
+    passFiles: false, // Runs on whole project by default
+    group: 'analysis',
+  },
+  {
+    name: 'Knip',
+    command: 'knip',
+    args: [],
+    type: 'node',
+    passFiles: false, // Analyzes project structure
+    group: 'analysis',
+  },
 
   // PHP Tools
   {
@@ -101,6 +127,26 @@ export const TOOLS: ToolConfig[] = [
     stagesFilesAfter: true,
     extensions: ['.php'],
     group: 'refactor',
+  },
+  {
+    name: 'Composer Validate',
+    command: 'composer',
+    args: ['validate', '--strict', '--ansi'],
+    type: 'system',
+    passFiles: false, // Runs on composer.json
+    extensions: ['composer.json', 'composer.lock'],
+     // Only run if composer.json exists
+    includePatterns: ['composer.json'],
+    group: 'lint',
+  },
+  {
+    name: 'PHP Security Checker',
+    command: 'security-checker',
+    args: ['security:check', '--ansi'],
+    type: 'php',
+    passFiles: false, // Runs on composer.lock
+    extensions: ['composer.lock'],
+    group: 'security',
   },
   {
     name: 'ECS',

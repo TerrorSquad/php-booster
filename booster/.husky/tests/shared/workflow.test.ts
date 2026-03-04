@@ -333,6 +333,30 @@ describe('workflow.ts', () => {
       delete process.env.HOOKS_ONLY
     })
 
+    it('should run tools in security HOOKS_ONLY group', async () => {
+      vi.mocked(isSkipped).mockReturnValue(false)
+      vi.mocked(fs.pathExists).mockResolvedValue(true)
+      vi.mocked(exec).mockResolvedValue({} as any)
+
+      process.env.HOOKS_ONLY = 'security'
+
+      const securityTool: ToolConfig = {
+        ...mockTool,
+        name: 'security-tool',
+        group: 'security',
+        extensions: ['.lock']
+      }
+      const formatTool: ToolConfig = { ...mockTool, name: 'format-tool', group: 'format' }
+
+      await runQualityChecks(['composer.lock'], [securityTool, formatTool])
+
+      // Only security tool should run
+      expect(exec).toHaveBeenCalledTimes(1)
+      expect(log.skip).toHaveBeenCalledWith(expect.stringContaining('format-tool'))
+
+      delete process.env.HOOKS_ONLY
+    })
+
     it('should run tools in multiple HOOKS_ONLY groups', async () => {
       vi.mocked(isSkipped).mockReturnValue(false)
       vi.mocked(fs.pathExists).mockResolvedValue(true)
