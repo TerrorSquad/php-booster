@@ -11,7 +11,7 @@ import {
   initEnvironment
 } from '../../shared/core'
 import { shouldSkipDuringMerge, stageFiles } from '../../shared/git'
-import { fs, which, $ } from 'zx'
+import { fs, which, $, path } from 'zx'
 
 // Mock dependencies
 vi.mock('../../shared/core', () => ({
@@ -52,6 +52,9 @@ vi.mock('zx', () => ({
   which: vi.fn(),
   $: {
     verbose: false
+  },
+  path: {
+    match: vi.fn()
   }
 }))
 
@@ -381,6 +384,58 @@ describe('workflow.ts', () => {
       await runQualityChecks(['file.php'], [lintTool, formatTool])
 
       expect(exec).toHaveBeenCalledTimes(2)
+    })
+
+    it('should filter files based on includePatterns (regex)', async () => {
+      vi.mocked(isSkipped).mockReturnValue(false)
+      vi.mocked(fs.pathExists).mockResolvedValue(true)
+      vi.mocked(exec).mockResolvedValue({} as any)
+
+      const regexTool: ToolConfig = {
+        ...mockTool,
+        type: 'node',
+        command: 'check',
+        extensions: ['.json'], // Add extension to match file extension check first
+        includePatterns: [/src\/locales\/.*\.json$/]
+      }
+
+      const files = ['apps/app1/src/locales/en.json', 'other/file.json']
+      await runQualityChecks(files, [regexTool])
+
+      // Should run only for matched file
+      expect(exec).toHaveBeenCalledTimes(1)
+      const callArgs = vi.mocked(exec).mock.calls[0][0]
+      expect(callArgs).toContain('apps/app1/src/locales/en.json')
+      expect(callArgs).not.toContain('other/file.json')
+    })
+
+    it('should filter files based on includePatterns (glob)', async () => {
+      vi.mocked(isSkipped).mockReturnValue(false)
+      vi.mocked(fs.pathExists).mockResolvedValue(true)
+      vi.mocked(exec).mockResolvedValue({} as any)
+
+      // Mock path.match behavior
+      // @ts-ignore
+      vi.mocked(path.match).mockImplementation((pattern, file) => {
+        // Simple mock: check if file ends with .json and path contains /locales/
+        return file.endsWith('.json') && file.includes('/locales/')
+      })
+
+      const globTool: ToolConfig = {
+        ...mockTool,
+        type: 'node',
+        command: 'check',
+        extensions: ['.json'], // Add extension to match file extension check first
+        includePatterns: ['apps/*/src/locales/*.json']
+      }
+
+      const files = ['apps/app1/src/locales/en.json', 'other/file.json']
+      await runQualityChecks(files, [globTool])
+
+      expect(exec).toHaveBeenCalledTimes(1)
+      const callArgs = vi.mocked(exec).mock.calls[0][0]
+      expect(callArgs).toContain('apps/app1/src/locales/en.json')
+      expect(callArgs).not.toContain('other/file.json')
     })
   })
 

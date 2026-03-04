@@ -1,4 +1,4 @@
-import { which, fs } from 'zx'
+import { which, fs, path } from 'zx'
 import {
   ensureMutagenSync,
   exec,
@@ -222,7 +222,21 @@ async function prepareTool(tool: ToolConfig, files: string[]): Promise<PreparedT
     ? files.filter((file) => tool.extensions!.some((ext) => file.endsWith(ext)))
     : files
 
-  if (filesToRun.length === 0) return null
+  const filteredFiles = tool.includePatterns
+    ? filesToRun.filter((file) => {
+        return tool.includePatterns!.some((pattern) => {
+            if (pattern instanceof RegExp) {
+              return pattern.test(file)
+            }
+
+            // Use Node.js built-in globbing matching (requires Node.js 22+)
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            return (path as any).match(pattern, file);
+          });
+        })
+    : filesToRun;
+
+  if (filteredFiles.length === 0) return null
 
   // Check binary existence
   if (!(await isToolAvailable(tool))) {
@@ -232,7 +246,7 @@ async function prepareTool(tool: ToolConfig, files: string[]): Promise<PreparedT
 
   return {
     tool,
-    files: filesToRun,
+    files: filteredFiles,
     description: tool.description || `Running ${tool.name}...`,
   }
 }

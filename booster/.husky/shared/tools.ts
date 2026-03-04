@@ -23,7 +23,7 @@ export const TOOLS: ToolConfig[] = [
   {
     name: 'ESLint',
     command: 'eslint',
-    args: ['--fix', '--cache'],
+    args: ['--fix', '--cache', '--no-warn-ignored'],
     type: 'node',
     stagesFilesAfter: true,
     extensions: ['.js', '.jsx', '.ts', '.tsx', '.vue', '.mjs', '.cjs'],
@@ -50,6 +50,16 @@ export const TOOLS: ToolConfig[] = [
       '.css',
       '.scss',
     ],
+    group: 'format',
+  },
+  {
+    name: 'Flatten JSON',
+    command: 'node',
+    args: ['./tools/flatten-json.ts'],
+    type: 'node',
+    extensions: ['.json'],
+    includePatterns: ['apps/*/src/locales/*.json'],
+    stagesFilesAfter: true,
     group: 'format',
   },
   {

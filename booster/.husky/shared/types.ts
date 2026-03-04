@@ -40,6 +40,8 @@ export interface ToolConfig {
   extensions?: string[]
   /** If true, re-stages files after execution (useful for fixers) */
   stagesFilesAfter?: boolean
+  /** Only run on files matching any of these glob patterns (or regexes) */
+  includePatterns?: (string | RegExp)[]
   /** If false, does not pass the list of staged files to the command. Default is true. */
   passFiles?: boolean
   /** If true, runs the command for each file individually. Default is false. */
