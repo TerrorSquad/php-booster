@@ -54,7 +54,7 @@ vi.mock('zx', () => ({
     verbose: false
   },
   path: {
-    match: vi.fn()
+    matchesGlob: vi.fn()
   }
 }))
 
@@ -438,9 +438,9 @@ describe('workflow.ts', () => {
       vi.mocked(fs.pathExists).mockResolvedValue(true)
       vi.mocked(exec).mockResolvedValue({} as any)
 
-      // Mock path.match behavior
+      // Mock path.matchesGlob behavior matchesGlob
       // @ts-ignore
-      vi.mocked(path.match).mockImplementation((pattern, file) => {
+      vi.mocked(path.matchesGlob).mockImplementation((file, pattern) => {
         // Simple mock: check if file ends with .json and path contains /locales/
         return file.endsWith('.json') && file.includes('/locales/')
       })
