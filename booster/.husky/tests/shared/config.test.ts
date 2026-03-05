@@ -179,12 +179,12 @@ describe('config.ts', () => {
     it('should completely override existing tool (command, type, etc.)', () => {
       const config: HooksConfig = {
         tools: {
-          PHPStan: { 
+          PHPStan: {
             command: 'docker-compose',
             args: ['exec', 'php', 'phpstan'],
             type: 'system',
             includePatterns: ['src/**/*.php']
-          } as any, 
+          } as any,
         },
       }
 
