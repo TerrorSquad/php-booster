@@ -143,22 +143,15 @@ export function applyConfigOverrides(
       continue // Skip disabled tool
     }
 
-    if (isCustomTool(override)) {
-      // Full custom definition replaces the tool
-      result.push({
-        ...override,
-        name: tool.name,
-      })
-    } else {
-      // Partial override - merge with existing
-      result.push({
-        ...tool,
-        ...(override.args !== undefined && { args: override.args }),
-        ...(override.extensions !== undefined && { extensions: override.extensions }),
-        ...(override.onFailure !== undefined && { onFailure: override.onFailure }),
-        ...(override.description !== undefined && { description: override.description }),
-      })
-    }
+    // Merge with existing logic:
+    // We treat the override as a partial update to the existing tool
+    // This allows changing ANY property (command, args, type, etc.)
+    // while keeping defaults for unspecified ones.
+    const { enabled, ...overrideProps } = override
+    result.push({
+      ...tool,
+      ...overrideProps,
+    })
   }
 
   // Add new custom tools

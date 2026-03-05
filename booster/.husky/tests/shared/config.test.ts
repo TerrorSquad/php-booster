@@ -176,6 +176,29 @@ describe('config.ts', () => {
       expect(phpstan?.args).toEqual(['analyse', '--level=9'])
     })
 
+    it('should completely override existing tool (command, type, etc.)', () => {
+      const config: HooksConfig = {
+        tools: {
+          PHPStan: { 
+            command: 'docker-compose',
+            args: ['exec', 'php', 'phpstan'],
+            type: 'system',
+            includePatterns: ['src/**/*.php']
+          } as any, 
+        },
+      }
+
+      const result = applyConfigOverrides(baseTools, config)
+      const phpstan = result.find((t) => t.name === 'PHPStan')
+
+      expect(phpstan?.command).toBe('docker-compose')
+      expect(phpstan?.type).toBe('system')
+      expect(phpstan?.args).toEqual(['exec', 'php', 'phpstan'])
+      expect(phpstan?.includePatterns).toEqual(['src/**/*.php'])
+      // Should preserve existing properties not overridden
+      expect(phpstan?.extensions).toEqual(['.php'])
+    })
+
     it('should override tool extensions', () => {
       const config: HooksConfig = {
         tools: {

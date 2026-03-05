@@ -127,23 +127,51 @@
   "definitions": {
     "toolOverride": {
       "type": "object",
-      "description": "Override existing tool settings",
+      "description": "Override existing tool settings to customize behavior or replace functionality",
       "properties": {
         "enabled": {
           "type": "boolean",
           "description": "Set to false to disable this tool",
           "default": true
         },
+        "command": {
+          "type": "string",
+          "description": "Override the command to execute"
+        },
         "args": {
           "type": "array",
           "items": { "type": "string" },
           "description": "Override command arguments"
+        },
+        "type": {
+          "type": "string",
+          "enum": ["php", "node", "system"],
+          "description": "Override tool type"
         },
         "extensions": {
           "type": "array",
           "items": { "type": "string" },
           "description": "Override file extensions to process",
           "examples": [[".php", ".phtml"]]
+        },
+        "includePatterns": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Glob patterns to include files (e.g. 'apps/*/src/*.json'). Requires Node 22+ for native glob support."
+        },
+        "passFiles": {
+          "type": "boolean",
+          "description": "If false, does not pass staged files to the command",
+          "default": true
+        },
+        "runForEachFile": {
+          "type": "boolean",
+          "description": "If true, runs the command for each file individually",
+          "default": false
+        },
+        "stagesFilesAfter": {
+          "type": "boolean",
+          "description": "If true, re-stages files after execution (useful for fixers)"
         },
         "onFailure": {
           "type": "string",
@@ -154,13 +182,18 @@
         "description": {
           "type": "string",
           "description": "Override the tool description shown in logs"
+        },
+        "group": {
+          "type": "string",
+          "enum": ["format", "lint", "analysis", "security", "refactor"],
+          "description": "Tool group for selective execution"
         }
       },
       "additionalProperties": false
     },
     "customTool": {
       "type": "object",
-      "description": "Add a custom tool",
+      "description": "Add a custom tool configuration",
       "required": ["command", "type", "extensions"],
       "properties": {
         "enabled": {
@@ -179,14 +212,33 @@
         },
         "type": {
           "type": "string",
-          "enum": ["php", "node"],
-          "description": "Tool type - 'php' uses DDEV/composer, 'node' uses npm/pnpm"
+          "enum": ["php", "node", "system"],
+          "description": "Tool type - 'php' uses DDEV/composer, 'node' uses npm/pnpm, 'system' uses PATH"
         },
         "extensions": {
           "type": "array",
           "items": { "type": "string" },
           "description": "File extensions this tool processes",
           "examples": [[".php"], [".js", ".ts"]]
+        },
+        "includePatterns": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Glob patterns to include files (e.g. 'apps/*/src/*.json')"
+        },
+        "passFiles": {
+          "type": "boolean",
+          "description": "If false, does not pass staged files to the command",
+          "default": true
+        },
+        "runForEachFile": {
+          "type": "boolean",
+          "description": "If true, runs the command for each file individually",
+          "default": false
+        },
+        "stagesFilesAfter": {
+          "type": "boolean",
+          "description": "If true, re-stages files after execution (useful for fixers)"
         },
         "description": {
           "type": "string",
@@ -197,6 +249,11 @@
           "enum": ["continue", "stop"],
           "description": "What to do when this tool fails",
           "default": "continue"
+        },
+        "group": {
+          "type": "string",
+          "enum": ["format", "lint", "analysis", "security", "refactor"],
+          "description": "Tool group for selective execution"
         }
       },
       "additionalProperties": false

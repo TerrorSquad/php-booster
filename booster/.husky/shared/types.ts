@@ -76,17 +76,9 @@ export type GitHook = (typeof GitHook)[keyof typeof GitHook]
 /**
  * Tool override configuration (partial ToolConfig for customization)
  */
-export interface ToolOverride {
+export interface ToolOverride extends Partial<Omit<ToolConfig, 'name'>> {
   /** Set to false to disable this tool */
   enabled?: boolean
-  /** Override arguments */
-  args?: string[]
-  /** Override extensions */
-  extensions?: string[]
-  /** Override failure mode */
-  onFailure?: FailureMode
-  /** Override description */
-  description?: string
 }
 
 /**
