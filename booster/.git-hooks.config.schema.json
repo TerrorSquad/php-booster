@@ -62,9 +62,33 @@
           "$ref": "#/definitions/toolOverride",
           "description": "TypeScript - Type checking (group: lint)"
         },
+        "Markdownlint": {
+          "$ref": "#/definitions/toolOverride",
+          "description": "Markdownlint - Markdown style checker (group: lint)"
+        },
+        "jscpd": {
+          "$ref": "#/definitions/toolOverride",
+          "description": "jscpd - Copy/paste detector (group: analysis)"
+        },
+        "Knip": {
+          "$ref": "#/definitions/toolOverride",
+          "description": "Knip - Unused files and dependencies finder (group: analysis)"
+        },
+        "Flatten JSON": {
+          "$ref": "#/definitions/toolOverride",
+          "description": "Flatten JSON - Normalizes JSON files (group: format)"
+        },
         "PHP Syntax Check": {
           "$ref": "#/definitions/toolOverride",
           "description": "PHP Syntax Check - PHP lint (group: lint)"
+        },
+        "Composer Validate": {
+          "$ref": "#/definitions/toolOverride",
+          "description": "Composer Validate - Validates composer.json and composer.lock (group: lint)"
+        },
+        "PHP Security Checker": {
+          "$ref": "#/definitions/toolOverride",
+          "description": "PHP Security Checker - Checks installed packages for known vulnerabilities (group: security)"
         },
         "Rector": {
           "$ref": "#/definitions/toolOverride",
