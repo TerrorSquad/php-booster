@@ -102,9 +102,14 @@ async function commandExists(commandPath: string, command: string, type: string)
     return true
   }
 
-  return await which(command)
-    .then(() => true)
-    .catch(() => false)
+  // Only fallback to system PATH for non-specific tool types or known system commands
+  if (type === 'system') {
+    return await which(command)
+      .then(() => true)
+      .catch(() => false)
+  }
+
+  return false
 }
 
 /**
