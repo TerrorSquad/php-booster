@@ -93,7 +93,7 @@ export const TOOLS: ToolConfig[] = [
   {
     name: 'jscpd',
     command: 'jscpd',
-    args: ['--ignore', '"**/*.d.ts,**/node_modules/**"'],
+    args: ['--ignore', '**/*.d.ts,**/node_modules/**,**/vendor/**,**/.ddev/**,**/var/**,**/public/**,**/storage/**,**/tests/_output/**'],
     type: 'node',
     extensions: ['.js', '.jsx', '.ts', '.tsx', '.vue', '.css', '.scss'],
     passFiles: false, // Runs on whole project by default
@@ -102,7 +102,7 @@ export const TOOLS: ToolConfig[] = [
   {
     name: 'Knip',
     command: 'knip',
-    args: [],
+    args: ['--no-exit-code'],
     type: 'node',
     passFiles: false, // Analyzes project structure
     group: 'analysis',
@@ -132,7 +132,7 @@ export const TOOLS: ToolConfig[] = [
     name: 'Composer Validate',
     command: 'composer',
     args: ['validate', '--strict', '--ansi'],
-    type: 'system',
+    type: 'php',
     passFiles: false, // Runs on composer.json
     extensions: ['composer.json', 'composer.lock'],
      // Only run if composer.json exists

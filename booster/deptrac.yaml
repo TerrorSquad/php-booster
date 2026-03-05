@@ -1,7 +1,12 @@
 deptrac:
   paths:
-    - ./src
-    - ./app
+    - ./
+  exclude_files:
+    - '#.*test.*#'
+    - '#.*vendor.*#'
+    - '#.*node_modules.*#'
+    - '#.*var/.*#'
+    - '#.*.ddev/.*#'
   layers:
     - name: Controller
       collectors:
