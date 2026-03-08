@@ -39,6 +39,10 @@ on:
           - verify
           - test-hooks
 
+concurrency:
+  group: integration-tests-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   integration-test:
     name: Integration Test (${{ matrix.project_type }})
@@ -143,6 +147,22 @@ jobs:
 
       - name: Run integration test
         run: |
+          run_with_timeout() {
+            local duration="$1"
+            shift
+
+            timeout --foreground "$duration" "$@" &
+            local cmd_pid=$!
+
+            # Emit periodic heartbeat so long-running tests don't look stuck.
+            while kill -0 "$cmd_pid" 2>/dev/null; do
+              echo "[$(date -u +%H:%M:%S)] still running: $*"
+              sleep 60
+            done
+
+            wait "$cmd_pid"
+          }
+
           # Use manual input if workflow_dispatch, otherwise use matrix
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             PROJECT_TYPE="${{ github.event.inputs.project_type }}"
@@ -157,15 +177,15 @@ jobs:
           # Use Makefile targets for common actions
           if [ "$TEST_ACTION" = "full" ]; then
             if [ "$PROJECT_TYPE" = "laravel" ]; then
-              timeout 45m make test-laravel
+              run_with_timeout 45m make test-laravel
             elif [ "$PROJECT_TYPE" = "symfony" ]; then
-              timeout 45m make test-symfony
+              run_with_timeout 45m make test-symfony
             fi
           elif [ "$TEST_ACTION" = "test-hooks" ]; then
-            timeout 20m make test-hooks
+            run_with_timeout 20m make test-hooks
           else
             # For other actions, fall back to direct script call
-            timeout 45m ./tools/internal-test/test-integration.py $TEST_ACTION $PROJECT_TYPE
+            run_with_timeout 45m ./tools/internal-test/test-integration.py $TEST_ACTION $PROJECT_TYPE
           fi
 
       - name: Show test results
@@ -274,6 +294,22 @@ jobs:
 
       - name: Run manual test
         run: |
+          run_with_timeout() {
+            local duration="$1"
+            shift
+
+            timeout --foreground "$duration" "$@" &
+            local cmd_pid=$!
+
+            # Emit periodic heartbeat so long-running tests don't look stuck.
+            while kill -0 "$cmd_pid" 2>/dev/null; do
+              echo "[$(date -u +%H:%M:%S)] still running: $*"
+              sleep 60
+            done
+
+            wait "$cmd_pid"
+          }
+
           PROJECT_TYPE="${{ github.event.inputs.project_type }}"
           TEST_ACTION="${{ github.event.inputs.test_action }}"
 
@@ -282,15 +318,15 @@ jobs:
           # Use Makefile targets for common actions
           if [ "$TEST_ACTION" = "full" ]; then
             if [ "$PROJECT_TYPE" = "laravel" ]; then
-              timeout 45m make test-laravel
+              run_with_timeout 45m make test-laravel
             elif [ "$PROJECT_TYPE" = "symfony" ]; then
-              timeout 45m make test-symfony
+              run_with_timeout 45m make test-symfony
             fi
           elif [ "$TEST_ACTION" = "test-hooks" ]; then
-            timeout 20m make test-hooks
+            run_with_timeout 20m make test-hooks
           else
             # For other actions, fall back to direct script call
-            timeout 45m ./tools/internal-test/test-integration.py $TEST_ACTION $PROJECT_TYPE
+            run_with_timeout 45m ./tools/internal-test/test-integration.py $TEST_ACTION $PROJECT_TYPE
           fi
 
       - name: Show test results
