@@ -124,6 +124,61 @@ jobs:
         run: |
           make test-env
 
+      - name: Build integration script from source
+        run: |
+          make build
+
+      - name: Build and verify booster.zip contents
+        if: matrix.project_type == 'laravel'
+        run: |
+          mkdir -p /tmp/booster-package
+          (cd booster && sh package-release.sh /tmp/booster-package)
+
+          unzip -Z1 /tmp/booster-package/booster.zip > /tmp/booster-zip-entries.txt
+
+          {
+            jq -r '.directories.items[] | "booster/\(.)/"' booster/manifest.json
+            jq -r '.files.topLevel.items[] | "booster/\(.)"' booster/manifest.json
+            jq -r '.files.config.items[] | "booster/\(.)"' booster/manifest.json
+            jq -r '.files.php.items[] | "booster/\(.)"' booster/manifest.json
+            jq -r '.files.packageManagement.items[] | "booster/\(.)"' booster/manifest.json
+            echo "booster/openapi/"
+            echo "booster/.ddev/config.yaml"
+            echo "booster/.ddev/commands/"
+            echo "booster/.ddev/php/"
+            echo "booster/.ddev/web-build/"
+            echo "booster/.ddev/scripts/"
+            echo "booster/src/"
+            echo "booster/manifest.json"
+            echo "booster/README_SNIPPET.md"
+          } > /tmp/booster-zip-expected.txt
+
+          missing=0
+          while IFS= read -r expected; do
+            if [ -z "$expected" ]; then
+              continue
+            fi
+
+            if [ "${expected%/}" != "$expected" ]; then
+              if ! grep -Fq "$expected" /tmp/booster-zip-entries.txt; then
+                echo "Missing directory in booster.zip: $expected"
+                missing=1
+              fi
+            else
+              if ! grep -Fxq "$expected" /tmp/booster-zip-entries.txt; then
+                echo "Missing file in booster.zip: $expected"
+                missing=1
+              fi
+            fi
+          done < /tmp/booster-zip-expected.txt
+
+          if [ "$missing" -ne 0 ]; then
+            echo "booster.zip is missing expected files."
+            exit 1
+          fi
+
+          echo "booster.zip contains all expected manifest and runtime files."
+
       - name: Build test fixtures if not cached
         run: |
           TARGET_PROJECT="${{ matrix.project_type }}"
@@ -270,6 +325,60 @@ jobs:
       - name: Check requirements
         run: |
           make test-env
+
+      - name: Build integration script from source
+        run: |
+          make build
+
+      - name: Build and verify booster.zip contents
+        run: |
+          mkdir -p /tmp/booster-package
+          (cd booster && sh package-release.sh /tmp/booster-package)
+
+          unzip -Z1 /tmp/booster-package/booster.zip > /tmp/booster-zip-entries.txt
+
+          {
+            jq -r '.directories.items[] | "booster/\(.)/"' booster/manifest.json
+            jq -r '.files.topLevel.items[] | "booster/\(.)"' booster/manifest.json
+            jq -r '.files.config.items[] | "booster/\(.)"' booster/manifest.json
+            jq -r '.files.php.items[] | "booster/\(.)"' booster/manifest.json
+            jq -r '.files.packageManagement.items[] | "booster/\(.)"' booster/manifest.json
+            echo "booster/openapi/"
+            echo "booster/.ddev/config.yaml"
+            echo "booster/.ddev/commands/"
+            echo "booster/.ddev/php/"
+            echo "booster/.ddev/web-build/"
+            echo "booster/.ddev/scripts/"
+            echo "booster/src/"
+            echo "booster/manifest.json"
+            echo "booster/README_SNIPPET.md"
+          } > /tmp/booster-zip-expected.txt
+
+          missing=0
+          while IFS= read -r expected; do
+            if [ -z "$expected" ]; then
+              continue
+            fi
+
+            if [ "${expected%/}" != "$expected" ]; then
+              if ! grep -Fq "$expected" /tmp/booster-zip-entries.txt; then
+                echo "Missing directory in booster.zip: $expected"
+                missing=1
+              fi
+            else
+              if ! grep -Fxq "$expected" /tmp/booster-zip-entries.txt; then
+                echo "Missing file in booster.zip: $expected"
+                missing=1
+              fi
+            fi
+          done < /tmp/booster-zip-expected.txt
+
+          if [ "$missing" -ne 0 ]; then
+            echo "booster.zip is missing expected files."
+            exit 1
+          fi
+
+          echo "booster.zip contains all expected manifest and runtime files."
 
       - name: Build test fixtures if not cached
         run: |
