@@ -114,16 +114,14 @@ describe('extras.ts', () => {
       expect(log.info).toHaveBeenCalledWith(expect.stringContaining('No changes'))
     })
 
-    it('should generate HTML and return changed if spec changed', async () => {
+    it('should return changed if spec changed', async () => {
       vi.mocked(fs.pathExists).mockResolvedValue(true)
       vi.mocked(exec)
         .mockResolvedValueOnce({} as any) // generate-api-spec
         .mockResolvedValueOnce({ toString: () => 'openapi/openapi.yml' } as any) // git diff
-        .mockResolvedValueOnce({} as any) // generate html
 
       const result = await generateApiDocs()
 
-      expect(exec).toHaveBeenCalledWith(['pnpm', 'generate:api-doc:html'])
       expect(result).toEqual({ generated: true, changed: true, path: 'openapi/openapi.yml' })
       expect(log.info).toHaveBeenCalledWith(expect.stringContaining('Remember to commit'))
     })

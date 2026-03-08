@@ -7,7 +7,6 @@
     "commit": "commit",
     "test": "vitest run .husky/tests",
     "test:coverage": "vitest run .husky/tests --coverage",
-    "generate:api-doc:html": "redocly build-docs openapi/openapi.yml --output=openapi/openapi.html",
     "prepare": "husky || true"
   },
   "devDependencies": {
@@ -15,7 +14,6 @@
     "@commitlint/config-conventional": "^20.4.2",
     "@commitlint/prompt-cli": "^20.4.2",
     "@commitlint/types": "^20.4.0",
-    "@redocly/cli": "^2.20.0",
     "@types/node": "^25.3.3",
     "@vitest/coverage-v8": "^4.0.18",
     "eslint": "^10.0.2",

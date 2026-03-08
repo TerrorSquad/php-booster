@@ -70,7 +70,7 @@ main:
     icon: i-noto-gear
     ---
     #description
-    Ready-to-use API documentation setup with [OpenAPI](https://swagger.io/specification/) starter spec and [ReDoc](https://github.com/Redocly/redoc) visualization.
+    Ready-to-use API documentation setup with [OpenAPI](https://swagger.io/specification/) starter spec.
     ::::
 
     ::::u-page-card

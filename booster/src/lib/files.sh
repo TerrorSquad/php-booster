@@ -46,7 +46,7 @@ function copy_files() {
     log "Copying common files (excluding internal test helpers)..."
 
     # Copy simple top-level directories/files safely
-    local top_level=(".github" ".vscode" ".phpstorm" ".editorconfig" "bin" ".markdownlint-cli2.jsonc")
+    local top_level=(".github" ".vscode" ".phpstorm" ".editorconfig" "bin" ".markdownlint-cli2.jsonc" ".prettierignore")
     for item in "${top_level[@]}"; do
         local src_path="${BOOSTER_INTERNAL_PATH}/${item}"
         if [ -e "$src_path" ]; then
@@ -158,7 +158,7 @@ function update_package_json() {
         log "'$project_pkg' not found. Copying from booster..."
         # Filter scripts using whitelist and devDependencies using blacklist when creating new package.json
         jq '
-            ["commit", "generate:api-doc:html", "prepare"] as $script_whitelist |
+            ["commit", "prepare"] as $script_whitelist |
             ["vitest", "@vitest/coverage-v8"] as $dev_blacklist |
             .scripts |= with_entries(select(.key as $k | $script_whitelist | index($k))) |
             .devDependencies |= with_entries(select(.key as $k | ($dev_blacklist | index($k) | not)))
@@ -170,7 +170,7 @@ function update_package_json() {
         # This merges top-level objects like scripts, devDependencies
         jq -s '
             .[0] as $proj | .[1] as $booster |
-            ["commit", "generate:api-doc:html", "prepare"] as $script_whitelist |
+            ["commit", "prepare"] as $script_whitelist |
             ["vitest", "@vitest/coverage-v8"] as $dev_blacklist |
 
             ($booster.scripts // {} | with_entries(select(.key as $k | $script_whitelist | index($k)))) as $booster_scripts |

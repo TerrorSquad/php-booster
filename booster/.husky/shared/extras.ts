@@ -111,12 +111,9 @@ export async function generateApiDocs(): Promise<ArtifactResult> {
     const modifiedFiles = diffResult.toString().trim().split('\n')
 
     if (modifiedFiles.includes('openapi/openapi.yml')) {
-      log.info('API spec changed, regenerating HTML...')
+      log.info('API spec changed')
 
-      await exec(['pnpm', 'generate:api-doc:html'])
-      log.success('HTML documentation generated')
-
-      log.info('Artifacts generated. Remember to commit: openapi/openapi.yml, openapi/openapi.html')
+      log.info('Artifacts generated. Remember to commit: openapi/openapi.yml')
       return { generated: true, changed: true, path: 'openapi/openapi.yml' }
     }
 

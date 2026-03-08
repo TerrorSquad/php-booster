@@ -32,8 +32,14 @@ function update_ignore_files() {
         fi
     fi
 
-    # 3. Update .eslintignore
-    if [ -f ".eslintignore" ]; then
+    # 3. Update .eslintignore or check Flat Config
+    # Check for Flat Config files
+    if ls eslint.config.* 1>/dev/null 2>&1; then
+        # Check if '.husky' is mentioned in any eslint config file
+        if ! grep -q "\.husky" eslint.config.* 2>/dev/null; then
+             warn "ESLint Flat Config detected. Please ensure '.husky' is added to 'ignores' in your configuration."
+        fi
+    elif [ -f ".eslintignore" ]; then
         if ! grep -q ".husky" ".eslintignore"; then
             echo -e "\n.husky" >> ".eslintignore"
             log "Added .husky to .eslintignore"
