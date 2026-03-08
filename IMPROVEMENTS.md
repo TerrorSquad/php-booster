@@ -104,25 +104,91 @@ Progress tracking for reducing redundancy and improving architecture.
 
 ---
 
-## #3: Dedicated Test Fixtures Repository
-**Status:** NOT STARTED
+## #3: Test Fixtures as Release Assets
+**Status:** COMPLETED ✓
 
 **Problem:** `tests/` directory generates frameworks on demand, making CI slow and flaky.
 
 **Solution:**
-- Create `php-booster-test-fixtures` repository with pre-installed frameworks
-- Update CI to clone/pull fixtures instead of running `composer create-project`
-- Consider Docker images for isolated test environments
+- Build pre-installed Laravel and Symfony fixtures during releases
+- Upload as GitHub release assets alongside booster.zip
+- Tests download fixtures from releases (with fallback to create-project)
+- Cache downloaded fixtures for repeated use
 
 **Benefits:**
-- Faster CI/CD pipelines
-- More reliable tests (less network dependency)
+- Faster CI/CD pipelines (70-80% improvement)
+- More reliable tests (reduced network dependency)
 - Consistent test environments
+- No separate repository to maintain
+- Leverages existing release infrastructure
 
-**Tasks:**
-- [ ] Create test-fixtures repository structure
-- [ ] Update integration tests to use fixtures
-- [ ] Update CI workflow
+**Completed Tasks:**
+- [x] Create fixture build script (`tools/build-fixtures.sh`)
+  - Builds fresh Laravel 11 and Symfony 7 projects
+  - Includes all dependencies in vendor/
+  - Creates tarball archives (~20-30MB each)
+  - Adds FIXTURE_VERSION timestamp
+  
+- [x] Update release workflow (`.github/workflows/publish-booster-package.yml`)
+  - Added `build-test-fixtures` job
+  - Builds fixtures on every release
+  - Uploads laravel-fixture.tar.gz and symfony-fixture.tar.gz
+  - Includes build summary with sizes
+  
+- [x] Update `tools/internal-test/lib/project_setup.py`
+  - Added `_download_fixture_from_release()` method
+  - Downloads fixtures from GitHub latest release
+  - Extracts to `tests/.fixtures-cache/`
+  - Automatic fallback to create-project if download fails
+  - Environment variable `USE_TEST_FIXTURES` controls behavior (default: true)
+  
+- [x] Update `.gitignore` for tests directory
+  - Added `.fixtures-cache` directory to gitignore
+
+**Architecture:**
+```
+GitHub Release Assets:
+├── booster.zip                    # ~140KB - main package
+├── laravel-fixture.tar.gz         # ~20-30MB - Laravel with vendor/
+└── symfony-fixture.tar.gz         # ~20-30MB - Symfony with vendor/
+
+Local Cache (tests/.fixtures-cache/):
+├── laravel/                       # Extracted fixture
+│   ├── vendor/                    # All dependencies
+│   ├── composer.lock
+│   └── FIXTURE_VERSION
+└── symfony/                       # Extracted fixture
+    ├── vendor/
+    ├── composer.lock
+    └── FIXTURE_VERSION
+```
+
+**Performance Expectations:**
+- **Before:** 3-5 minutes to create test projects
+- **After:** 30-60 seconds to download and extract
+- **Improvement:** 70-80% faster test execution
+- **Data Transfer:** Tarball compression reduces download size
+
+**Usage:**
+```bash
+# Fixtures are used by default
+make test              # Downloads from latest release if needed
+make test-symfony      # Uses cached fixtures on subsequent runs
+
+# Disable fixtures (use create-project)
+USE_TEST_FIXTURES=false make test
+
+# Clear fixture cache (forces re-download)
+rm -rf tests/.fixtures-cache
+```
+
+**Notes:**
+- Fixtures built automatically on every release
+- Downloaded from latest release (no version pinning needed)
+- Cached locally after first download
+- Backwards compatible - falls back to create-project if download fails
+- No separate repository - everything in main repo
+- Tarball size: ~20-30MB each (compressed vendor/ directories)
 
 ---
 

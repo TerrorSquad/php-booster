@@ -4,6 +4,7 @@ Project setup utilities for the PHP Booster integration tests
 """
 
 import os
+import shutil
 import sys
 
 from .command_utils import CommandExecutor
@@ -41,19 +42,178 @@ class ProjectSetup:
         # Create target directory
         self.config.target_dir.mkdir(parents=True, exist_ok=True)
 
+        # Check if we should use fixtures (default: true)
+        use_fixtures = os.getenv("USE_TEST_FIXTURES", "true").lower() == "true"
+
         if self.config.project_type == "symfony":
-            self._setup_symfony()
+            if use_fixtures:
+                self._setup_from_fixtures("symfony")
+            else:
+                self._setup_symfony_create_project()
         elif self.config.project_type == "laravel":
-            self._setup_laravel()
+            if use_fixtures:
+                self._setup_from_fixtures("laravel")
+            else:
+                self._setup_laravel_create_project()
         else:
             self.log.error(f"Unknown project type: {self.config.project_type}")
             sys.exit(1)
 
         self.log.success(f"Project setup complete at {self.config.target_dir}")
 
-    def _setup_symfony(self) -> None:
-        """Set up a Symfony project."""
-        """Set up Symfony project with DDEV"""
+    def _get_fixtures_cache_dir(self):
+        """Get the path to the fixtures cache directory"""
+        return self.config.root_dir / "tests" / ".fixtures-cache"
+
+    def _download_fixture_from_release(self, project_type: str):
+        """Download fixture tarball from GitHub releases"""
+        import urllib.request
+        import tarfile
+
+        fixtures_cache = self._get_fixtures_cache_dir()
+        fixtures_cache.mkdir(parents=True, exist_ok=True)
+
+        # GitHub release URL (use latest release)
+        release_url = "https://github.com/TerrorSquad/php-booster/releases/latest/download"
+        tarball_filename = f"{project_type}-fixture.tar.gz"
+        tarball_url = f"{release_url}/{tarball_filename}"
+        tarball_path = fixtures_cache / tarball_filename
+
+        self.log.info(f"Downloading {project_type} fixture from GitHub releases...")
+        self.log.info(f"URL: {tarball_url}")
+
+        try:
+            # Download tarball
+            urllib.request.urlretrieve(tarball_url, tarball_path)
+            self.log.success(f"Downloaded {tarball_filename}")
+
+            # Extract tarball
+            self.log.info(f"Extracting fixture...")
+            with tarfile.open(tarball_path, "r:gz") as tar:
+                tar.extractall(fixtures_cache)
+
+            self.log.success(f"Fixture extracted to {fixtures_cache / project_type}")
+            return True
+
+        except Exception as e:
+            self.log.warn(
+                f"Failed to download fixture from releases: {e}. "
+                "Will fall back to create-project method."
+            )
+            return False
+
+    def _ensure_fixtures_cache(self, project_type: str):
+        """Ensure fixtures cache is available (download from releases)"""
+        fixtures_cache = self._get_fixtures_cache_dir()
+        fixture_dir = fixtures_cache / project_type
+
+        # Check if we already have the fixture cached
+        if fixture_dir.exists():
+            self.log.info(f"Using cached {project_type} fixture")
+            # Check if fixture has a version file
+            version_file = fixture_dir / "FIXTURE_VERSION"
+            if version_file.exists():
+                version = version_file.read_text().strip()
+                self.log.info(f"Fixture version: {version}")
+            return True
+
+        # Try to download from releases
+        self.log.info(f"No cached fixture found, downloading from GitHub releases...")
+        return self._download_fixture_from_release(project_type)
+
+    def _setup_from_fixtures(self, project_type: str):
+        """Set up project by copying from pre-built fixtures"""
+        self.log.info(f"Setting up {project_type} from fixtures (fast mode)...")
+
+        # Ensure we have the fixture (download from releases if needed)
+        if not self._ensure_fixtures_cache(project_type):
+            self.log.error(
+                f"Failed to download {project_type} fixture. "
+                "Falling back to create-project method..."
+            )
+            if project_type == "symfony":
+                self._setup_symfony_create_project()
+            else:
+                self._setup_laravel_create_project()
+            return
+
+        # Get fixture source path
+        fixtures_cache = self._get_fixtures_cache_dir()
+        source = fixtures_cache / project_type
+
+        if not source.exists():
+            self.log.error(
+                f"Fixture not found at {source} after download. "
+                "Falling back to create-project method..."
+            )
+            if project_type == "symfony":
+                self._setup_symfony_create_project()
+            else:
+                self._setup_laravel_create_project()
+            return
+
+        self.log.info(f"Copying {project_type} fixture from cache...")
+
+        # Copy everything including .git directory
+        for item in source.iterdir():
+            dest = self.config.target_dir / item.name
+            if item.is_dir():
+                shutil.copytree(item, dest)
+            else:
+                shutil.copy2(item, dest)
+
+        # Configure Git
+        self.log.info("Configuring Git for test environment...")
+        self.cmd.run_command(
+            ["git", "config", "user.name", "Test User"], cwd=self.config.target_dir
+        )
+        self.cmd.run_command(
+            ["git", "config", "user.email", "test@example.com"],
+            cwd=self.config.target_dir,
+        )
+
+        # Configure DDEV based on project type
+        if project_type == "symfony":
+            self.log.info("Configuring DDEV for Symfony...")
+            self.cmd.run_command(
+                [
+                    "ddev",
+                    "config",
+                    f"--project-name={self.config.project_name}",
+                    "--project-type=php",
+                    "--docroot=public",
+                ],
+                cwd=self.config.target_dir,
+            )
+        else:  # laravel
+            self.log.info("Configuring DDEV for Laravel...")
+            self.cmd.run_command(
+                [
+                    "ddev",
+                    "config",
+                    f"--project-name={self.config.project_name}",
+                    "--project-type=laravel",
+                    "--docroot=public",
+                ],
+                cwd=self.config.target_dir,
+            )
+
+        # Start DDEV
+        self.log.info("Starting DDEV...")
+        self.cmd.run_command(["ddev", "start"], cwd=self.config.target_dir)
+
+        # Run composer install to ensure everything is up to date
+        # This is fast since we already have vendor/ and lock files
+        self.log.info("Running composer install (using cached dependencies)...")
+        self.cmd.run_command(
+            ["ddev", "composer", "install", "--no-interaction"],
+            cwd=self.config.target_dir,
+        )
+
+        self.log.success(f"{project_type.capitalize()} fixture setup complete!")
+
+    def _setup_symfony_create_project(self) -> None:
+        """Set up Symfony project using composer create-project (legacy/fallback method)"""
         self.log.info("Creating Symfony project using DDEV...")
 
         # Configure DDEV first
@@ -129,8 +289,8 @@ class ProjectSetup:
             cwd=self.config.target_dir,
         )
 
-    def _setup_laravel(self):
-        """Set up Laravel project with DDEV"""
+    def _setup_laravel_create_project(self):
+        """Set up Laravel project using composer create-project (legacy/fallback method)"""
         self.log.info("Creating Laravel project using DDEV...")
 
         # Configure DDEV first

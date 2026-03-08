@@ -94,6 +94,14 @@ jobs:
             ${{ runner.os }}-pnpm-store-${{ matrix.project_type }}-
             ${{ runner.os }}-pnpm-store-
 
+      - name: Cache test fixtures
+        uses: actions/cache@v4
+        with:
+          path: tests/.fixtures-cache
+          key: ${{ runner.os }}-test-fixtures-v1-${{ hashFiles('tests/.fixtures-cache/**/FIXTURE_VERSION') }}
+          restore-keys: |
+            ${{ runner.os }}-test-fixtures-v1-
+
       - name: Install DDEV
         uses: ddev/github-action-setup-ddev@v1
         with:
@@ -193,6 +201,14 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pnpm-store-${{ github.event.inputs.project_type }}-
             ${{ runner.os }}-pnpm-store-
+
+      - name: Cache test fixtures
+        uses: actions/cache@v4
+        with:
+          path: tests/.fixtures-cache
+          key: ${{ runner.os }}-test-fixtures-v1-${{ hashFiles('tests/.fixtures-cache/**/FIXTURE_VERSION') }}
+          restore-keys: |
+            ${{ runner.os }}-test-fixtures-v1-
 
       - name: Install DDEV
         uses: ddev/github-action-setup-ddev@v1
