@@ -587,7 +587,7 @@ function copy_files() {
     log "Copying common files (excluding internal test helpers)..."
 
     # Copy simple top-level directories/files safely
-    local top_level=(".github" ".vscode" ".phpstorm" ".editorconfig" "bin")
+    local top_level=(".github" ".vscode" ".phpstorm" ".editorconfig" "bin" ".markdownlint-cli2.jsonc" ".git-hooks.config.schema.json")
     for item in "${top_level[@]}"; do
         local src_path="${BOOSTER_INTERNAL_PATH}/${item}"
         if [ -e "$src_path" ]; then
@@ -874,7 +874,7 @@ function update_tool_paths() {
     fi
 
     # --- Copy Config Files ---
-    local cq_files=("rector.php" "phpstan.neon.dist" "ecs.php" "psalm.xml" "deptrac.yaml")
+    local cq_files=("rector.php" "phpstan.neon.dist" "ecs.php" "psalm.xml" "deptrac.yaml" "sonar-project.properties")
     for file in "${cq_files[@]}"; do
         local src_path="${BOOSTER_INTERNAL_PATH}/${file}"
         if [ -f "$src_path" ]; then
