@@ -11,6 +11,11 @@ REPO_ROOT="$(dirname "$SCRIPT_DIR")"
 OUTPUT_DIR="${1:-$REPO_ROOT}"
 TEMP_DIR=$(mktemp -d)
 
+# Normalize output path to absolute so tar writes correctly after changing directories.
+if [[ "$OUTPUT_DIR" != /* ]]; then
+  OUTPUT_DIR="$REPO_ROOT/$OUTPUT_DIR"
+fi
+
 echo "🏗️  Building test fixtures..."
 echo "Repository root: $REPO_ROOT"
 echo "Output directory: $OUTPUT_DIR"
