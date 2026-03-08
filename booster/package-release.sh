@@ -1,13 +1,20 @@
-#!/usr/bin/env bash
+#!/bin/sh
 
 # Package script to create booster.zip for distribution
 # This script creates a minimal booster package excluding unnecessary files
 # Usage: bash package-release.sh [output_dir]
 
-set -e
+set -eu
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 OUTPUT_DIR="${1:-.}"
+
+# Normalize output directory to an absolute path so ZIP_PATH stays valid after cd.
+case "$OUTPUT_DIR" in
+  /*) ;;
+  *) OUTPUT_DIR="$(cd "$OUTPUT_DIR" 2>/dev/null && pwd)" ;;
+esac
+
 TEMP_DIR=$(mktemp -d)
 ZIP_NAME="booster.zip"
 ZIP_PATH="${OUTPUT_DIR}/${ZIP_NAME}"
@@ -16,40 +23,41 @@ ZIP_PATH="${OUTPUT_DIR}/${ZIP_NAME}"
 mkdir -p "$OUTPUT_DIR"
 
 # Files/dirs to include in the package
-INCLUDE_ITEMS=(
-  ".editorconfig"
-  ".git-hooks.config.example.json"
-  ".git-hooks.config.schema.json"
-  ".github"
-  ".gitignore"
-  ".husky"
-  ".markdownlint-cli2.jsonc"
-  ".phpstorm"
-  ".ddev/config.yaml"
-  ".ddev/commands"
-  ".ddev/php"
-  ".ddev/web-build"
-  ".ddev/scripts"
-  ".prettierignore"
-  ".vscode"
-  "bin"
-  "commitlint.config.ts"
-  "composer.json"
-  "deptrac.yaml"
-  "ecs.php"
-  "manifest.json"
-  "openapi"
-  "package.json"
-  "phpstan.neon.dist"
-  "pnpm-lock.dist.yaml"
-  "pnpm-workspace.yaml"
-  "psalm.xml"
-  "rector.php"
-  "renovate.json"
-  "sonar-project.properties"
-  "src"
-  "validate-branch-name.config.cjs"
-  "README_SNIPPET.md"
+INCLUDE_ITEMS=$(cat <<'EOF'
+.editorconfig
+.git-hooks.config.example.json
+.git-hooks.config.schema.json
+.github
+.gitignore
+.husky
+.markdownlint-cli2.jsonc
+.phpstorm
+.ddev/config.yaml
+.ddev/commands
+.ddev/php
+.ddev/web-build
+.ddev/scripts
+.prettierignore
+.vscode
+bin
+commitlint.config.ts
+composer.json
+deptrac.yaml
+ecs.php
+manifest.json
+openapi
+package.json
+phpstan.neon.dist
+pnpm-lock.dist.yaml
+pnpm-workspace.yaml
+psalm.xml
+rector.php
+renovate.json
+sonar-project.properties
+src
+validate-branch-name.config.cjs
+README_SNIPPET.md
+EOF
 )
 
 echo "Creating booster package..."
@@ -62,7 +70,8 @@ PACKAGE_DIR="$TEMP_DIR/booster"
 mkdir -p "$PACKAGE_DIR"
 
 # Copy include items
-for item in "${INCLUDE_ITEMS[@]}"; do
+echo "$INCLUDE_ITEMS" | while IFS= read -r item; do
+  [ -n "$item" ] || continue
   src_path="$SCRIPT_DIR/$item"
   if [ -e "$src_path" ]; then
     if [ -d "$src_path" ]; then
@@ -88,9 +97,10 @@ EOF
 echo "  ✓ Created .booster-package marker"
 
 # Create ZIP file
+ORIGINAL_DIR=$(pwd)
 cd "$TEMP_DIR"
 zip -r -q "$ZIP_PATH" booster/
-cd - > /dev/null
+cd "$ORIGINAL_DIR"
 
 # Cleanup
 rm -rf "$TEMP_DIR"
