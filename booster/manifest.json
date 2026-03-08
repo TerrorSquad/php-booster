@@ -9,7 +9,6 @@
       ".github",
       ".vscode",
       ".phpstorm",
-      ".ddev",
       "bin",
       ".husky"
     ]
