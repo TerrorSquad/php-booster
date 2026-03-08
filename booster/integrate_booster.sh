@@ -539,34 +539,113 @@ function cleanup() {
 
 
 
+# --- Manifest & Configuration Functions ---
+
+function load_manifest() {
+    local manifest_file="${BOOSTER_INTERNAL_PATH}/manifest.json"
+
+    if [ ! -f "$manifest_file" ]; then
+        error "Manifest file not found at '$manifest_file'. Booster installation is incomplete or corrupted."
+    fi
+
+    log "Loading file manifest from booster..."
+
+    # Validate manifest exists and contains required fields
+    if ! command -v jq >/dev/null 2>&1; then
+        error "jq is required to process the manifest file but is not installed. Please install jq and try again."
+    fi
+
+    # Validate manifest structure
+    if ! jq -e '.version' "$manifest_file" >/dev/null 2>&1; then
+        error "Invalid manifest file at '$manifest_file' (missing version field)."
+    fi
+
+    # Validate manifest can be parsed
+    if ! jq empty "$manifest_file" >/dev/null 2>&1; then
+        error "Manifest file at '$manifest_file' is not valid JSON."
+    fi
+
+    log "  Manifest loaded successfully (version: $(jq -r '.version' "$manifest_file"))"
+    return 0
+}
+
+function get_manifest_items() {
+    local key="${1:?Manifest key required}"
+    local manifest_file="${BOOSTER_INTERNAL_PATH}/manifest.json"
+
+    if [ ! -f "$manifest_file" ]; then
+        error "Manifest file not found at '$manifest_file'."
+    fi
+
+    if ! command -v jq >/dev/null 2>&1; then
+        error "jq is required but not installed."
+    fi
+
+    # Extract items from manifest and output as space-separated
+    jq -r ".files.$key.items[]? // .directories.items[]?" "$manifest_file" 2>/dev/null | tr '\n' ' '
+}
+
+function validate_manifest() {
+    local manifest_file="${BOOSTER_INTERNAL_PATH}/manifest.json"
+
+    if [ ! -f "$manifest_file" ]; then
+        warn "Manifest file not found at '$manifest_file'"
+        return 1
+    fi
+
+    if [ "$VERBOSE" = true ]; then
+        log "Validating manifest files..."
+        local missing_count=0
+
+        # Check all files mentioned in manifest
+        if command -v jq >/dev/null 2>&1; then
+            local all_files
+            all_files=$(jq -r '.. | select(type == "array") | .[]? | select(type == "string")' "$manifest_file" 2>/dev/null | sort -u)
+
+            for file in $all_files; do
+                if [ ! -e "$BOOSTER_INTERNAL_PATH/$file" ]; then
+                    warn "  Missing: $file"
+                    ((missing_count++))
+                fi
+            done
+
+            if [ $missing_count -gt 0 ]; then
+                log "  Found $missing_count missing files in booster directory"
+            fi
+        fi
+    fi
+
+    return 0
+}
+
 # --- Core Logic Functions ---
 
 function try_download_booster_zip() {
     local version="${1:-latest}"
     local zip_url
     local temp_zip
-    
+
     # Construct GitHub release URL for booster.zip
     if [ "$version" = "latest" ]; then
         zip_url="${BOOSTER_REPO_URL}/releases/download/latest/booster.zip"
     else
         zip_url="${BOOSTER_REPO_URL}/releases/download/${version}/booster.zip"
     fi
-    
+
     temp_zip=$(mktemp)
-    
+
     log "Attempting to download booster package from releases..."
     if command -v curl >/dev/null 2>&1; then
         if curl -fsSL -o "$temp_zip" "$zip_url" 2>/dev/null; then
             log "  Downloaded booster.zip successfully"
-            
+
             # Extract to target directory
             rm -rf "$BOOSTER_TARGET_DIR"
             mkdir -p "$BOOSTER_TARGET_DIR"
-            
+
             if unzip -q "$temp_zip" -d "$BOOSTER_TARGET_DIR" 2>/dev/null; then
                 rm -f "$temp_zip"
-                
+
                 if [ -d "$BOOSTER_INTERNAL_PATH" ]; then
                     success "php-booster extracted successfully from ZIP package."
                     return 0
@@ -578,29 +657,29 @@ function try_download_booster_zip() {
             fi
         fi
     fi
-    
+
     rm -f "$temp_zip"
     return 1
 }
 
 function download_via_git_clone() {
     log "Cloning php-booster from $BOOSTER_REPO_URL..."
-    
+
     # Clean up previous attempts first
     rm -rf "$BOOSTER_TARGET_DIR"
-    
+
     # Clone only the main branch and only the latest commit for speed
     git clone --depth 1 --branch main "$BOOSTER_REPO_URL" "$BOOSTER_TARGET_DIR" || error "Failed to clone booster repository."
-    
+
     if [ ! -d "$BOOSTER_TARGET_DIR" ]; then
         error "Target directory '$BOOSTER_TARGET_DIR' not found after clone."
     fi
-    
+
     if [ ! -d "$BOOSTER_INTERNAL_PATH" ]; then
         warn "The expected internal structure '$BOOSTER_INTERNAL_PATH' was not found within the cloned repository."
         error "Booster content directory '$BOOSTER_INTERNAL_PATH' not found."
     fi
-    
+
     success "php-booster cloned successfully into '$BOOSTER_TARGET_DIR'."
 }
 
@@ -631,7 +710,7 @@ function download_php_booster() {
             try_download_booster_zip "latest" && return 0
             log "ZIP download not available or failed, falling back to git clone..."
         fi
-        
+
         download_via_git_clone
     fi
 }
@@ -639,8 +718,21 @@ function download_php_booster() {
 function copy_files() {
     log "Copying common files (excluding internal test helpers)..."
 
-    # Copy simple top-level directories/files safely
-    local top_level=(".github" ".vscode" ".phpstorm" ".editorconfig" "bin" ".markdownlint-cli2.jsonc" ".prettierignore")
+    # Load manifest (will error if not found or invalid)
+    load_manifest
+    validate_manifest
+
+    # Load directory items from manifest
+    local top_level
+    read -ra top_level < <(jq -r '.directories.items[]' "$BOOSTER_INTERNAL_PATH/manifest.json")
+    
+    # Load top-level file items from manifest
+    local top_files
+    read -ra top_files < <(jq -r '.files.topLevel.items[]' "$BOOSTER_INTERNAL_PATH/manifest.json")
+    
+    # Combine into single array
+    top_level+=("${top_files[@]}")
+
     for item in "${top_level[@]}"; do
         local src_path="${BOOSTER_INTERNAL_PATH}/${item}"
         if [ -e "$src_path" ]; then
@@ -927,7 +1019,14 @@ function update_tool_paths() {
     fi
 
     # --- Copy Config Files ---
-    local cq_files=("rector.php" "phpstan.neon.dist" "ecs.php" "psalm.xml" "deptrac.yaml" "sonar-project.properties")
+    # Load config files from manifest
+    local config_items
+    local php_items
+    read -ra config_items < <(jq -r '.files.config.items[]' "$BOOSTER_INTERNAL_PATH/manifest.json")
+    read -ra php_items < <(jq -r '.files.php.items[]? // empty' "$BOOSTER_INTERNAL_PATH/manifest.json")
+    
+    local cq_files=("${config_items[@]}" "${php_items[@]}")
+
     for file in "${cq_files[@]}"; do
         local src_path="${BOOSTER_INTERNAL_PATH}/${file}"
         if [ -f "$src_path" ]; then
@@ -1732,12 +1831,13 @@ function update_configs_only() {
 
     local updated_count=0
 
+    # Load manifest (will error if not found or invalid)
+    load_manifest
+    validate_manifest
+
     # Config files to update (always overwrite)
-    local config_files=(
-        "commitlint.config.ts"
-        "validate-branch-name.config.cjs"
-        "renovate.json"
-    )
+    local config_files
+    read -ra config_files < <(jq -r '.files.config.items[]' "$BOOSTER_INTERNAL_PATH/manifest.json")
 
     for config in "${config_files[@]}"; do
         local src="${BOOSTER_INTERNAL_PATH}/${config}"
@@ -1760,7 +1860,9 @@ function update_configs_only() {
 
     # PHP-specific configs (only if not hooks-only mode and files exist)
     if [ "$HOOKS_ONLY_MODE" != true ] && [ -f "composer.json" ]; then
-        local php_configs=("ecs.php" "rector.php" "phpstan.neon.dist" "psalm.xml" "deptrac.yaml" "sonar-project.properties")
+        local php_configs
+        read -ra php_configs < <(jq -r '.files.php.items[]? // empty' "$BOOSTER_INTERNAL_PATH/manifest.json")
+
         for config in "${php_configs[@]}"; do
             local src="${BOOSTER_INTERNAL_PATH}/${config}"
             if [ -f "$src" ]; then

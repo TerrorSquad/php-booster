@@ -32,6 +32,7 @@ INCLUDE_ITEMS=(
   "composer.json"
   "deptrac.yaml"
   "ecs.php"
+  "manifest.json"
   "openapi"
   "package.json"
   "phpstan.neon.dist"

@@ -1,3 +1,82 @@
+# --- Manifest & Configuration Functions ---
+
+function load_manifest() {
+    local manifest_file="${BOOSTER_INTERNAL_PATH}/manifest.json"
+
+    if [ ! -f "$manifest_file" ]; then
+        error "Manifest file not found at '$manifest_file'. Booster installation is incomplete or corrupted."
+    fi
+
+    log "Loading file manifest from booster..."
+
+    # Validate manifest exists and contains required fields
+    if ! command -v jq >/dev/null 2>&1; then
+        error "jq is required to process the manifest file but is not installed. Please install jq and try again."
+    fi
+
+    # Validate manifest structure
+    if ! jq -e '.version' "$manifest_file" >/dev/null 2>&1; then
+        error "Invalid manifest file at '$manifest_file' (missing version field)."
+    fi
+
+    # Validate manifest can be parsed
+    if ! jq empty "$manifest_file" >/dev/null 2>&1; then
+        error "Manifest file at '$manifest_file' is not valid JSON."
+    fi
+
+    log "  Manifest loaded successfully (version: $(jq -r '.version' "$manifest_file"))"
+    return 0
+}
+
+function get_manifest_items() {
+    local key="${1:?Manifest key required}"
+    local manifest_file="${BOOSTER_INTERNAL_PATH}/manifest.json"
+
+    if [ ! -f "$manifest_file" ]; then
+        error "Manifest file not found at '$manifest_file'."
+    fi
+
+    if ! command -v jq >/dev/null 2>&1; then
+        error "jq is required but not installed."
+    fi
+
+    # Extract items from manifest and output as space-separated
+    jq -r ".files.$key.items[]? // .directories.items[]?" "$manifest_file" 2>/dev/null | tr '\n' ' '
+}
+
+function validate_manifest() {
+    local manifest_file="${BOOSTER_INTERNAL_PATH}/manifest.json"
+
+    if [ ! -f "$manifest_file" ]; then
+        warn "Manifest file not found at '$manifest_file'"
+        return 1
+    fi
+
+    if [ "$VERBOSE" = true ]; then
+        log "Validating manifest files..."
+        local missing_count=0
+
+        # Check all files mentioned in manifest
+        if command -v jq >/dev/null 2>&1; then
+            local all_files
+            all_files=$(jq -r '.. | select(type == "array") | .[]? | select(type == "string")' "$manifest_file" 2>/dev/null | sort -u)
+
+            for file in $all_files; do
+                if [ ! -e "$BOOSTER_INTERNAL_PATH/$file" ]; then
+                    warn "  Missing: $file"
+                    ((missing_count++))
+                fi
+            done
+
+            if [ $missing_count -gt 0 ]; then
+                log "  Found $missing_count missing files in booster directory"
+            fi
+        fi
+    fi
+
+    return 0
+}
+
 # --- Core Logic Functions ---
 
 function try_download_booster_zip() {
@@ -98,8 +177,21 @@ function download_php_booster() {
 function copy_files() {
     log "Copying common files (excluding internal test helpers)..."
 
-    # Copy simple top-level directories/files safely
-    local top_level=(".github" ".vscode" ".phpstorm" ".editorconfig" "bin" ".markdownlint-cli2.jsonc" ".prettierignore")
+    # Load manifest (will error if not found or invalid)
+    load_manifest
+    validate_manifest
+
+    # Load directory items from manifest
+    local top_level
+    read -ra top_level < <(jq -r '.directories.items[]' "$BOOSTER_INTERNAL_PATH/manifest.json")
+
+    # Load top-level file items from manifest
+    local top_files
+    read -ra top_files < <(jq -r '.files.topLevel.items[]' "$BOOSTER_INTERNAL_PATH/manifest.json")
+
+    # Combine into single array
+    top_level+=("${top_files[@]}")
+
     for item in "${top_level[@]}"; do
         local src_path="${BOOSTER_INTERNAL_PATH}/${item}"
         if [ -e "$src_path" ]; then
@@ -386,7 +478,14 @@ function update_tool_paths() {
     fi
 
     # --- Copy Config Files ---
-    local cq_files=("rector.php" "phpstan.neon.dist" "ecs.php" "psalm.xml" "deptrac.yaml" "sonar-project.properties")
+    # Load config files from manifest
+    local config_items
+    local php_items
+    read -ra config_items < <(jq -r '.files.config.items[]' "$BOOSTER_INTERNAL_PATH/manifest.json")
+    read -ra php_items < <(jq -r '.files.php.items[]? // empty' "$BOOSTER_INTERNAL_PATH/manifest.json")
+
+    local cq_files=("${config_items[@]}" "${php_items[@]}")
+
     for file in "${cq_files[@]}"; do
         local src_path="${BOOSTER_INTERNAL_PATH}/${file}"
         if [ -f "$src_path" ]; then

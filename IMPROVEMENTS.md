@@ -48,7 +48,7 @@ Progress tracking for reducing redundancy and improving architecture.
 ---
 
 ## #2: Decouple Configuration from Logic (Manifest File)
-**Status:** NOT STARTED
+**Status:** COMPLETED ✓
 
 **Problem:** List of files to copy is hardcoded in `booster/src/lib/files.sh`.
 
@@ -62,10 +62,45 @@ Progress tracking for reducing redundancy and improving architecture.
 - No need to modify shell scripts when adding new config files
 - Better separation of concerns
 
-**Tasks:**
-- [ ] Create `booster/manifest.json` with file lists
-- [ ] Update `booster/src/lib/files.sh` to use manifest
-- [ ] Add validation in build script
+**Completed Tasks:**
+- [x] Create `booster/manifest.json` with organized file lists
+  - `directories`: .github, .vscode, .phpstorm, bin, .husky
+  - `files.topLevel`: .editorconfig, .markdownlint-cli2.jsonc, .prettierignore
+  - `files.config`: commitlint, validate-branch-name, renovate, .git-hooks.config.example.json
+  - `files.php`: composer.json, ecs.php, rector.php, phpstan, psalm, deptrac, sonar-project.properties
+  - `files.packageManagement`: package.json, pnpm files
+  - Meta information and validation configuration
+
+- [x] Update `booster/src/lib/files.sh` to use manifest
+  - Added `load_manifest()` function
+  - Added `get_manifest_items()` function
+  - Added `validate_manifest()` function (verbose mode)
+  - Updated `copy_files()` to load from manifest with fallback to hardcoded defaults
+  - Graceful degradation if jq not available
+
+- [x] Update `booster/src/main.sh` for partial updates
+  - Updated `update_configs_only()` to use manifest
+  - Maintains backward compatibility with fallback defaults
+
+- [x] Update packaging script
+  - Added manifest.json to `booster/package-release.sh`
+  - Included in distributed booster.zip
+
+- [x] Rebuild integration script
+  - integrate_booster.sh now supports manifest-driven configuration
+
+**Notes:**
+- Manifest loads automatically if jq is available
+- Falls back to hardcoded defaults if jq not installed
+- No breaking changes - fully backward compatible
+- Manifest is validated in verbose mode
+- Easier to add/remove files in future - just edit manifest.json
+
+**Updated (Stricter Enforcement):**
+- ✓ Build script (`booster/build.sh`) now validates manifest.json exists and is valid JSON before building
+- ✓ Manifest loading in `files.sh` and `main.sh` now errors if manifest is missing or invalid (no fallback)
+- ✓ Errors caught at build time, not at installation time
+- ✓ Integration script will fail loudly with clear error message if manifest corrupted
 
 ---
 

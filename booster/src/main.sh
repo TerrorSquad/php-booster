@@ -131,12 +131,13 @@ function update_configs_only() {
 
     local updated_count=0
 
+    # Load manifest (will error if not found or invalid)
+    load_manifest
+    validate_manifest
+
     # Config files to update (always overwrite)
-    local config_files=(
-        "commitlint.config.ts"
-        "validate-branch-name.config.cjs"
-        "renovate.json"
-    )
+    local config_files
+    read -ra config_files < <(jq -r '.files.config.items[]' "$BOOSTER_INTERNAL_PATH/manifest.json")
 
     for config in "${config_files[@]}"; do
         local src="${BOOSTER_INTERNAL_PATH}/${config}"
@@ -159,7 +160,9 @@ function update_configs_only() {
 
     # PHP-specific configs (only if not hooks-only mode and files exist)
     if [ "$HOOKS_ONLY_MODE" != true ] && [ -f "composer.json" ]; then
-        local php_configs=("ecs.php" "rector.php" "phpstan.neon.dist" "psalm.xml" "deptrac.yaml" "sonar-project.properties")
+        local php_configs
+        read -ra php_configs < <(jq -r '.files.php.items[]? // empty' "$BOOSTER_INTERNAL_PATH/manifest.json")
+
         for config in "${php_configs[@]}"; do
             local src="${BOOSTER_INTERNAL_PATH}/${config}"
             if [ -f "$src" ]; then

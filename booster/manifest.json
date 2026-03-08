@@ -1,0 +1,76 @@
+{
+  "$schema": "booster/manifest.schema.json",
+  "version": "1.0.0",
+  "description": "PHP Booster file manifest - defines which files are distributed and copied to user projects",
+
+  "directories": {
+    "description": "Directories to copy to project root (smart merge if exists)",
+    "items": [
+      ".github",
+      ".vscode",
+      ".phpstorm",
+      "bin",
+      ".husky"
+    ]
+  },
+
+  "files": {
+    "topLevel": {
+      "description": "Top-level files copied to all projects",
+      "items": [
+        ".editorconfig",
+        ".markdownlint-cli2.jsonc",
+        ".prettierignore"
+      ]
+    },
+    "config": {
+      "description": "Configuration files (always overwritten during updates)",
+      "items": [
+        "commitlint.config.ts",
+        "validate-branch-name.config.cjs",
+        "renovate.json",
+        ".git-hooks.config.example.json"
+      ]
+    },
+    "php": {
+      "description": "PHP-specific code quality tools configuration",
+      "required": false,
+      "items": [
+        "composer.json",
+        "ecs.php",
+        "rector.php",
+        "phpstan.neon.dist",
+        "psalm.xml",
+        "deptrac.yaml",
+        "sonar-project.properties"
+      ]
+    },
+    "packageManagement": {
+      "description": "Package manager configuration files",
+      "items": [
+        "package.json",
+        "pnpm-workspace.yaml",
+        "pnpm-lock.dist.yaml"
+      ]
+    },
+    "openapi": {
+      "description": "OpenAPI/Swagger documentation",
+      "directory": "openapi",
+      "required": false
+    }
+  },
+
+  "meta": {
+    "documentation": "booster/README_SNIPPET.md",
+    "source": "https://github.com/TerrorSquad/php-booster/tree/main/booster",
+    "licenseFile": "LICENSE.md"
+  },
+
+  "validation": {
+    "checkFileExistence": true,
+    "warnOnMissing": [
+      "openapi",
+      "LICENSE.md"
+    ]
+  }
+}

@@ -16,6 +16,27 @@ trap 'rm -f "$TMP_FILE"' ERR
 
 echo "Building $OUTPUT_FILE..."
 
+# Validate manifest.json exists and is valid JSON
+if [ ! -f "manifest.json" ]; then
+    echo "ERROR: manifest.json not found in booster directory."
+    echo "The manifest file is required for the integration script to function."
+    exit 1
+fi
+
+if ! command -v jq >/dev/null 2>&1; then
+    echo "WARNING: jq is not installed. Cannot validate manifest.json syntax."
+else
+    if ! jq empty manifest.json 2>/dev/null; then
+        echo "ERROR: manifest.json is not valid JSON."
+        exit 1
+    fi
+    if ! jq -e '.version' manifest.json >/dev/null 2>&1; then
+        echo "ERROR: manifest.json is missing required 'version' field."
+        exit 1
+    fi
+    echo "  ✓ manifest.json is valid (version: $(jq -r '.version' manifest.json))"
+fi
+
 # Ensure temporary output file is empty
 > "$TMP_FILE"
 
