@@ -1,5 +1,28 @@
 # Changelog
 
+## [2.6.0](https://github.com/TerrorSquad/php-booster/compare/v2.5.0...v2.6.0) (2026-03-08)
+
+
+### Features
+
+* **husky:** add Flatten JSON tool and use npx zx ([f2c7703](https://github.com/TerrorSquad/php-booster/commit/f2c770357e0a6c3a79d042559d71aef3afe7ab30))
+* **husky:** allow full tool overrides in config ([647b8ea](https://github.com/TerrorSquad/php-booster/commit/647b8ea1e9ab0b12fe957bc86df111fd674c5ea6))
+* **tools:** add Markdownlint, jscpd, Knip, Flatten JSON, PHP Security Checker, and Composer Validate to git hooks configuration ([1dfd2aa](https://github.com/TerrorSquad/php-booster/commit/1dfd2aa3ddf8c58636ebd291792864b29496dc78))
+* **tools:** add PHP Security Checker, Composer Validate, Markdownlint, jscpd, and Knip ([711ff55](https://github.com/TerrorSquad/php-booster/commit/711ff55012e84f367dcf3043b92ca3e5c3c94b5c))
+* update file handling and documentation ([b27f4fe](https://github.com/TerrorSquad/php-booster/commit/b27f4fe12007a4b2225205102e78c99a346f8c34))
+
+
+### Bug Fixes
+
+* **deps:** add missing eslint/prettier deps and lax markdownlint config ([d5f71be](https://github.com/TerrorSquad/php-booster/commit/d5f71be3a7dd0705758ebe049e32739ea68dc1a5))
+* **docs:** correct formatting of project URL in README_SNIPPET.md ([abb642c](https://github.com/TerrorSquad/php-booster/commit/abb642c1f0d0fe7d9b46de2490b0b2f6316ee990))
+* **files:** update copy_files function to include additional config files ([b6a5c91](https://github.com/TerrorSquad/php-booster/commit/b6a5c9130496e00a164bd901073383c5b2aced55))
+* **husky:** ensure strict local checks for npm/composer tools, preventing false positives from global PATH ([cfeca2f](https://github.com/TerrorSquad/php-booster/commit/cfeca2f8234876d634cab9a9a2db4edd75cce881))
+* **husky:** use correct Node.js 22+ API path.matchesGlob ([65e8315](https://github.com/TerrorSquad/php-booster/commit/65e8315dc4c1da172dbc8485b9c3d4a947229809))
+* **tests:** correct PHPStan tool configuration in test case ([1a29dc2](https://github.com/TerrorSquad/php-booster/commit/1a29dc282efddf462b39fc6c9cf62339f3d4a7e1))
+* **tools:** ignore paths in jscpd, soft-fail knip, use php for composer val, fix deptrac paths ([6443f09](https://github.com/TerrorSquad/php-booster/commit/6443f093cbc458aba8ccd7a0c3cc2d95b678efd2))
+* **workflow:** use Node.js built-in globbing method for file matching ([26f555b](https://github.com/TerrorSquad/php-booster/commit/26f555b1f8d86db6f5de851a662d998c1aa3750b))
+
 ## [2.5.0](https://github.com/TerrorSquad/php-booster/compare/v2.4.0...v2.5.0) (2026-02-23)
 
 
