@@ -6,6 +6,7 @@ on:
     paths:
       - 'booster/**'
       - 'tools/internal-test/**'
+      - 'tools/build-fixtures.sh'
       - '.github/workflows/integration-tests.yml'
   pull_request:
     branches: [main, develop]
@@ -99,9 +100,10 @@ jobs:
         uses: actions/cache@v4
         with:
           path: tests/.fixtures-cache
-          key: ${{ runner.os }}-test-fixtures-v1-${{ hashFiles('tests/.fixtures-cache/**/FIXTURE_VERSION') }}
+          key: ${{ runner.os }}-test-fixtures-v2-${{ matrix.project_type }}-${{ hashFiles('tools/build-fixtures.sh') }}
           restore-keys: |
-            ${{ runner.os }}-test-fixtures-v1-
+            ${{ runner.os }}-test-fixtures-v2-${{ matrix.project_type }}-
+            ${{ runner.os }}-test-fixtures-v2-
 
       - name: Install DDEV
         uses: ddev/github-action-setup-ddev@v1
@@ -120,22 +122,23 @@ jobs:
 
       - name: Build test fixtures if not cached
         run: |
-          if [ ! -d "tests/.fixtures-cache/laravel" ] || [ ! -d "tests/.fixtures-cache/symfony" ]; then
-            echo "📦 Building test fixtures (first run or cache miss)..."
+          TARGET_PROJECT="${{ matrix.project_type }}"
+
+          if [ ! -d "tests/.fixtures-cache/$TARGET_PROJECT" ]; then
+            echo "📦 Building $TARGET_PROJECT fixture (first run or cache miss)..."
             chmod +x tools/build-fixtures.sh
             mkdir -p tests/.fixtures-cache
-            bash tools/build-fixtures.sh tests/.fixtures-cache
+            bash tools/build-fixtures.sh tests/.fixtures-cache "$TARGET_PROJECT"
 
-            # Extract tarballs to cache directory
+            # Extract tarball to cache directory
             cd tests/.fixtures-cache
-            tar xzf laravel-fixture.tar.gz
-            tar xzf symfony-fixture.tar.gz
+            tar xzf "$TARGET_PROJECT-fixture.tar.gz"
 
-            echo "✅ Fixtures built and ready"
+            echo "✅ $TARGET_PROJECT fixture built and ready"
             ls -lh
           else
-            echo "✅ Using cached fixtures"
-            ls -lh tests/.fixtures-cache/*/FIXTURE_VERSION
+            echo "✅ Using cached $TARGET_PROJECT fixture"
+            ls -lh "tests/.fixtures-cache/$TARGET_PROJECT/FIXTURE_VERSION"
           fi
 
       - name: Run integration test
@@ -228,9 +231,10 @@ jobs:
         uses: actions/cache@v4
         with:
           path: tests/.fixtures-cache
-          key: ${{ runner.os }}-test-fixtures-v1-${{ hashFiles('tests/.fixtures-cache/**/FIXTURE_VERSION') }}
+          key: ${{ runner.os }}-test-fixtures-v2-${{ github.event.inputs.project_type }}-${{ hashFiles('tools/build-fixtures.sh') }}
           restore-keys: |
-            ${{ runner.os }}-test-fixtures-v1-
+            ${{ runner.os }}-test-fixtures-v2-${{ github.event.inputs.project_type }}-
+            ${{ runner.os }}-test-fixtures-v2-
 
       - name: Install DDEV
         uses: ddev/github-action-setup-ddev@v1
@@ -249,22 +253,23 @@ jobs:
 
       - name: Build test fixtures if not cached
         run: |
-          if [ ! -d "tests/.fixtures-cache/laravel" ] || [ ! -d "tests/.fixtures-cache/symfony" ]; then
-            echo "📦 Building test fixtures (first run or cache miss)..."
+          TARGET_PROJECT="${{ github.event.inputs.project_type }}"
+
+          if [ ! -d "tests/.fixtures-cache/$TARGET_PROJECT" ]; then
+            echo "📦 Building $TARGET_PROJECT fixture (first run or cache miss)..."
             chmod +x tools/build-fixtures.sh
             mkdir -p tests/.fixtures-cache
-            bash tools/build-fixtures.sh tests/.fixtures-cache
+            bash tools/build-fixtures.sh tests/.fixtures-cache "$TARGET_PROJECT"
 
-            # Extract tarballs to cache directory
+            # Extract tarball to cache directory
             cd tests/.fixtures-cache
-            tar xzf laravel-fixture.tar.gz
-            tar xzf symfony-fixture.tar.gz
+            tar xzf "$TARGET_PROJECT-fixture.tar.gz"
 
-            echo "✅ Fixtures built and ready"
+            echo "✅ $TARGET_PROJECT fixture built and ready"
             ls -lh
           else
-            echo "✅ Using cached fixtures"
-            ls -lh tests/.fixtures-cache/*/FIXTURE_VERSION
+            echo "✅ Using cached $TARGET_PROJECT fixture"
+            ls -lh "tests/.fixtures-cache/$TARGET_PROJECT/FIXTURE_VERSION"
           fi
 
       - name: Run manual test
