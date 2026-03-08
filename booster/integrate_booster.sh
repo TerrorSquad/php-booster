@@ -725,11 +725,11 @@ function copy_files() {
     # Load directory items from manifest
     local top_level
     read -ra top_level < <(jq -r '.directories.items[]' "$BOOSTER_INTERNAL_PATH/manifest.json")
-    
+
     # Load top-level file items from manifest
     local top_files
     read -ra top_files < <(jq -r '.files.topLevel.items[]' "$BOOSTER_INTERNAL_PATH/manifest.json")
-    
+
     # Combine into single array
     top_level+=("${top_files[@]}")
 
@@ -1024,7 +1024,7 @@ function update_tool_paths() {
     local php_items
     read -ra config_items < <(jq -r '.files.config.items[]' "$BOOSTER_INTERNAL_PATH/manifest.json")
     read -ra php_items < <(jq -r '.files.php.items[]? // empty' "$BOOSTER_INTERNAL_PATH/manifest.json")
-    
+
     local cq_files=("${config_items[@]}" "${php_items[@]}")
 
     for file in "${cq_files[@]}"; do

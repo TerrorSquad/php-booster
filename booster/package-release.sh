@@ -25,6 +25,7 @@ INCLUDE_ITEMS=(
   ".husky"
   ".markdownlint-cli2.jsonc"
   ".phpstorm"
+  ".ddev"
   ".prettierignore"
   ".vscode"
   "bin"
