@@ -136,22 +136,22 @@ jobs:
 
           unzip -Z1 /tmp/booster-package/booster.zip > /tmp/booster-zip-entries.txt
 
-          {
-            jq -r '.directories.items[] | "booster/\(.)/"' booster/manifest.json
-            jq -r '.files.topLevel.items[] | "booster/\(.)"' booster/manifest.json
-            jq -r '.files.config.items[] | "booster/\(.)"' booster/manifest.json
-            jq -r '.files.php.items[] | "booster/\(.)"' booster/manifest.json
-            jq -r '.files.packageManagement.items[] | "booster/\(.)"' booster/manifest.json
-            echo "booster/openapi/"
-            echo "booster/.ddev/config.yaml"
-            echo "booster/.ddev/commands/"
-            echo "booster/.ddev/php/"
-            echo "booster/.ddev/web-build/"
-            echo "booster/.ddev/scripts/"
-            echo "booster/src/"
-            echo "booster/manifest.json"
-            echo "booster/README_SNIPPET.md"
-          } > /tmp/booster-zip-expected.txt
+          : > /tmp/booster-zip-expected.txt
+          jq -r '.directories.items[] | "booster/\(.)/"' booster/manifest.json >> /tmp/booster-zip-expected.txt
+          jq -r '.files.topLevel.items[] | "booster/\(.)"' booster/manifest.json >> /tmp/booster-zip-expected.txt
+          jq -r '.files.config.items[] | "booster/\(.)"' booster/manifest.json >> /tmp/booster-zip-expected.txt
+          jq -r '.files.php.items[] | "booster/\(.)"' booster/manifest.json >> /tmp/booster-zip-expected.txt
+          jq -r '.files.packageManagement.items[] | "booster/\(.)"' booster/manifest.json >> /tmp/booster-zip-expected.txt
+
+          [ -d booster/openapi ] && echo "booster/openapi/" >> /tmp/booster-zip-expected.txt
+          [ -f booster/.ddev/config.yaml ] && echo "booster/.ddev/config.yaml" >> /tmp/booster-zip-expected.txt
+          [ -d booster/.ddev/commands ] && echo "booster/.ddev/commands/" >> /tmp/booster-zip-expected.txt
+          [ -d booster/.ddev/php ] && echo "booster/.ddev/php/" >> /tmp/booster-zip-expected.txt
+          [ -d booster/.ddev/web-build ] && echo "booster/.ddev/web-build/" >> /tmp/booster-zip-expected.txt
+          [ -d booster/.ddev/scripts ] && echo "booster/.ddev/scripts/" >> /tmp/booster-zip-expected.txt
+          [ -d booster/src ] && echo "booster/src/" >> /tmp/booster-zip-expected.txt
+          [ -f booster/manifest.json ] && echo "booster/manifest.json" >> /tmp/booster-zip-expected.txt
+          [ -f booster/README_SNIPPET.md ] && echo "booster/README_SNIPPET.md" >> /tmp/booster-zip-expected.txt
 
           missing=0
           while IFS= read -r expected; do
@@ -337,22 +337,22 @@ jobs:
 
           unzip -Z1 /tmp/booster-package/booster.zip > /tmp/booster-zip-entries.txt
 
-          {
-            jq -r '.directories.items[] | "booster/\(.)/"' booster/manifest.json
-            jq -r '.files.topLevel.items[] | "booster/\(.)"' booster/manifest.json
-            jq -r '.files.config.items[] | "booster/\(.)"' booster/manifest.json
-            jq -r '.files.php.items[] | "booster/\(.)"' booster/manifest.json
-            jq -r '.files.packageManagement.items[] | "booster/\(.)"' booster/manifest.json
-            echo "booster/openapi/"
-            echo "booster/.ddev/config.yaml"
-            echo "booster/.ddev/commands/"
-            echo "booster/.ddev/php/"
-            echo "booster/.ddev/web-build/"
-            echo "booster/.ddev/scripts/"
-            echo "booster/src/"
-            echo "booster/manifest.json"
-            echo "booster/README_SNIPPET.md"
-          } > /tmp/booster-zip-expected.txt
+          : > /tmp/booster-zip-expected.txt
+          jq -r '.directories.items[] | "booster/\(.)/"' booster/manifest.json >> /tmp/booster-zip-expected.txt
+          jq -r '.files.topLevel.items[] | "booster/\(.)"' booster/manifest.json >> /tmp/booster-zip-expected.txt
+          jq -r '.files.config.items[] | "booster/\(.)"' booster/manifest.json >> /tmp/booster-zip-expected.txt
+          jq -r '.files.php.items[] | "booster/\(.)"' booster/manifest.json >> /tmp/booster-zip-expected.txt
+          jq -r '.files.packageManagement.items[] | "booster/\(.)"' booster/manifest.json >> /tmp/booster-zip-expected.txt
+
+          [ -d booster/openapi ] && echo "booster/openapi/" >> /tmp/booster-zip-expected.txt
+          [ -f booster/.ddev/config.yaml ] && echo "booster/.ddev/config.yaml" >> /tmp/booster-zip-expected.txt
+          [ -d booster/.ddev/commands ] && echo "booster/.ddev/commands/" >> /tmp/booster-zip-expected.txt
+          [ -d booster/.ddev/php ] && echo "booster/.ddev/php/" >> /tmp/booster-zip-expected.txt
+          [ -d booster/.ddev/web-build ] && echo "booster/.ddev/web-build/" >> /tmp/booster-zip-expected.txt
+          [ -d booster/.ddev/scripts ] && echo "booster/.ddev/scripts/" >> /tmp/booster-zip-expected.txt
+          [ -d booster/src ] && echo "booster/src/" >> /tmp/booster-zip-expected.txt
+          [ -f booster/manifest.json ] && echo "booster/manifest.json" >> /tmp/booster-zip-expected.txt
+          [ -f booster/README_SNIPPET.md ] && echo "booster/README_SNIPPET.md" >> /tmp/booster-zip-expected.txt
 
           missing=0
           while IFS= read -r expected; do
