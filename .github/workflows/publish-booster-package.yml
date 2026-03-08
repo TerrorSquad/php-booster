@@ -1,0 +1,46 @@
+name: Build & Publish Booster Package
+
+on:
+  release:
+    types: [published, created]
+  workflow_dispatch:
+    inputs:
+      upload_asset:
+        description: 'Upload package as release asset'
+        required: true
+        default: 'true'
+
+jobs:
+  build-package:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build booster package
+        run: |
+          cd booster
+          bash package-release.sh /tmp/booster-package
+          ls -lh /tmp/booster-package/booster.zip
+
+      - name: Upload package as release asset
+        if: github.event_name == 'release' || github.event.inputs.upload_asset == 'true'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: /tmp/booster-package/booster.zip
+          fail_on_unmatched_files: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Summary
+        run: |
+          echo "## Booster Package Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✓ Package built successfully" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**File:** booster.zip" >> $GITHUB_STEP_SUMMARY
+          echo "**Size:** $(du -h /tmp/booster-package/booster.zip | cut -f1)" >> $GITHUB_STEP_SUMMARY
+          echo "**Location:** Attached to GitHub release" >> $GITHUB_STEP_SUMMARY

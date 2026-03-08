@@ -541,13 +541,75 @@ function cleanup() {
 
 # --- Core Logic Functions ---
 
+function try_download_booster_zip() {
+    local version="${1:-latest}"
+    local zip_url
+    local temp_zip
+    
+    # Construct GitHub release URL for booster.zip
+    if [ "$version" = "latest" ]; then
+        zip_url="${BOOSTER_REPO_URL}/releases/download/latest/booster.zip"
+    else
+        zip_url="${BOOSTER_REPO_URL}/releases/download/${version}/booster.zip"
+    fi
+    
+    temp_zip=$(mktemp)
+    
+    log "Attempting to download booster package from releases..."
+    if command -v curl >/dev/null 2>&1; then
+        if curl -fsSL -o "$temp_zip" "$zip_url" 2>/dev/null; then
+            log "  Downloaded booster.zip successfully"
+            
+            # Extract to target directory
+            rm -rf "$BOOSTER_TARGET_DIR"
+            mkdir -p "$BOOSTER_TARGET_DIR"
+            
+            if unzip -q "$temp_zip" -d "$BOOSTER_TARGET_DIR" 2>/dev/null; then
+                rm -f "$temp_zip"
+                
+                if [ -d "$BOOSTER_INTERNAL_PATH" ]; then
+                    success "php-booster extracted successfully from ZIP package."
+                    return 0
+                else
+                    error "Expected directory structure not found in ZIP package."
+                fi
+            else
+                error "Failed to extract booster.zip"
+            fi
+        fi
+    fi
+    
+    rm -f "$temp_zip"
+    return 1
+}
+
+function download_via_git_clone() {
+    log "Cloning php-booster from $BOOSTER_REPO_URL..."
+    
+    # Clean up previous attempts first
+    rm -rf "$BOOSTER_TARGET_DIR"
+    
+    # Clone only the main branch and only the latest commit for speed
+    git clone --depth 1 --branch main "$BOOSTER_REPO_URL" "$BOOSTER_TARGET_DIR" || error "Failed to clone booster repository."
+    
+    if [ ! -d "$BOOSTER_TARGET_DIR" ]; then
+        error "Target directory '$BOOSTER_TARGET_DIR' not found after clone."
+    fi
+    
+    if [ ! -d "$BOOSTER_INTERNAL_PATH" ]; then
+        warn "The expected internal structure '$BOOSTER_INTERNAL_PATH' was not found within the cloned repository."
+        error "Booster content directory '$BOOSTER_INTERNAL_PATH' not found."
+    fi
+    
+    success "php-booster cloned successfully into '$BOOSTER_TARGET_DIR'."
+}
 
 function download_php_booster() {
     if [ "$BOOSTER_LOCAL_DEV" = "1" ]; then
         log "Using local php-booster for development..."
 
         # Clean up previous attempts first
-        rm -rf "$BOOSTER_TARGET_DIR" # Remove target dir if it exists
+        rm -rf "$BOOSTER_TARGET_DIR"
 
         # Check if local booster path exists
         if [ ! -d "$BOOSTER_LOCAL_PATH" ]; then
@@ -564,22 +626,13 @@ function download_php_booster() {
 
         success "Local php-booster copied successfully from '$BOOSTER_LOCAL_PATH'."
     else
-        log "Cloning php-booster from $BOOSTER_REPO_URL..."
-        # Clean up previous attempts first
-        rm -rf "$BOOSTER_TARGET_DIR" # Remove target dir if it exists
-
-        # Clone only the main branch and only the latest commit for speed
-        git clone --depth 1 --branch main "$BOOSTER_REPO_URL" "$BOOSTER_TARGET_DIR" || error "Failed to clone booster repository."
-
-        if [ ! -d "$BOOSTER_TARGET_DIR" ]; then
-            error "Target directory '$BOOSTER_TARGET_DIR' not found after clone."
+        # Try ZIP download first (faster, smaller), fall back to git clone
+        if [ "${BOOSTER_USE_ZIP:-true}" != "false" ]; then
+            try_download_booster_zip "latest" && return 0
+            log "ZIP download not available or failed, falling back to git clone..."
         fi
-
-        if [ ! -d "$BOOSTER_INTERNAL_PATH" ]; then
-            warn "The expected internal structure '$BOOSTER_INTERNAL_PATH' was not found within the cloned repository."
-            error "Booster content directory '$BOOSTER_INTERNAL_PATH' not found."
-        fi
-        success "php-booster cloned successfully into '$BOOSTER_TARGET_DIR'."
+        
+        download_via_git_clone
     fi
 }
 

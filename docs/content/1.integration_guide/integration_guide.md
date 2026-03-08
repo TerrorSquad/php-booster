@@ -33,6 +33,19 @@ Follow these steps to integrate the PHP Development Booster into your existing P
   - Push the branch to your repository and create a pull request for review.
 ::
 
+## Performance
+
+The integration script automatically tries to download a minimal `booster.zip` package from GitHub releases first, which is significantly faster than cloning the entire repository. It transparently falls back to git cloning if the ZIP is not available.
+
+**Expected download sizes:**
+- **ZIP package**: ~136 KB (recommended)
+- **Full git clone**: ~5+ MB (fallback)
+
+You can force git clone if needed:
+```bash [Terminal]
+curl -sSL https://raw.githubusercontent.com/TerrorSquad/php-booster/main/booster/integrate_booster.sh | BOOSTER_USE_ZIP=false bash
+```
+
 ## JavaScript/TypeScript Projects
 
 For JavaScript or TypeScript projects without PHP, use the **hooks-only mode** (`-J`):
