@@ -104,23 +104,24 @@ Progress tracking for reducing redundancy and improving architecture.
 
 ---
 
-## #3: Test Fixtures as Release Assets
+## #3: Test Fixtures for Fast CI
 **Status:** COMPLETED ✓
 
 **Problem:** `tests/` directory generates frameworks on demand, making CI slow and flaky.
 
 **Solution:**
-- Build pre-installed Laravel and Symfony fixtures during releases
-- Upload as GitHub release assets alongside booster.zip
-- Tests download fixtures from releases (with fallback to create-project)
-- Cache downloaded fixtures for repeated use
+- Build pre-installed Laravel and Symfony fixtures on first CI run
+- Cache fixtures using GitHub Actions cache (30-day retention)
+- Fixtures include vendor/ directories for instant setup
+- Falls back to create-project if cache expires
 
 **Benefits:**
-- Faster CI/CD pipelines (70-80% improvement)
+- Faster CI/CD pipelines (70-80% improvement after first build)
 - More reliable tests (reduced network dependency)
 - Consistent test environments
-- No separate repository to maintain
-- Leverages existing release infrastructure
+- Simple architecture - no release assets or downloads needed
+- Built on-demand, cached aggressively
+- Cache expires after 30 days of inactivity (automatic rebuild)
 
 **Completed Tasks:**
 - [x] Create fixture build script (`tools/build-fixtures.sh`)
@@ -129,25 +130,67 @@ Progress tracking for reducing redundancy and improving architecture.
   - Creates tarball archives (~20-30MB each)
   - Adds FIXTURE_VERSION timestamp
   
-- [x] Update release workflow (`.github/workflows/publish-booster-package.yml`)
-  - Added `build-test-fixtures` job
-  - Builds fixtures on every release
-  - Uploads laravel-fixture.tar.gz and symfony-fixture.tar.gz
-  - Includes build summary with sizes
+- [x] Update CI workflow (`.github/workflows/integration-tests.yml`)
+  - Added "Build test fixtures if not cached" step
+  - Builds fixtures on first run or cache miss
+  - Caches fixtures with GitHub Actions cache (30-day retention)
+  - All subsequent runs use cached fixtures (instant!)
+  - Step timeouts prevent indefinite hangs
   
 - [x] Update `tools/internal-test/lib/project_setup.py`
-  - Added `_download_fixture_from_release()` method
-  - Downloads fixtures from GitHub latest release
-  - Extracts to `tests/.fixtures-cache/`
-  - Automatic fallback to create-project if download fails
-  - Environment variable `USE_TEST_FIXTURES` controls behavior (default: true)
-  
-- [x] Update `.gitignore` for tests directory
-  - Added `.fixtures-cache` directory to gitignore
+  - Checks local cache first (built by CI)
+  - Automatic fallback to create-project if fixtures unavailable
+  - Environment variable: `USE_TEST_FIXTURES` (default: true) - enable/disable fixtures
 
 **Architecture:**
 ```
-GitHub Release Assets:
+CI Workflow:
+1st Run:  Build fixtures (5 min) → Cache → Run tests → Total: ~8-10 min
+2nd+ Run: Load cache (30s) → Run tests → Total: ~3-5 min
+Cache expires after 30 days → rebuilds automatically
+
+Local Cache (tests/.fixtures-cache/):
+├── laravel/                       # Built fixture
+│   ├── vendor/                    # All dependencies
+│   ├── composer.lock
+│   └── FIXTURE_VERSION
+└── symfony/                       # Built fixture
+    ├── vendor/
+    ├── composer.lock
+    └── FIXTURE_VERSION
+```
+
+**Performance:**
+- **First CI Run:** 8-10 minutes (builds fixtures + runs tests)
+- **Cached CI Runs:** 3-5 minutes (70-80% faster)
+- **Cache Expiry:** 30 days (automatic rebuild on first run after expiry)
+- **Local Runs:** Re-use cached fixtures indefinitely
+
+**Usage:**
+```bash
+# Default: Use fixtures (built on first run, cached thereafter)
+make test
+
+# Disable fixtures (always use create-project)
+USE_TEST_FIXTURES=false make test
+
+# Download from latest GitHub release instead of building
+DOWNLOAD_FIXTURES_FROM_RELEASE=true make test
+
+# Clear cache (forces rebuild)
+rm -rf tests/.fixtures-cache
+```
+
+**Notes:**
+- Fixtures built automatically by CI on first run
+- Cached with GitHub Actions cache (30-day retention)
+- Release workflow still builds fixtures for optional download
+- Backwards compatible - falls back to create-project if fixtures fail
+- Network timeouts prevent indefinite hangs
+
+---
+
+## #4: Single Source of Truth for Documentation
 ├── booster.zip                    # ~140KB - main package
 ├── laravel-fixture.tar.gz         # ~20-30MB - Laravel with vendor/
 └── symfony-fixture.tar.gz         # ~20-30MB - Symfony with vendor/

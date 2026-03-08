@@ -42,6 +42,7 @@ jobs:
   integration-test:
     name: Integration Test (${{ matrix.project_type }})
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
@@ -117,6 +118,26 @@ jobs:
         run: |
           make test-env
 
+      - name: Build test fixtures if not cached
+        run: |
+          if [ ! -d "tests/.fixtures-cache/laravel" ] || [ ! -d "tests/.fixtures-cache/symfony" ]; then
+            echo "📦 Building test fixtures (first run or cache miss)..."
+            chmod +x tools/build-fixtures.sh
+            mkdir -p tests/.fixtures-cache
+            bash tools/build-fixtures.sh tests/.fixtures-cache
+
+            # Extract tarballs to cache directory
+            cd tests/.fixtures-cache
+            tar xzf laravel-fixture.tar.gz
+            tar xzf symfony-fixture.tar.gz
+
+            echo "✅ Fixtures built and ready"
+            ls -lh
+          else
+            echo "✅ Using cached fixtures"
+            ls -lh tests/.fixtures-cache/*/FIXTURE_VERSION
+          fi
+
       - name: Run integration test
         run: |
           # Use manual input if workflow_dispatch, otherwise use matrix
@@ -133,15 +154,15 @@ jobs:
           # Use Makefile targets for common actions
           if [ "$TEST_ACTION" = "full" ]; then
             if [ "$PROJECT_TYPE" = "laravel" ]; then
-              make test-laravel
+              timeout 45m make test-laravel
             elif [ "$PROJECT_TYPE" = "symfony" ]; then
-              make test-symfony
+              timeout 45m make test-symfony
             fi
           elif [ "$TEST_ACTION" = "test-hooks" ]; then
-            make test-hooks
+            timeout 20m make test-hooks
           else
             # For other actions, fall back to direct script call
-            ./tools/internal-test/test-integration.py $TEST_ACTION $PROJECT_TYPE
+            timeout 45m ./tools/internal-test/test-integration.py $TEST_ACTION $PROJECT_TYPE
           fi
 
       - name: Show test results
@@ -153,6 +174,7 @@ jobs:
   manual-test:
     name: Manual Test (workflow_dispatch only)
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     if: github.event_name == 'workflow_dispatch'
 
     steps:
@@ -225,6 +247,26 @@ jobs:
         run: |
           make test-env
 
+      - name: Build test fixtures if not cached
+        run: |
+          if [ ! -d "tests/.fixtures-cache/laravel" ] || [ ! -d "tests/.fixtures-cache/symfony" ]; then
+            echo "📦 Building test fixtures (first run or cache miss)..."
+            chmod +x tools/build-fixtures.sh
+            mkdir -p tests/.fixtures-cache
+            bash tools/build-fixtures.sh tests/.fixtures-cache
+
+            # Extract tarballs to cache directory
+            cd tests/.fixtures-cache
+            tar xzf laravel-fixture.tar.gz
+            tar xzf symfony-fixture.tar.gz
+
+            echo "✅ Fixtures built and ready"
+            ls -lh
+          else
+            echo "✅ Using cached fixtures"
+            ls -lh tests/.fixtures-cache/*/FIXTURE_VERSION
+          fi
+
       - name: Run manual test
         run: |
           PROJECT_TYPE="${{ github.event.inputs.project_type }}"
@@ -235,15 +277,15 @@ jobs:
           # Use Makefile targets for common actions
           if [ "$TEST_ACTION" = "full" ]; then
             if [ "$PROJECT_TYPE" = "laravel" ]; then
-              make test-laravel
+              timeout 45m make test-laravel
             elif [ "$PROJECT_TYPE" = "symfony" ]; then
-              make test-symfony
+              timeout 45m make test-symfony
             fi
           elif [ "$TEST_ACTION" = "test-hooks" ]; then
-            make test-hooks
+            timeout 20m make test-hooks
           else
             # For other actions, fall back to direct script call
-            ./tools/internal-test/test-integration.py $TEST_ACTION $PROJECT_TYPE
+            timeout 45m ./tools/internal-test/test-integration.py $TEST_ACTION $PROJECT_TYPE
           fi
 
       - name: Show test results

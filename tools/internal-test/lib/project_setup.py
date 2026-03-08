@@ -65,49 +65,12 @@ class ProjectSetup:
         """Get the path to the fixtures cache directory"""
         return self.config.root_dir / "tests" / ".fixtures-cache"
 
-    def _download_fixture_from_release(self, project_type: str):
-        """Download fixture tarball from GitHub releases"""
-        import urllib.request
-        import tarfile
-
-        fixtures_cache = self._get_fixtures_cache_dir()
-        fixtures_cache.mkdir(parents=True, exist_ok=True)
-
-        # GitHub release URL (use latest release)
-        release_url = "https://github.com/TerrorSquad/php-booster/releases/latest/download"
-        tarball_filename = f"{project_type}-fixture.tar.gz"
-        tarball_url = f"{release_url}/{tarball_filename}"
-        tarball_path = fixtures_cache / tarball_filename
-
-        self.log.info(f"Downloading {project_type} fixture from GitHub releases...")
-        self.log.info(f"URL: {tarball_url}")
-
-        try:
-            # Download tarball
-            urllib.request.urlretrieve(tarball_url, tarball_path)
-            self.log.success(f"Downloaded {tarball_filename}")
-
-            # Extract tarball
-            self.log.info(f"Extracting fixture...")
-            with tarfile.open(tarball_path, "r:gz") as tar:
-                tar.extractall(fixtures_cache)
-
-            self.log.success(f"Fixture extracted to {fixtures_cache / project_type}")
-            return True
-
-        except Exception as e:
-            self.log.warn(
-                f"Failed to download fixture from releases: {e}. "
-                "Will fall back to create-project method."
-            )
-            return False
-
     def _ensure_fixtures_cache(self, project_type: str):
-        """Ensure fixtures cache is available (download from releases)"""
+        """Check if fixtures cache is available (built by CI)"""
         fixtures_cache = self._get_fixtures_cache_dir()
         fixture_dir = fixtures_cache / project_type
 
-        # Check if we already have the fixture cached
+        # Check if we have the fixture cached (built by CI workflow)
         if fixture_dir.exists():
             self.log.info(f"Using cached {project_type} fixture")
             # Check if fixture has a version file
@@ -117,9 +80,9 @@ class ProjectSetup:
                 self.log.info(f"Fixture version: {version}")
             return True
 
-        # Try to download from releases
-        self.log.info(f"No cached fixture found, downloading from GitHub releases...")
-        return self._download_fixture_from_release(project_type)
+        # No cached fixtures available
+        self.log.info(f"No cached {project_type} fixture found (will be built by CI on first run)")
+        return False
 
     def _setup_from_fixtures(self, project_type: str):
         """Set up project by copying from pre-built fixtures"""
