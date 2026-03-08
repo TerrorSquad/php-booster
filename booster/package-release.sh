@@ -73,12 +73,17 @@ mkdir -p "$PACKAGE_DIR"
 echo "$INCLUDE_ITEMS" | while IFS= read -r item; do
   [ -n "$item" ] || continue
   src_path="$SCRIPT_DIR/$item"
+  dest_path="$PACKAGE_DIR/$item"
+  dest_parent=$(dirname "$dest_path")
+
+  mkdir -p "$dest_parent"
+
   if [ -e "$src_path" ]; then
     if [ -d "$src_path" ]; then
-      cp -R "$src_path" "$PACKAGE_DIR/"
+      cp -R "$src_path" "$dest_path"
       echo "  ✓ Copied directory: $item"
     else
-      cp "$src_path" "$PACKAGE_DIR/"
+      cp "$src_path" "$dest_path"
       echo "  ✓ Copied file: $item"
     fi
   else
