@@ -6,6 +6,7 @@ Project setup utilities for the PHP Booster integration tests
 import os
 import shutil
 import sys
+from datetime import datetime
 
 from .command_utils import CommandExecutor
 from .config import Config
@@ -29,6 +30,8 @@ class ProjectSetup:
     def setup_project(self) -> None:
         """
         Set up the test project.
+        Tries to use cached fixture first, then creates fresh project if needed.
+        After creation, automatically caches for future runs.
         Exits with code 1 if project already exists or type is unknown.
         """
         if self.state.is_project_created():
@@ -42,22 +45,22 @@ class ProjectSetup:
         # Create target directory
         self.config.target_dir.mkdir(parents=True, exist_ok=True)
 
-        # Check if we should use fixtures (default: true)
-        use_fixtures = os.getenv("USE_TEST_FIXTURES", "true").lower() == "true"
+        # Try to use cached fixture first
+        if self._try_use_cached_fixture(self.config.project_type):
+            self.log.success(f"Project setup complete at {self.config.target_dir} (from cache)")
+            return
 
+        # Create new project if cache not available
         if self.config.project_type == "symfony":
-            if use_fixtures:
-                self._setup_from_fixtures("symfony")
-            else:
-                self._setup_symfony_create_project()
+            self._create_symfony_project()
         elif self.config.project_type == "laravel":
-            if use_fixtures:
-                self._setup_from_fixtures("laravel")
-            else:
-                self._setup_laravel_create_project()
+            self._create_laravel_project()
         else:
             self.log.error(f"Unknown project type: {self.config.project_type}")
             sys.exit(1)
+
+        # Cache the newly created project for future runs
+        self._cache_fixture_after_setup(self.config.project_type)
 
         self.log.success(f"Project setup complete at {self.config.target_dir}")
 
@@ -81,51 +84,30 @@ class ProjectSetup:
             return True
 
         # No cached fixtures available
-        self.log.info(f"No cached {project_type} fixture found (will be built by CI on first run)")
+        self.log.info(f"No cached {project_type} fixture found")
         return False
 
-    def _setup_from_fixtures(self, project_type: str):
-        """Set up project by copying from pre-built fixtures"""
-        self.log.info(f"Setting up {project_type} from fixtures (fast mode)...")
+    def _try_use_cached_fixture(self, project_type: str) -> bool:
+        """
+        Try to use cached fixture. Returns True if successful, False if not available.
+        If cache exists, sets up DDEV and runs composer install.
+        """
+        cache_source = self._get_fixtures_cache_dir() / project_type
 
-        # Ensure we have the fixture (download from releases if needed)
-        if not self._ensure_fixtures_cache(project_type):
-            self.log.error(
-                f"Failed to download {project_type} fixture. "
-                "Falling back to create-project method..."
-            )
-            if project_type == "symfony":
-                self._setup_symfony_create_project()
-            else:
-                self._setup_laravel_create_project()
-            return
+        if not cache_source.exists():
+            return False
 
-        # Get fixture source path
-        fixtures_cache = self._get_fixtures_cache_dir()
-        source = fixtures_cache / project_type
+        self.log.info(f"Using cached {project_type} fixture...")
 
-        if not source.exists():
-            self.log.error(
-                f"Fixture not found at {source} after download. "
-                "Falling back to create-project method..."
-            )
-            if project_type == "symfony":
-                self._setup_symfony_create_project()
-            else:
-                self._setup_laravel_create_project()
-            return
-
-        self.log.info(f"Copying {project_type} fixture from cache...")
-
-        # Copy everything including .git directory
-        for item in source.iterdir():
+        # Copy from cache
+        for item in cache_source.iterdir():
             dest = self.config.target_dir / item.name
             if item.is_dir():
                 shutil.copytree(item, dest)
             else:
                 shutil.copy2(item, dest)
 
-        # Configure Git
+        # Configure git
         self.log.info("Configuring Git for test environment...")
         self.cmd.run_command(
             ["git", "config", "user.name", "Test User"], cwd=self.config.target_dir
@@ -173,10 +155,36 @@ class ProjectSetup:
             cwd=self.config.target_dir,
         )
 
-        self.log.success(f"{project_type.capitalize()} fixture setup complete!")
+        self.log.success(f"{project_type.capitalize()} fixture loaded from cache!")
+        return True
 
-    def _setup_symfony_create_project(self) -> None:
-        """Set up Symfony project using composer create-project (legacy/fallback method)"""
+    def _cache_fixture_after_setup(self, project_type: str) -> None:
+        """Cache the project after initial setup for future test runs"""
+        cache_dir = self._get_fixtures_cache_dir() / project_type
+
+        if cache_dir.exists():
+            self.log.info(f"Cache already exists at {cache_dir}, skipping...")
+            return
+
+        self.log.info(f"Caching {project_type} fixture for future runs...")
+        cache_dir.mkdir(parents=True, exist_ok=True)
+
+        # Copy project directory to cache
+        for item in self.config.target_dir.iterdir():
+            dest = cache_dir / item.name
+            if item.is_dir():
+                shutil.copytree(item, dest)
+            else:
+                shutil.copy2(item, dest)
+
+        # Create version file with current date
+        version_file = cache_dir / "FIXTURE_VERSION"
+        version_file.write_text(datetime.now().strftime("%Y-%m-%d"))
+
+        self.log.success(f"Cached {project_type} fixture at {cache_dir}")
+
+    def _create_symfony_project(self) -> None:
+        """Set up Symfony project using composer create-project via DDEV"""
         self.log.info("Creating Symfony project using DDEV...")
 
         # Configure DDEV first
@@ -252,8 +260,8 @@ class ProjectSetup:
             cwd=self.config.target_dir,
         )
 
-    def _setup_laravel_create_project(self):
-        """Set up Laravel project using composer create-project (legacy/fallback method)"""
+    def _create_laravel_project(self):
+        """Set up Laravel project using composer create-project via DDEV"""
         self.log.info("Creating Laravel project using DDEV...")
 
         # Configure DDEV first

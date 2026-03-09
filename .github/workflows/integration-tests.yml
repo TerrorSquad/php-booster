@@ -6,7 +6,6 @@ on:
     paths:
       - 'booster/**'
       - 'tools/internal-test/**'
-      - 'tools/build-fixtures.sh'
       - '.github/workflows/integration-tests.yml'
   pull_request:
     branches: [main, develop]
@@ -103,7 +102,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: tests/.fixtures-cache
-          key: ${{ runner.os }}-test-fixtures-v2-${{ matrix.project_type }}-${{ hashFiles('tools/build-fixtures.sh') }}
+          key: ${{ runner.os }}-test-fixtures-v2-${{ matrix.project_type }}-${{ hashFiles('tools/internal-test/lib/project_setup.py') }}
           restore-keys: |
             ${{ runner.os }}-test-fixtures-v2-${{ matrix.project_type }}-
             ${{ runner.os }}-test-fixtures-v2-
@@ -118,6 +117,10 @@ jobs:
           ddev config global --instrumentation-opt-in=false
           ddev config global --omit-containers=ddev-ssh-agent
           ddev version
+
+      - name: Start DDEV for fixture building
+        run: |
+          ddev start
 
       - name: Check requirements
         run: |
@@ -177,27 +180,6 @@ jobs:
           fi
 
           echo "booster.zip contains all expected manifest and runtime files."
-
-      - name: Build test fixtures if not cached
-        run: |
-          TARGET_PROJECT="${{ matrix.project_type }}"
-
-          if [ ! -d "tests/.fixtures-cache/$TARGET_PROJECT" ]; then
-            echo "📦 Building $TARGET_PROJECT fixture (first run or cache miss)..."
-            chmod +x tools/build-fixtures.sh
-            mkdir -p tests/.fixtures-cache
-            bash tools/build-fixtures.sh tests/.fixtures-cache "$TARGET_PROJECT"
-
-            # Extract tarball to cache directory
-            cd tests/.fixtures-cache
-            tar xzf "$TARGET_PROJECT-fixture.tar.gz"
-
-            echo "✅ $TARGET_PROJECT fixture built and ready"
-            ls -lh
-          else
-            echo "✅ Using cached $TARGET_PROJECT fixture"
-            ls -lh "tests/.fixtures-cache/$TARGET_PROJECT/FIXTURE_VERSION"
-          fi
 
       - name: Run integration test
         run: |
@@ -275,7 +257,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: tests/.fixtures-cache
-          key: ${{ runner.os }}-test-fixtures-v2-${{ github.event.inputs.project_type }}-${{ hashFiles('tools/build-fixtures.sh') }}
+          key: ${{ runner.os }}-test-fixtures-v2-${{ github.event.inputs.project_type }}-${{ hashFiles('tools/internal-test/lib/project_setup.py') }}
           restore-keys: |
             ${{ runner.os }}-test-fixtures-v2-${{ github.event.inputs.project_type }}-
             ${{ runner.os }}-test-fixtures-v2-
@@ -290,6 +272,10 @@ jobs:
           ddev config global --instrumentation-opt-in=false
           ddev config global --omit-containers=ddev-ssh-agent
           ddev version
+
+      - name: Start DDEV for fixture building
+        run: |
+          ddev start
 
       - name: Check requirements
         run: |
@@ -348,27 +334,6 @@ jobs:
           fi
 
           echo "booster.zip contains all expected manifest and runtime files."
-
-      - name: Build test fixtures if not cached
-        run: |
-          TARGET_PROJECT="${{ github.event.inputs.project_type }}"
-
-          if [ ! -d "tests/.fixtures-cache/$TARGET_PROJECT" ]; then
-            echo "📦 Building $TARGET_PROJECT fixture (first run or cache miss)..."
-            chmod +x tools/build-fixtures.sh
-            mkdir -p tests/.fixtures-cache
-            bash tools/build-fixtures.sh tests/.fixtures-cache "$TARGET_PROJECT"
-
-            # Extract tarball to cache directory
-            cd tests/.fixtures-cache
-            tar xzf "$TARGET_PROJECT-fixture.tar.gz"
-
-            echo "✅ $TARGET_PROJECT fixture built and ready"
-            ls -lh
-          else
-            echo "✅ Using cached $TARGET_PROJECT fixture"
-            ls -lh "tests/.fixtures-cache/$TARGET_PROJECT/FIXTURE_VERSION"
-          fi
 
       - name: Run manual test
         run: |
