@@ -20,7 +20,7 @@
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.5.5",
     "husky": "^9.1.7",
-    "jiti": "^1.21.6",
+    "jiti": "^2.6.1",
     "markdownlint-cli2": "^0.21.0",
     "prettier": "^3.8.1",
     "typescript": "^5.9.3",

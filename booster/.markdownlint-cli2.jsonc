@@ -3,11 +3,13 @@
     "default": true,
     "MD013": false,
     "MD033": false,
-    "MD041": false
+    "MD041": false,
+    "MD060": false,
+    "MD001": false
   },
   "globs": [
     "**/*.md",
-    "!node_modules", 
+    "!node_modules",
     "!vendor"
   ]
 }
