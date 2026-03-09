@@ -118,10 +118,6 @@ jobs:
           ddev config global --omit-containers=ddev-ssh-agent
           ddev version
 
-      - name: Start DDEV for fixture building
-        run: |
-          ddev start
-
       - name: Check requirements
         run: |
           python3 tools/internal-test/test-integration.py env-check
@@ -272,10 +268,6 @@ jobs:
           ddev config global --instrumentation-opt-in=false
           ddev config global --omit-containers=ddev-ssh-agent
           ddev version
-
-      - name: Start DDEV for fixture building
-        run: |
-          ddev start
 
       - name: Check requirements
         run: |
