@@ -13,7 +13,6 @@
     "phpstan/phpstan": "^2.1.39",
     "symplify/easy-coding-standard": "^13.0.4",
     "zircote/swagger-php": "^6.0.5",
-    "enlightn/security-checker": "^2.0",
     "psalm/phar": "^6.15.1",
     "deptrac/deptrac": "^4.6.0"
   },

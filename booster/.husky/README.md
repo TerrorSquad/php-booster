@@ -31,20 +31,20 @@ To add a new tool, add a `ToolConfig` object to the `TOOLS` array. To override o
 
 ### Configuration Object (`ToolConfig`)
 
-| Property               | Type                                   | Description                                                                                      |
-| ---------------------- | -------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| `name`                 | `string`                               | Display name of the tool (used in logs and skip-variable derivation).                            |
-| `command`              | `string`                               | The binary command to run (e.g., `eslint`, `rector`).                                            |
-| `commandAlternatives`  | `string[]`                             | (Optional) Fallback commands tried in order if `command` is not found (e.g., `['psalm.phar']`). |
-| `type`                 | `'node' \| 'php' \| 'system'`          | Where to resolve the binary: `node_modules/.bin`, `vendor/bin`, or system `PATH`.                |
-| `args`                 | `string[]`                             | (Optional) Arguments to pass to the command.                                                     |
-| `extensions`           | `string[]`                             | (Optional) Only run on files with these extensions.                                              |
-| `stagesFilesAfter`     | `boolean`                              | (Optional) If `true`, re-stages files after execution (useful for auto-fixers).                  |
-| `passFiles`            | `boolean`                              | (Optional) If `false`, does not pass staged files to the command. Default is `true`.             |
-| `runForEachFile`       | `boolean`                              | (Optional) If `true`, runs the command once per file instead of passing all files at once.       |
-| `description`          | `string`                               | (Optional) Custom log message shown while the tool is running.                                   |
-| `onFailure`            | `'continue' \| 'stop'`                 | (Optional) What happens when this tool fails. Default is `'continue'`. Use `'stop'` for syntax checks that must pass before other tools run. |
-| `group`                | `'format' \| 'lint' \| 'analysis' \| 'refactor'` | (Optional) Tool category for selective execution via `HOOKS_ONLY`.              |
+| Property              | Type                             | Description                                                                                                                                  |
+| --------------------- | -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `name`                | `string`                         | Display name of the tool (used in logs and skip-variable derivation).                                                                        |
+| `command`             | `string`                         | The binary command to run (e.g., `eslint`, `rector`).                                                                                        |
+| `commandAlternatives` | `string[]`                       | (Optional) Fallback commands tried in order if `command` is not found (e.g., `['psalm.phar']`).                                              |
+| `type`                | `'node' \| 'php' \| 'system'`    | Where to resolve the binary: `node_modules/.bin`, `vendor/bin`, or system `PATH`.                                                            |
+| `args`                | `string[]`                       | (Optional) Arguments to pass to the command.                                                                                                 |
+| `extensions`          | `string[]`                       | (Optional) Only run on files with these extensions.                                                                                          |
+| `stagesFilesAfter`    | `boolean`                        | (Optional) If `true`, re-stages files after execution (useful for auto-fixers).                                                              |
+| `passFiles`           | `boolean`                        | (Optional) If `false`, does not pass staged files to the command. Default is `true`.                                                         |
+| `runForEachFile`      | `boolean`                        | (Optional) If `true`, runs the command once per file instead of passing all files at once.                                                   |
+| `description`         | `string`                         | (Optional) Custom log message shown while the tool is running.                                                                               |
+| `onFailure`           | `'continue' \| 'stop'`           | (Optional) What happens when this tool fails. Default is `'continue'`. Use `'stop'` for syntax checks that must pass before other tools run. |
+| `group`               | `'format' \| 'lint' \| 'analysis' \| 'refactor'` | (Optional) Tool category for selective execution via `HOOKS_ONLY`.                                                           |
 
 ### Example
 
@@ -94,16 +94,16 @@ Create a `.git-hooks.config.json` file (or `.githooks.json`) in the project root
 
 ### Config File Schema
 
-| Field              | Type      | Description                                                                    |
-| ------------------ | --------- | ------------------------------------------------------------------------------ |
-| `verbose`          | `boolean` | Enable verbose logging (same as `GIT_HOOKS_VERBOSE=1`).                        |
-| `skip.preCommit`   | `boolean` | Skip the entire pre-commit hook.                                               |
-| `skip.prePush`     | `boolean` | Skip the entire pre-push hook.                                                 |
-| `skip.commitMsg`   | `boolean` | Skip the entire commit-msg hook.                                               |
-| `skip.tests`       | `boolean` | Skip tests in pre-push (Pest).                                                 |
-| `skip.artifacts`   | `boolean` | Skip artifact generation in pre-push (Deptrac image, API docs).                |
-| `tools.<Name>`     | `object`  | Override properties of an existing tool, or define a new custom tool by name.  |
-| `tools.<Name>.enabled` | `boolean` | Set to `false` to disable a tool entirely.                                 |
+| Field              | Type      | Description                                                                   |
+| ------------------ | --------- | ----------------------------------------------------------------------------- |
+| `verbose`          | `boolean` | Enable verbose logging (same as `GIT_HOOKS_VERBOSE=1`).                       |
+| `skip.preCommit`   | `boolean` | Skip the entire pre-commit hook.                                              |
+| `skip.prePush`     | `boolean` | Skip the entire pre-push hook.                                                |
+| `skip.commitMsg`   | `boolean` | Skip the entire commit-msg hook.                                              |
+| `skip.tests`       | `boolean` | Skip tests in pre-push (Pest).                                                |
+| `skip.artifacts`   | `boolean` | Skip artifact generation in pre-push (Deptrac image, API docs).               |
+| `tools.<Name>`     | `object`  | Override properties of an existing tool, or define a new custom tool by name. |
+| `tools.<Name>.enabled` | `boolean` | Set to `false` to disable a tool entirely.                                |
 
 ## Selective Execution (`HOOKS_ONLY`)
 
@@ -169,13 +169,13 @@ You can control hook behavior with environment variables. These can be set in yo
 
 ### General
 
-| Variable              | Description                                                                                     |
-| --------------------- | ----------------------------------------------------------------------------------------------- |
-| `GIT_HOOKS_VERBOSE`   | Set to `1` or `true` to enable verbose logging (shows executed commands).                       |
-| `GIT_HOOKS_ENV_FILE`  | Path to a custom env file to load at hook startup (overrides `.git-hooks.env` / `.env`).        |
-| `GIT_HOOKS_CONFIG`    | Path to a custom config file (overrides the default `.git-hooks.config.json` lookup).           |
-| `HOOKS_ONLY`          | Comma-separated list of tool groups to run (e.g., `lint,format`). Skips all other groups.       |
-| `DDEV_PHP`            | Set to `false` or `0` to force PHP tools to run on the host even if DDEV is detected.          |
+| Variable             | Description                                                                             |
+| -------------------- | --------------------------------------------------------------------------------------- |
+| `GIT_HOOKS_VERBOSE`  | Set to `1` or `true` to enable verbose logging (shows executed commands).               |
+| `GIT_HOOKS_ENV_FILE` | Path to a custom env file to load at hook startup (overrides `.git-hooks.env` / `.env`).|
+| `GIT_HOOKS_CONFIG`   | Path to a custom config file (overrides the default `.git-hooks.config.json` lookup).   |
+| `HOOKS_ONLY`         | Comma-separated list of tool groups to run (e.g., `lint,format`). Skips all other groups.|
+| `DDEV_PHP`           | Set to `false` or `0` to force PHP tools to run on the host even if DDEV is detected.   |
 
 ### Hook-level skips
 
