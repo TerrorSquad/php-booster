@@ -1,5 +1,36 @@
 # Changelog
 
+## [2.7.0](https://github.com/TerrorSquad/php-booster/compare/v2.6.0...v2.7.0) (2026-03-09)
+
+
+### Features
+
+* add esbuild to onlyBuiltDependencies in pnpm workspace configuration ([05933b1](https://github.com/TerrorSquad/php-booster/commit/05933b140dffb686c805300dcf32aac402f7e886))
+* enhance CI workflows with fixture caching and timeout settings for improved performance ([eed9c6f](https://github.com/TerrorSquad/php-booster/commit/eed9c6ffd7938746406007f6a7061bb116a7861d))
+* remove unused node and pnpm command scripts; update manifest and package-release to include .ddev ([1930076](https://github.com/TerrorSquad/php-booster/commit/1930076631f525ffd182e6358bf3a9c58e049d0f))
+* update .ddev inclusion in manifest and package-release script for improved project setup ([18d5463](https://github.com/TerrorSquad/php-booster/commit/18d5463a82b5a99ed9a64cb2022f05a2f138b550))
+
+
+### Bug Fixes
+
+* add integration script build and verification for booster.zip contents ([3ab7e82](https://github.com/TerrorSquad/php-booster/commit/3ab7e82d9782a398bd483c4079b6cc4f26428a5e))
+* enhance file handling in copy functions and improve directory management ([9088e5f](https://github.com/TerrorSquad/php-booster/commit/9088e5f1e48b420ccd88022de0d5b8457f9bf1e1))
+* enhance integration tests and build-fixtures script to support dynamic framework selection ([900ed79](https://github.com/TerrorSquad/php-booster/commit/900ed791acb0306e647b04ad82277c81e602a3a7))
+* ensure parent directories are created when copying files in package-release script ([89aebde](https://github.com/TerrorSquad/php-booster/commit/89aebde59018cd208b433e38d425f0185405f89c))
+* implement timeout function for integration tests and enhance concurrency handling ([2795b81](https://github.com/TerrorSquad/php-booster/commit/2795b812f7c9dbbff2996d47337a00f041295e3f))
+* improve error handling and output directory normalization in scripts ([95cebcb](https://github.com/TerrorSquad/php-booster/commit/95cebcb27e157dab6e359ba8801833dc6e9eeeb8))
+* normalize output path to absolute for tarball creation in build-fixtures script ([3655d55](https://github.com/TerrorSquad/php-booster/commit/3655d55ebe054f8dc4aee89fb00ca5fa4a58d6ce))
+* refactor integration tests to use cached fixtures and remove build-fixtures.sh ([6150581](https://github.com/TerrorSquad/php-booster/commit/61505811aafc61e8410344e4057e7254700956bf))
+* remove redundant DDEV start step in integration tests ([6a78086](https://github.com/TerrorSquad/php-booster/commit/6a78086621122b8220497f834875fac996dc190e))
+* remove redundant packages ([5feb92b](https://github.com/TerrorSquad/php-booster/commit/5feb92be823eb3ecc2bfe65186d71e667ee07343))
+* remove redundant tools ([a6b7486](https://github.com/TerrorSquad/php-booster/commit/a6b7486310f3739e3e5647a01ba1cab05c7eafd1))
+* reorder dependency checks for yq in check_dependencies function ([72eff11](https://github.com/TerrorSquad/php-booster/commit/72eff114751308e8f5c7c2a14309863c6d2e88ae))
+* simplify integration test workflow by removing redundant timeout logic and using direct script calls ([6d2f110](https://github.com/TerrorSquad/php-booster/commit/6d2f11037b2bae5b4277a62356a7bb401de8e723))
+* streamline expected file generation in integration tests by using conditional checks ([8a0d68f](https://github.com/TerrorSquad/php-booster/commit/8a0d68f14732a6db115f5f0108e283a33ed39788))
+* update integration test commands to use Python script directly and remove Makefile shortcuts ([41cc027](https://github.com/TerrorSquad/php-booster/commit/41cc0279aa2579c367873a929f0fd22976c836d7))
+* update jiti dependency to version 2.6.1 and enhance markdownlint configuration ([289c929](https://github.com/TerrorSquad/php-booster/commit/289c929030011f0325a1964856a40d4e233e44d3))
+* update jiti to version 2.6.1 and add @eslint/js dependency ([1ab0db6](https://github.com/TerrorSquad/php-booster/commit/1ab0db67b066a3b0c2e2bb1f6f6a1bcd12261838))
+
 ## [2.6.0](https://github.com/TerrorSquad/php-booster/compare/v2.5.0...v2.6.0) (2026-03-08)
 
 
