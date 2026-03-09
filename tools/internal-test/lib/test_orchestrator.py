@@ -121,6 +121,7 @@ class TestOrchestrator:
         "openapi/openapi.yml",
         ".husky/commit-msg",
         ".husky/shared/index.ts",
+        ".git-hooks.config.example.json",
     ]
 
     def _verify_expected_files(self, test_dir: Path) -> List[str]:

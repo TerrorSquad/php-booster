@@ -252,7 +252,7 @@ function add_code_quality_tools() {
 
                 # Install packages individually for better error handling
                 local failed_packages=()
-                local critical_packages=("rector/rector" "phpstan/phpstan" "symplify/easy-coding-standard" "deptrac/deptrac")
+                local critical_packages=("rector/rector" "phpstan/phpstan" "symplify/easy-coding-standard" "deptrac/deptrac" "psalm/phar")
 
                 for dep in "${missing_dev_deps[@]}"; do
                     log "Installing dev dependency: $dep"

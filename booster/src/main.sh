@@ -250,6 +250,7 @@ function main() {
             warn "No existing booster installation detected. Running partial update anyway..."
         fi
 
+        IS_DDEV_PROJECT=$(is_ddev_project)
         check_dependencies
 
         if [ "$UPDATE_HOOKS_ONLY" = true ]; then

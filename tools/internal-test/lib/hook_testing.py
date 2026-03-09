@@ -56,6 +56,8 @@ class HookTester:
         env["SKIP_PHPSTAN"] = "1"
         env["SKIP_PSALM"] = "1"
         env["SKIP_DEPTRAC"] = "1"
+        env["SKIP_ECS"] = "1"
+        env["SKIP_RECTOR"] = "1"
 
         # Check if there are changes to commit
         status = self.cmd.run_command(
@@ -243,17 +245,13 @@ echo "Hello, World!";
             ["git", "add", "test_commit.php"], cwd=self.config.target_dir
         )
 
-        # Wait for Mutagen sync (if active)
-        import time
-        if self.config.verbose:
-            self.log.info("Waiting 5s for Mutagen sync...")
-        time.sleep(5)
-
         # Set environment to skip static analysis for faster testing
         env = os.environ.copy()
         env["SKIP_PHPSTAN"] = "1"
         env["SKIP_PSALM"] = "1"
         env["SKIP_DEPTRAC"] = "1"
+        env["SKIP_ECS"] = "1"
+        env["SKIP_RECTOR"] = "1"
 
         try:
             self.cmd.run_command(
@@ -335,6 +333,8 @@ echo "Another test";
         env["SKIP_PHPSTAN"] = "1"
         env["SKIP_PSALM"] = "1"
         env["SKIP_DEPTRAC"] = "1"
+        env["SKIP_ECS"] = "1"
+        env["SKIP_RECTOR"] = "1"
 
         # This should fail due to invalid branch name
         if self.config.verbose:

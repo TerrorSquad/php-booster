@@ -11,15 +11,10 @@ This test suite provides automated testing of the PHP Booster integration proces
 ### Quick Start
 
 ```bash
-# Using Makefile (recommended)
-make test              # Run Laravel test
-make test-symfony      # Run Symfony test
-make test-clean        # Clean up test environments
-
-# Or using Python script directly
-./test-integration.py env-check
-./test-integration.py full laravel
-./test-integration.py clean laravel
+# Using the test script directly
+python3 tools/internal-test/test-integration.py full laravel
+python3 tools/internal-test/test-integration.py full symfony
+python3 tools/internal-test/test-integration.py clean laravel
 ```
 
 ### Available Actions
@@ -44,25 +39,21 @@ make test-clean        # Clean up test environments
 ### Examples
 
 ```bash
-# Makefile shortcuts
-make test              # Run full Laravel integration test
-make test-symfony      # Run full Symfony integration test
-make test-hooks        # Test git hooks functionality
-make test-env          # Check environment and requirements
-make test-status       # Show test environment status
-make test-clean        # Clean up all test environments
-
 # Python script directly
-./test-integration.py full laravel
-./test-integration.py full symfony
-./test-integration.py setup laravel
-./test-integration.py verify laravel
-./test-integration.py test-hooks laravel
-./test-integration.py status laravel
-./test-integration.py clean laravel
+python3 tools/internal-test/test-integration.py full laravel
+python3 tools/internal-test/test-integration.py full symfony
+python3 tools/internal-test/test-integration.py setup laravel
+python3 tools/internal-test/test-integration.py verify laravel
+python3 tools/internal-test/test-integration.py test-hooks laravel
+python3 tools/internal-test/test-integration.py status laravel
+python3 tools/internal-test/test-integration.py clean laravel
 
-# Custom target directory (advanced)
-./test-integration.py full laravel --target-dir /tmp/my-test
+# With flags
+python3 tools/internal-test/test-integration.py full laravel --verbose
+python3 tools/internal-test/test-integration.py test-interactive-project laravel --automated
+
+# Custom target directory
+python3 tools/internal-test/test-integration.py full laravel --target-dir /tmp/my-test
 ```
 
 ## Dependencies
@@ -244,12 +235,9 @@ The test script creates projects in:
 
 To clean up:
 ```bash
-# Using Makefile (recommended)
-make test-clean
-
-# Or using Python script directly
-./test-integration.py clean laravel
-./test-integration.py clean symfony
+# Using Python script directly
+python3 tools/internal-test/test-integration.py clean laravel
+python3 tools/internal-test/test-integration.py clean symfony
 
 # Manual cleanup example (if needed)
 cd tests/laravel/booster-test && ddev delete -y
@@ -261,13 +249,9 @@ rm -rf tests/laravel/booster-test
 For testing local changes to the booster before committing:
 
 ```bash
-# The script automatically uses local development mode
-# Set these environment variables if needed:
 export BOOSTER_LOCAL_DEV=1
 export BOOSTER_LOCAL_PATH="/path/to/booster"
 
 # Run tests
-make test
-# or
-./test-integration.py full laravel
+python3 tools/internal-test/test-integration.py full laravel
 ```

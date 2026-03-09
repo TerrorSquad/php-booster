@@ -31,7 +31,7 @@ class EnvironmentChecker:
                         distro_name = line.split("=", 1)[1].strip('"\\n')
                         print(f"  - Distribution: {distro_name}")
                         break
-        except:
+        except (OSError, IOError):
             print("  - Distribution: Unknown")
         print(f"  - Shell: {os.environ.get('SHELL', 'Unknown')}")
         print(f"  - User: {os.environ.get('USER', 'Unknown')}")

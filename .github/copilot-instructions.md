@@ -204,15 +204,18 @@ curl -sSL https://raw.githubusercontent.com/TerrorSquad/php-booster/main/booster
 The repository includes a Python-based integration test suite in `tools/internal-test/`.
 
 | Task | Command |
-|------|---------|
-| Run full Laravel test | `make test` (or `make test-laravel`) |
-| Run full Symfony test | `make test-symfony` |
-| Test Git hooks only | `make test-hooks` |
-| Clean test environments | `make test-clean` |
+|------|--------|
+| Build integration script | `make build` |
+| Run full Laravel test | `python3 tools/internal-test/test-integration.py full laravel` |
+| Run full Symfony test | `python3 tools/internal-test/test-integration.py full symfony` |
+| Test Git hooks only | `python3 tools/internal-test/test-integration.py test-hooks laravel` |
+| Clean test environments | `python3 tools/internal-test/test-integration.py clean laravel` |
+| See all options | `python3 tools/internal-test/test-integration.py --help` |
 
 Copilot SHOULD:
 - Suggest running these tests when modifying the integration logic.
 - Reference `tools/internal-test/test-integration.py` for test logic.
+- Always use the Python script directly, not Makefile shortcuts (which only cover `build`).
 
 ---
 ## 16. Documentation Site (`docs/`)

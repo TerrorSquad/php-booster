@@ -26,7 +26,6 @@ Examples:
   %(prog)s integrate laravel            # Integrate booster into existing project
   %(prog)s full laravel                 # Run complete test suite
   %(prog)s test-hooks laravel           # Test git hooks functionality
-  %(prog)s test-github-actions laravel  # Test GitHub Actions integration
   %(prog)s test-interactive             # Test interactive mode without requiring a project
   %(prog)s test-interactive-project laravel # Test interactive mode with a project
   %(prog)s test-interactive-project laravel --automated # Automated interactive test
@@ -51,7 +50,6 @@ relative to the repository root unless --target-dir is specified.
             "integrate",
             "verify",
             "test-hooks",
-            "test-github-actions",
             "test-interactive",
             "test-interactive-project",
             "clean-interactive-test",
