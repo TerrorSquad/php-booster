@@ -9,9 +9,8 @@ function check_dependencies() {
 
     # Skip PHP-related dependency checks in hooks-only mode
     if [ "$HOOKS_ONLY_MODE" != true ]; then
-        command -v yq >/dev/null 2>&1 || missing_deps+=("yq") # Needed for ddev config
-
         if [ $IS_DDEV_PROJECT -eq 1 ]; then
+            command -v yq >/dev/null 2>&1 || missing_deps+=("yq") # Needed for ddev config
             command -v ddev >/dev/null 2>&1 || missing_deps+=("ddev")
         else
             command -v composer >/dev/null 2>&1 || missing_deps+=("composer")
@@ -46,5 +45,3 @@ function cleanup() {
     rm -f composer.json.merged.tmp composer.json.merged.tmp.next hooks.yaml.tmp .ddev/config.yaml.tmp package.json.tmp
     success "Temporary files cleaned up."
 }
-
-
