@@ -47,7 +47,6 @@ jobs:
   integration-test:
     name: Integration Test (${{ matrix.project_type }})
     runs-on: ubuntu-latest
-    timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
@@ -122,7 +121,7 @@ jobs:
 
       - name: Check requirements
         run: |
-          make test-env
+          python3 tools/internal-test/test-integration.py env-check
 
       - name: Build integration script from source
         run: |
@@ -202,22 +201,6 @@ jobs:
 
       - name: Run integration test
         run: |
-          run_with_timeout() {
-            local duration="$1"
-            shift
-
-            timeout --foreground "$duration" "$@" &
-            local cmd_pid=$!
-
-            # Emit periodic heartbeat so long-running tests don't look stuck.
-            while kill -0 "$cmd_pid" 2>/dev/null; do
-              echo "[$(date -u +%H:%M:%S)] still running: $*"
-              sleep 60
-            done
-
-            wait "$cmd_pid"
-          }
-
           # Use manual input if workflow_dispatch, otherwise use matrix
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             PROJECT_TYPE="${{ github.event.inputs.project_type }}"
@@ -228,31 +211,17 @@ jobs:
           fi
 
           echo "Running test: $TEST_ACTION for project type: $PROJECT_TYPE"
-
-          # Use Makefile targets for common actions
-          if [ "$TEST_ACTION" = "full" ]; then
-            if [ "$PROJECT_TYPE" = "laravel" ]; then
-              run_with_timeout 45m make test-laravel
-            elif [ "$PROJECT_TYPE" = "symfony" ]; then
-              run_with_timeout 45m make test-symfony
-            fi
-          elif [ "$TEST_ACTION" = "test-hooks" ]; then
-            run_with_timeout 20m make test-hooks
-          else
-            # For other actions, fall back to direct script call
-            run_with_timeout 45m ./tools/internal-test/test-integration.py $TEST_ACTION $PROJECT_TYPE
-          fi
+          python3 tools/internal-test/test-integration.py "$TEST_ACTION" "$PROJECT_TYPE"
 
       - name: Show test results
         if: always()
         run: |
           echo "Test completed. Checking status..."
-          ./tools/internal-test/test-integration.py status ${{ matrix.project_type }}
+          python3 tools/internal-test/test-integration.py status ${{ matrix.project_type }}
 
   manual-test:
     name: Manual Test (workflow_dispatch only)
     runs-on: ubuntu-latest
-    timeout-minutes: 60
     if: github.event_name == 'workflow_dispatch'
 
     steps:
@@ -324,7 +293,7 @@ jobs:
 
       - name: Check requirements
         run: |
-          make test-env
+          python3 tools/internal-test/test-integration.py env-check
 
       - name: Build integration script from source
         run: |
@@ -403,43 +372,14 @@ jobs:
 
       - name: Run manual test
         run: |
-          run_with_timeout() {
-            local duration="$1"
-            shift
-
-            timeout --foreground "$duration" "$@" &
-            local cmd_pid=$!
-
-            # Emit periodic heartbeat so long-running tests don't look stuck.
-            while kill -0 "$cmd_pid" 2>/dev/null; do
-              echo "[$(date -u +%H:%M:%S)] still running: $*"
-              sleep 60
-            done
-
-            wait "$cmd_pid"
-          }
-
           PROJECT_TYPE="${{ github.event.inputs.project_type }}"
           TEST_ACTION="${{ github.event.inputs.test_action }}"
 
           echo "Running manual test: $TEST_ACTION for project type: $PROJECT_TYPE"
-
-          # Use Makefile targets for common actions
-          if [ "$TEST_ACTION" = "full" ]; then
-            if [ "$PROJECT_TYPE" = "laravel" ]; then
-              run_with_timeout 45m make test-laravel
-            elif [ "$PROJECT_TYPE" = "symfony" ]; then
-              run_with_timeout 45m make test-symfony
-            fi
-          elif [ "$TEST_ACTION" = "test-hooks" ]; then
-            run_with_timeout 20m make test-hooks
-          else
-            # For other actions, fall back to direct script call
-            run_with_timeout 45m ./tools/internal-test/test-integration.py $TEST_ACTION $PROJECT_TYPE
-          fi
+          python3 tools/internal-test/test-integration.py "$TEST_ACTION" "$PROJECT_TYPE"
 
       - name: Show test results
         if: always()
         run: |
           echo "Manual test completed. Checking status..."
-          ./tools/internal-test/test-integration.py status ${{ github.event.inputs.project_type }}
+          python3 tools/internal-test/test-integration.py status ${{ github.event.inputs.project_type }}
