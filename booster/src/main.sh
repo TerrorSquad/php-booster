@@ -103,6 +103,7 @@ function update_hooks_only() {
         fi
 
         mkdir -p .husky
+        rm -rf .husky/tests
 
         # Copy everything except the 'tests' directory
         for item in "$husky_src"/*; do
@@ -136,8 +137,10 @@ function update_configs_only() {
     validate_manifest
 
     # Config files to update (always overwrite)
-    local config_files
-    read -ra config_files < <(jq -r '.files.config.items[]' "$BOOSTER_INTERNAL_PATH/manifest.json")
+    local config_files=()
+    while IFS= read -r item; do
+        config_files+=("$item")
+    done < <(jq -r '.files.config.items[]' "$BOOSTER_INTERNAL_PATH/manifest.json")
 
     for config in "${config_files[@]}"; do
         local src="${BOOSTER_INTERNAL_PATH}/${config}"
@@ -160,8 +163,10 @@ function update_configs_only() {
 
     # PHP-specific configs (only if not hooks-only mode and files exist)
     if [ "$HOOKS_ONLY_MODE" != true ] && [ -f "composer.json" ]; then
-        local php_configs
-        read -ra php_configs < <(jq -r '.files.php.items[]? // empty' "$BOOSTER_INTERNAL_PATH/manifest.json")
+        local php_configs=()
+        while IFS= read -r item; do
+            php_configs+=("$item")
+        done < <(jq -r '.files.php.items[]? // empty' "$BOOSTER_INTERNAL_PATH/manifest.json")
 
         for config in "${php_configs[@]}"; do
             local src="${BOOSTER_INTERNAL_PATH}/${config}"

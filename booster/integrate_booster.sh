@@ -723,18 +723,28 @@ function copy_files() {
     validate_manifest
 
     # Load directory items from manifest
-    local top_level
-    read -ra top_level < <(jq -r '.directories.items[]' "$BOOSTER_INTERNAL_PATH/manifest.json")
+    local top_level=()
+    while IFS= read -r item; do
+        top_level+=("$item")
+    done < <(jq -r '.directories.items[]' "$BOOSTER_INTERNAL_PATH/manifest.json")
 
     # Load top-level file items from manifest
-    local top_files
-    read -ra top_files < <(jq -r '.files.topLevel.items[]' "$BOOSTER_INTERNAL_PATH/manifest.json")
+    local top_files=()
+    while IFS= read -r item; do
+        top_files+=("$item")
+    done < <(jq -r '.files.topLevel.items[]' "$BOOSTER_INTERNAL_PATH/manifest.json")
 
     # Combine into single array
     top_level+=("${top_files[@]}")
 
     for item in "${top_level[@]}"; do
         local src_path="${BOOSTER_INTERNAL_PATH}/${item}"
+
+        if [ "$item" = ".husky" ]; then
+            log "  Skipping generic copy for '.husky'; handled by filtered hook copy."
+            continue
+        fi
+
         if [ -e "$src_path" ]; then
             if [ -d "$src_path" ]; then
                 # It's a directory
@@ -743,6 +753,16 @@ function copy_files() {
                     log "  Copied directory '$item'."
                 else
                     log "  Directory '$item' exists. Merging contents safely..."
+                    find "$src_path" -type d | while read -r dir; do
+                        local rel_dir="${dir#$src_path/}"
+
+                        if [ "$dir" = "$src_path" ]; then
+                            continue
+                        fi
+
+                        mkdir -p "$item/$rel_dir"
+                    done
+
                     # Iterate over files in src to copy missing ones
                     find "$src_path" -type f | while read -r file; do
                         local rel_path="${file#$src_path/}"
@@ -779,6 +799,7 @@ function copy_files() {
     if [ -d "$husky_src" ]; then
         log "  Copying .husky directory"
         mkdir -p .husky
+        rm -rf .husky/tests
 
         # Copy everything except the 'tests' directory
         for item in "$husky_src"/*; do
@@ -1003,6 +1024,16 @@ function update_tool_paths() {
             cp -R "$booster_doc_path" "openapi" || warn "Failed to copy openapi directory."
         else
             log "  'openapi' directory exists. Copying missing files..."
+            find "$booster_doc_path" -type d | while read -r dir; do
+                local rel_dir="${dir#$booster_doc_path/}"
+
+                if [ "$dir" = "$booster_doc_path" ]; then
+                    continue
+                fi
+
+                mkdir -p "openapi/$rel_dir"
+            done
+
             for doc_file in "$booster_doc_path"/*; do
                 local filename
                 filename=$(basename "$doc_file")
@@ -1020,10 +1051,15 @@ function update_tool_paths() {
 
     # --- Copy Config Files ---
     # Load config files from manifest
-    local config_items
-    local php_items
-    read -ra config_items < <(jq -r '.files.config.items[]' "$BOOSTER_INTERNAL_PATH/manifest.json")
-    read -ra php_items < <(jq -r '.files.php.items[]? // empty' "$BOOSTER_INTERNAL_PATH/manifest.json")
+    local config_items=()
+    local php_items=()
+    while IFS= read -r item; do
+        config_items+=("$item")
+    done < <(jq -r '.files.config.items[]' "$BOOSTER_INTERNAL_PATH/manifest.json")
+
+    while IFS= read -r item; do
+        php_items+=("$item")
+    done < <(jq -r '.files.php.items[]? // empty' "$BOOSTER_INTERNAL_PATH/manifest.json")
 
     local cq_files=("${config_items[@]}" "${php_items[@]}")
 
@@ -1803,6 +1839,7 @@ function update_hooks_only() {
         fi
 
         mkdir -p .husky
+        rm -rf .husky/tests
 
         # Copy everything except the 'tests' directory
         for item in "$husky_src"/*; do
@@ -1836,8 +1873,10 @@ function update_configs_only() {
     validate_manifest
 
     # Config files to update (always overwrite)
-    local config_files
-    read -ra config_files < <(jq -r '.files.config.items[]' "$BOOSTER_INTERNAL_PATH/manifest.json")
+    local config_files=()
+    while IFS= read -r item; do
+        config_files+=("$item")
+    done < <(jq -r '.files.config.items[]' "$BOOSTER_INTERNAL_PATH/manifest.json")
 
     for config in "${config_files[@]}"; do
         local src="${BOOSTER_INTERNAL_PATH}/${config}"
@@ -1860,8 +1899,10 @@ function update_configs_only() {
 
     # PHP-specific configs (only if not hooks-only mode and files exist)
     if [ "$HOOKS_ONLY_MODE" != true ] && [ -f "composer.json" ]; then
-        local php_configs
-        read -ra php_configs < <(jq -r '.files.php.items[]? // empty' "$BOOSTER_INTERNAL_PATH/manifest.json")
+        local php_configs=()
+        while IFS= read -r item; do
+            php_configs+=("$item")
+        done < <(jq -r '.files.php.items[]? // empty' "$BOOSTER_INTERNAL_PATH/manifest.json")
 
         for config in "${php_configs[@]}"; do
             local src="${BOOSTER_INTERNAL_PATH}/${config}"
