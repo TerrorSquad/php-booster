@@ -90,14 +90,34 @@ export interface CustomToolConfig extends Omit<ToolConfig, 'name'> {
 }
 
 /**
+ * Per-hook tool configuration
+ */
+export interface HookSpecificConfig {
+  /**
+   * Tool overrides/additions scoped to this specific hook.
+   * For pre-commit: all default tools run and these are merged on top.
+   * For pre-push and commit-msg: ONLY these tools run (use existing tool
+   * names to reference built-in definitions, or provide a full `command` to
+   * add a brand-new tool).
+   */
+  tools?: Record<string, ToolOverride | CustomToolConfig>
+}
+
+/**
  * Git hooks configuration file schema (.git-hooks.config.json)
  */
 export interface HooksConfig {
   /**
-   * Tool overrides - key is tool name (e.g., "PHPStan", "ESLint")
-   * Use existing tool names to override, or new names to add custom tools
+   * Per-hook configuration.
+   * - `preCommit.tools`: all default tools run, overrides applied on top.
+   * - `prePush.tools` and `commitMsg.tools`: ONLY the tools listed here run
+   *   for that hook.
    */
-  tools?: Record<string, ToolOverride | CustomToolConfig>
+  hooks?: {
+    preCommit?: HookSpecificConfig
+    prePush?: HookSpecificConfig
+    commitMsg?: HookSpecificConfig
+  }
   /**
    * Enable verbose logging (same as GIT_HOOKS_VERBOSE=1)
    */

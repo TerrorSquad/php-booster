@@ -114,8 +114,12 @@ describe('Pre-push Hook', () => {
       generateApiDocs.mockResolvedValue({ generated: true, changed: false })
 
       const configWithDeptracDisabled = {
-        tools: {
-          Deptrac: { enabled: false }
+        hooks: {
+          prePush: {
+            tools: {
+              Deptrac: { enabled: false }
+            }
+          }
         }
       }
 
@@ -130,8 +134,12 @@ describe('Pre-push Hook', () => {
       generateApiDocs.mockResolvedValue({ generated: true, changed: false })
 
       const configWithDeptracDisabled = {
-        tools: {
-          deptrac: { enabled: false }
+        hooks: {
+          prePush: {
+            tools: {
+              deptrac: { enabled: false }
+            }
+          }
         }
       }
 

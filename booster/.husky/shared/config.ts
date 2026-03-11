@@ -20,16 +20,24 @@ let _configCache: HooksConfig | null = null
  */
 export function resetConfigCache(): void {
   _configCache = null
+  _missingFlag = false
 }
 
 /**
- * Load configuration from .git-hooks.config.json or similar
- * Returns empty config if no file found
+ * Sentinel value cached when no config file is found.
+ * Allows distinguishing "no file" from "empty file".
  */
-export async function loadConfig(): Promise<HooksConfig> {
+const MISSING_CONFIG = Symbol('missing')
+let _missingFlag = false
+
+/**
+ * Load configuration from .git-hooks.config.json or similar.
+ * Returns null when no config file is found.
+ */
+export async function loadConfig(): Promise<HooksConfig | null> {
   // Return cached config if available
   if (_configCache !== null) {
-    return _configCache
+    return _missingFlag ? null : _configCache
   }
 
   // Check environment variable for custom path
@@ -50,9 +58,10 @@ export async function loadConfig(): Promise<HooksConfig> {
     }
   }
 
-  // No config file found - return empty config
+  // No config file found - cache sentinel and return null
   _configCache = {}
-  return _configCache
+  _missingFlag = true
+  return null
 }
 
 /**
@@ -64,8 +73,8 @@ async function readConfigFile(path: string): Promise<HooksConfig> {
     const config = JSON.parse(content) as HooksConfig
 
     // Validate basic structure
-    if (config.tools && typeof config.tools !== 'object') {
-      log.warn(`Invalid 'tools' in ${path} - expected object`)
+    if (config.hooks && typeof config.hooks !== 'object') {
+      log.warn(`Invalid 'hooks' in ${path} - expected object`)
       return {}
     }
 
@@ -89,109 +98,78 @@ function isCustomTool(override: ToolOverride | CustomToolConfig): override is Cu
 }
 
 /**
- * Create a case-insensitive lookup map for config tools
- * Maps lowercase names to original config keys
- */
-function createToolLookupMap(tools: HooksConfig['tools']): Map<string, string> {
-  const map = new Map<string, string>()
-  if (tools) {
-    for (const key of Object.keys(tools)) {
-      map.set(key.toLowerCase(), key)
-    }
-  }
-  return map
-}
-
-/**
- * Apply config overrides to the default tools array
- * @param defaultTools The default TOOLS array
- * @param config The loaded configuration
- * @returns Modified tools array with overrides applied
+ * Apply config overrides using the tool definition registry.
+ *
+ * The system is **purely config-driven**: only tools listed under
+ * `hooks.<hookName>.tools` in the config file are executed.
+ * The `registry` array is used solely as a name-lookup so users can
+ * reference built-in tools by name without repeating every field.
+ *
+ * @param registry  The TOOLS definition registry (name → full config lookup)
+ * @param config    The loaded configuration (must be non-null)
+ * @param hookName  Which hook is being configured
  */
 export function applyConfigOverrides(
-  defaultTools: ToolConfig[],
+  registry: ToolConfig[],
   config: HooksConfig,
+  hookName?: 'preCommit' | 'prePush' | 'commitMsg',
 ): ToolConfig[] {
-  if (!config.tools) {
-    return defaultTools
+  const toolOverrides = (hookName ? config.hooks?.[hookName]?.tools : undefined) ?? {}
+
+  if (Object.keys(toolOverrides).length === 0) {
+    return []
+  }
+
+  // Build case-insensitive registry lookup: lowercase name → ToolConfig
+  const registryLookup = new Map<string, ToolConfig>()
+  for (const tool of registry) {
+    registryLookup.set(tool.name.toLowerCase(), tool)
   }
 
   const result: ToolConfig[] = []
-  const processedOverrides = new Set<string>()
 
-  // Create case-insensitive lookup map
-  const toolLookup = createToolLookupMap(config.tools)
+  for (const [name, toolConfig] of Object.entries(toolOverrides)) {
+    if (toolConfig.enabled === false) continue
 
-  // Process existing tools with overrides
-  for (const tool of defaultTools) {
-    // Case-insensitive lookup: find the config key that matches (ignoring case)
-    const configKey = toolLookup.get(tool.name.toLowerCase())
-    const override = configKey ? config.tools[configKey] : undefined
+    const baseTool = registryLookup.get(name.toLowerCase())
 
-    if (!override) {
-      // No override - keep original
-      result.push(tool)
-      continue
+    if (baseTool) {
+      // Known tool: merge registry definition with config overrides.
+      // Registry provides the name (canonicalised casing).
+      const { enabled, ...overrideProps } = toolConfig
+      result.push({ ...baseTool, ...overrideProps })
+    } else {
+      // Unknown name — must be a fully-specified custom tool
+      if (!isCustomTool(toolConfig)) {
+        log.warn(`Tool '${name}' not found in registry and no 'command' specified - skipping`)
+        continue
+      }
+      const { enabled, ...toolProps } = toolConfig
+      result.push({ ...toolProps, name })
     }
-
-    if (configKey) {
-      processedOverrides.add(configKey)
-    }
-
-    // Check if tool is disabled
-    if (override.enabled === false) {
-      continue // Skip disabled tool
-    }
-
-    // Merge with existing logic:
-    // We treat the override as a partial update to the existing tool
-    // This allows changing ANY property (command, args, type, etc.)
-    // while keeping defaults for unspecified ones.
-    const { enabled, ...overrideProps } = override
-    result.push({
-      ...tool,
-      ...overrideProps,
-    })
-  }
-
-  // Add new custom tools
-  for (const [name, toolConfig] of Object.entries(config.tools)) {
-    if (processedOverrides.has(name)) {
-      continue // Already processed
-    }
-
-    if (!isCustomTool(toolConfig)) {
-      log.warn(`Tool '${name}' not found and no 'command' specified - skipping`)
-      continue
-    }
-
-    if (toolConfig.enabled === false) {
-      continue // Skip disabled custom tool
-    }
-
-    result.push({
-      ...toolConfig,
-      name,
-    })
   }
 
   return result
 }
 
 /**
- * Check if a hook or feature should be skipped based on config
+ * Check if a hook or feature should be skipped based on config.
+ * Returns false when config is null (no config file found).
  */
 export function isHookSkippedByConfig(
   key: 'preCommit' | 'prePush' | 'commitMsg' | 'tests' | 'artifacts',
-  config: HooksConfig,
+  config: HooksConfig | null,
 ): boolean {
+  if (!config) return false
   return config.skip?.[key] === true
 }
 
 /**
- * Apply verbose setting from config
+ * Apply verbose setting from config.
+ * No-ops when config is null.
  */
-export function applyVerboseSetting(config: HooksConfig): void {
+export function applyVerboseSetting(config: HooksConfig | null): void {
+  if (!config) return
   if (config.verbose === true && !process.env.GIT_HOOKS_VERBOSE) {
     process.env.GIT_HOOKS_VERBOSE = '1'
   }

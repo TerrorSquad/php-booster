@@ -21,7 +21,10 @@ import {
   exec,
   generateApiDocs,
   generateDeptracImage,
+  applyConfigOverrides,
+  runQualityChecks,
 } from './shared/index.ts'
+import { TOOLS } from './shared/tools.ts'
 
 export async function runTests(): Promise<boolean> {
   if (await fs.pathExists('vendor/bin/pest')) {
@@ -38,18 +41,13 @@ export async function runTests(): Promise<boolean> {
 }
 
 /**
- * Check if a tool is disabled in the config
+ * Check if a tool is disabled in the config for the pre-push hook
  */
 function isToolDisabled(toolName: string, config: Awaited<ReturnType<typeof loadConfig>>): boolean {
-  if (!config.tools) return false
-
-  // Case-insensitive lookup
-  const configKey = Object.keys(config.tools).find(
-    key => key.toLowerCase() === toolName.toLowerCase()
-  )
-
-  if (!configKey) return false
-  return config.tools[configKey]?.enabled === false
+  if (!config) return false
+  const prePushTools = config.hooks?.prePush?.tools ?? {}
+  const hookKey = Object.keys(prePushTools).find((k) => k.toLowerCase() === toolName.toLowerCase())
+  return hookKey ? prePushTools[hookKey]?.enabled === false : false
 }
 
 export async function handleArtifacts(config: Awaited<ReturnType<typeof loadConfig>>): Promise<void> {
@@ -81,6 +79,7 @@ export async function handleArtifacts(config: Awaited<ReturnType<typeof loadConf
 
 await runHook(GitHook.PrePush, async () => {
   const config = await loadConfig()
+  if (config === null) return true
 
   // Run tests - these ARE blocking (unless disabled in config)
   if (!isHookSkippedByConfig('tests', config)) {
@@ -94,6 +93,17 @@ await runHook(GitHook.PrePush, async () => {
     await handleArtifacts(config)
   } else {
     log.info('Skipping artifact generation (disabled in config)')
+  }
+
+  // Run any quality tools explicitly configured for the pre-push hook.
+  // Tools with passFiles:false (whole-project analysis) are always executed.
+  // Tools that require specific files are skipped when no relevant files are
+  // available in the push context.
+  const prePushTools = applyConfigOverrides(TOOLS, config, 'prePush')
+  if (prePushTools.length > 0) {
+    log.step('Running pre-push quality checks...')
+    const success = await runQualityChecks([], prePushTools, true)
+    if (!success) return false
   }
 
   return true

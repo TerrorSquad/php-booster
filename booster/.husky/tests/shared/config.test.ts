@@ -53,12 +53,12 @@ describe('config.ts', () => {
   })
 
   describe('loadConfig', () => {
-    it('should return empty config when no config file exists', async () => {
+    it('should return null when no config file exists', async () => {
       mockPathExists.mockResolvedValue(false)
 
       const config = await loadConfig()
 
-      expect(config).toEqual({})
+      expect(config).toBeNull()
     })
 
     it('should load config from .git-hooks.config.json', async () => {
@@ -144,33 +144,31 @@ describe('config.ts', () => {
       },
     ]
 
-    it('should return tools unchanged with empty config', () => {
+    it('should return empty array with empty config (no tools configured)', () => {
       const result = applyConfigOverrides(baseTools, {})
 
-      expect(result).toEqual(baseTools)
+      expect(result).toEqual([])
     })
 
     it('should disable a tool when enabled is false', () => {
       const config: HooksConfig = {
-        tools: {
-          PHPStan: { enabled: false },
-        },
+        hooks: { preCommit: { tools: { PHPStan: { enabled: false } } } },
       }
 
-      const result = applyConfigOverrides(baseTools, config)
+      const result = applyConfigOverrides(baseTools, config, 'preCommit')
 
+      // PHPStan is listed but disabled — excluded
       expect(result.find((t) => t.name === 'PHPStan')).toBeUndefined()
-      expect(result.find((t) => t.name === 'ESLint')).toBeDefined()
+      // ESLint was never listed in config — not auto-included
+      expect(result).toHaveLength(0)
     })
 
     it('should override tool arguments', () => {
       const config: HooksConfig = {
-        tools: {
-          PHPStan: { args: ['analyse', '--level=9'] },
-        },
+        hooks: { preCommit: { tools: { PHPStan: { args: ['analyse', '--level=9'] } } } },
       }
 
-      const result = applyConfigOverrides(baseTools, config)
+      const result = applyConfigOverrides(baseTools, config, 'preCommit')
       const phpstan = result.find((t) => t.name === 'PHPStan')
 
       expect(phpstan?.args).toEqual(['analyse', '--level=9'])
@@ -178,17 +176,21 @@ describe('config.ts', () => {
 
     it('should completely override existing tool (command, type, etc.)', () => {
       const config: HooksConfig = {
-        tools: {
-          PHPStan: {
-            command: 'docker-compose',
-            args: ['exec', 'php', 'phpstan'],
-            type: 'system',
-            includePatterns: ['src/**/*.php']
-          } as any,
+        hooks: {
+          preCommit: {
+            tools: {
+              PHPStan: {
+                command: 'docker-compose',
+                args: ['exec', 'php', 'phpstan'],
+                type: 'system',
+                includePatterns: ['src/**/*.php'],
+              } as any,
+            },
+          },
         },
       }
 
-      const result = applyConfigOverrides(baseTools, config)
+      const result = applyConfigOverrides(baseTools, config, 'preCommit')
       const phpstan = result.find((t) => t.name === 'PHPStan')
 
       expect(phpstan?.command).toBe('docker-compose')
@@ -201,12 +203,10 @@ describe('config.ts', () => {
 
     it('should override tool extensions', () => {
       const config: HooksConfig = {
-        tools: {
-          ESLint: { extensions: ['.jsx', '.tsx'] },
-        },
+        hooks: { preCommit: { tools: { ESLint: { extensions: ['.jsx', '.tsx'] } } } },
       }
 
-      const result = applyConfigOverrides(baseTools, config)
+      const result = applyConfigOverrides(baseTools, config, 'preCommit')
       const eslint = result.find((t) => t.name === 'ESLint')
 
       expect(eslint?.extensions).toEqual(['.jsx', '.tsx'])
@@ -214,32 +214,33 @@ describe('config.ts', () => {
 
     it('should override failure mode', () => {
       const config: HooksConfig = {
-        tools: {
-          PHPStan: { onFailure: 'stop' as FailureMode },
-        },
+        hooks: { preCommit: { tools: { PHPStan: { onFailure: 'stop' as FailureMode } } } },
       }
 
-      const result = applyConfigOverrides(baseTools, config)
+      const result = applyConfigOverrides(baseTools, config, 'preCommit')
       const phpstan = result.find((t) => t.name === 'PHPStan')
 
       expect(phpstan?.onFailure).toBe('stop')
     })
 
-
     it('should add custom tools', () => {
       const config: HooksConfig = {
-        tools: {
-          CustomLint: {
-            command: 'custom-lint',
-            args: ['--strict'],
-            type: 'node',
-            extensions: ['.custom'],
-            description: 'Custom linter',
+        hooks: {
+          preCommit: {
+            tools: {
+              CustomLint: {
+                command: 'custom-lint',
+                args: ['--strict'],
+                type: 'node',
+                extensions: ['.custom'],
+                description: 'Custom linter',
+              },
+            },
           },
         },
       }
 
-      const result = applyConfigOverrides(baseTools, config)
+      const result = applyConfigOverrides(baseTools, config, 'preCommit')
       const customTool = result.find((t) => t.name === 'CustomLint')
 
       expect(customTool).toBeDefined()
@@ -249,17 +250,21 @@ describe('config.ts', () => {
 
     it('should not add custom tools that are disabled', () => {
       const config: HooksConfig = {
-        tools: {
-          CustomLint: {
-            enabled: false,
-            command: 'custom-lint',
-            type: 'node',
-            extensions: ['.custom'],
+        hooks: {
+          preCommit: {
+            tools: {
+              CustomLint: {
+                enabled: false,
+                command: 'custom-lint',
+                type: 'node',
+                extensions: ['.custom'],
+              },
+            },
           },
         },
       }
 
-      const result = applyConfigOverrides(baseTools, config)
+      const result = applyConfigOverrides(baseTools, config, 'preCommit')
 
       expect(result.find((t) => t.name === 'CustomLint')).toBeUndefined()
     })
@@ -267,12 +272,10 @@ describe('config.ts', () => {
     it('should warn about unknown tool without command', () => {
       const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
       const config: HooksConfig = {
-        tools: {
-          UnknownTool: { args: ['--test'] },
-        },
+        hooks: { preCommit: { tools: { UnknownTool: { args: ['--test'] } } } },
       }
 
-      const result = applyConfigOverrides(baseTools, config)
+      const result = applyConfigOverrides(baseTools, config, 'preCommit')
 
       expect(result.find((t) => t.name === 'UnknownTool')).toBeUndefined()
       expect(consoleSpy).toHaveBeenCalled()
@@ -281,25 +284,24 @@ describe('config.ts', () => {
 
     it('should apply config override with case-insensitive tool name lookup (lowercase)', () => {
       const config: HooksConfig = {
-        tools: {
-          phpstan: { enabled: false },  // lowercase instead of 'PHPStan'
-        },
+        hooks: { preCommit: { tools: { phpstan: { enabled: false } } } }, // lowercase
       }
 
-      const result = applyConfigOverrides(baseTools, config)
+      const result = applyConfigOverrides(baseTools, config, 'preCommit')
 
+      // PHPStan matched case-insensitively and disabled → excluded
       expect(result.find((t) => t.name === 'PHPStan')).toBeUndefined()
-      expect(result.find((t) => t.name === 'ESLint')).toBeDefined()
+      // ESLint not listed in config → not auto-included (config-driven)
+      expect(result.find((t) => t.name === 'ESLint')).toBeUndefined()
+      expect(result).toHaveLength(0)
     })
 
     it('should apply config override with case-insensitive tool name lookup (mixed case)', () => {
       const config: HooksConfig = {
-        tools: {
-          Phpstan: { args: ['analyse', '--level=max'] },  // mixed case
-        },
+        hooks: { preCommit: { tools: { Phpstan: { args: ['analyse', '--level=max'] } } } }, // mixed case
       }
 
-      const result = applyConfigOverrides(baseTools, config)
+      const result = applyConfigOverrides(baseTools, config, 'preCommit')
       const phpstan = result.find((t) => t.name === 'PHPStan')
 
       expect(phpstan?.args).toEqual(['analyse', '--level=max'])
@@ -307,15 +309,194 @@ describe('config.ts', () => {
 
     it('should apply config override with case-insensitive tool name lookup (all caps)', () => {
       const config: HooksConfig = {
-        tools: {
-          ESLINT: { extensions: ['.vue'] },  // all caps instead of 'ESLint'
-        },
+        hooks: { preCommit: { tools: { ESLINT: { extensions: ['.vue'] } } } }, // all caps
       }
 
-      const result = applyConfigOverrides(baseTools, config)
+      const result = applyConfigOverrides(baseTools, config, 'preCommit')
       const eslint = result.find((t) => t.name === 'ESLint')
 
       expect(eslint?.extensions).toEqual(['.vue'])
+    })
+  })
+
+  describe('applyConfigOverrides – per-hook tools', () => {
+    const baseTools: ToolConfig[] = [
+      {
+        name: 'PHPStan',
+        command: 'vendor/bin/phpstan',
+        args: ['analyse'],
+        type: 'php',
+        extensions: ['.php'],
+        description: 'Static analysis',
+      },
+      {
+        name: 'ESLint',
+        command: 'eslint',
+        args: ['--fix'],
+        type: 'node',
+        extensions: ['.js', '.ts'],
+        description: 'JavaScript linting',
+      },
+    ]
+
+    // --- preCommit ---
+
+    it('should return empty array for preCommit when no tools configured', () => {
+      const config: HooksConfig = {}
+
+      const result = applyConfigOverrides(baseTools, config, 'preCommit')
+
+      // Config-driven: no tools listed → nothing runs
+      expect(result).toHaveLength(0)
+    })
+
+    it('should apply hooks.preCommit.tools overrides for preCommit hook', () => {
+      const config: HooksConfig = {
+        hooks: {
+          preCommit: {
+            tools: {
+              PHPStan: { args: ['analyse', '--level=9'] },
+            },
+          },
+        },
+      }
+
+      const result = applyConfigOverrides(baseTools, config, 'preCommit')
+      const phpstan = result.find((t) => t.name === 'PHPStan')
+
+      expect(phpstan?.args).toEqual(['analyse', '--level=9'])
+    })
+
+    it('should include a custom tool listed in hooks.preCommit.tools', () => {
+      const config: HooksConfig = {
+        hooks: {
+          preCommit: {
+            tools: {
+              NewTool: {
+                command: 'new-lint',
+                type: 'node',
+                extensions: ['.ts'],
+              },
+            },
+          },
+        },
+      }
+
+      const result = applyConfigOverrides(baseTools, config, 'preCommit')
+
+      // Only the explicitly listed tool is present (config-driven)
+      expect(result.find((t) => t.name === 'NewTool')).toBeDefined()
+      expect(result).toHaveLength(1)
+    })
+
+    // --- prePush ---
+
+    it('should return empty array for prePush when no hook-specific tools configured', () => {
+      const config: HooksConfig = {}
+
+      const result = applyConfigOverrides(baseTools, config, 'prePush')
+
+      expect(result).toHaveLength(0)
+    })
+
+    it('should return only hook-specific tools for prePush', () => {
+      const config: HooksConfig = {
+        hooks: {
+          prePush: {
+            tools: {
+              PHPStan: { passFiles: false }, // reference existing tool definition
+            },
+          },
+        },
+      }
+
+      const result = applyConfigOverrides(baseTools, config, 'prePush')
+
+      // Only PHPStan should run; ESLint was NOT mentioned
+      expect(result).toHaveLength(1)
+      const phpstan = result.find((t) => t.name === 'PHPStan')
+      expect(phpstan).toBeDefined()
+      expect(phpstan?.passFiles).toBe(false)
+      // Base properties preserved from defaultTools lookup
+      expect(phpstan?.command).toBe('vendor/bin/phpstan')
+    })
+
+    it('should add a brand-new custom tool for prePush', () => {
+      const config: HooksConfig = {
+        hooks: {
+          prePush: {
+            tools: {
+              MyAnalyser: {
+                command: 'vendor/bin/my-analyser',
+                type: 'php',
+                extensions: ['.php'],
+                passFiles: false,
+              },
+            },
+          },
+        },
+      }
+
+      const result = applyConfigOverrides(baseTools, config, 'prePush')
+
+      expect(result).toHaveLength(1)
+      expect(result[0].name).toBe('MyAnalyser')
+      expect(result[0].command).toBe('vendor/bin/my-analyser')
+    })
+
+    it('should not include disabled tools in prePush hook-specific list', () => {
+      const config: HooksConfig = {
+        hooks: {
+          prePush: {
+            tools: {
+              PHPStan: { enabled: false },
+            },
+          },
+        },
+      }
+
+      const result = applyConfigOverrides(baseTools, config, 'prePush')
+
+      expect(result.find((t) => t.name === 'PHPStan')).toBeUndefined()
+    })
+
+    it('should only include tools explicitly listed for prePush', () => {
+      const config: HooksConfig = {
+        hooks: {
+          prePush: {
+            tools: {
+              PHPStan: { passFiles: false },
+            },
+          },
+        },
+      }
+
+      const result = applyConfigOverrides(baseTools, config, 'prePush')
+
+      // ESLint was not listed — should not appear
+      expect(result.find((t) => t.name === 'ESLint')).toBeUndefined()
+      const phpstan = result.find((t) => t.name === 'PHPStan')
+      expect(phpstan?.passFiles).toBe(false)
+    })
+
+    // --- commitMsg ---
+
+    it('should return only hook-specific tools for commitMsg', () => {
+      const config: HooksConfig = {
+        hooks: {
+          commitMsg: {
+            tools: {
+              ESLint: { extensions: ['.ts'] },
+            },
+          },
+        },
+      }
+
+      const result = applyConfigOverrides(baseTools, config, 'commitMsg')
+
+      expect(result).toHaveLength(1)
+      expect(result[0].name).toBe('ESLint')
+      expect(result[0].extensions).toEqual(['.ts'])
     })
   })
 
@@ -324,6 +505,11 @@ describe('config.ts', () => {
       expect(isHookSkippedByConfig('preCommit', {})).toBe(false)
       expect(isHookSkippedByConfig('prePush', {})).toBe(false)
       expect(isHookSkippedByConfig('commitMsg', {})).toBe(false)
+    })
+
+    it('should return false when config is null', () => {
+      expect(isHookSkippedByConfig('preCommit', null)).toBe(false)
+      expect(isHookSkippedByConfig('prePush', null)).toBe(false)
     })
 
     it('should return true when hook is disabled', () => {
@@ -397,6 +583,14 @@ describe('config.ts', () => {
       delete process.env.GIT_HOOKS_VERBOSE
 
       applyVerboseSetting({})
+
+      expect(process.env.GIT_HOOKS_VERBOSE).toBeUndefined()
+    })
+
+    it('should do nothing when config is null', () => {
+      delete process.env.GIT_HOOKS_VERBOSE
+
+      applyVerboseSetting(null)
 
       expect(process.env.GIT_HOOKS_VERBOSE).toBeUndefined()
     })

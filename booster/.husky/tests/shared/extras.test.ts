@@ -143,15 +143,16 @@ describe('extras.ts', () => {
       expect(gitCommitCalls).toHaveLength(0)
     })
 
-    it('should throw if HTML generation fails', async () => {
+    it('should return generated+changed when spec changes (no HTML step)', async () => {
       vi.mocked(fs.pathExists).mockResolvedValue(true)
       vi.mocked(exec)
         .mockResolvedValueOnce({} as any) // generate-api-spec
         .mockResolvedValueOnce({ toString: () => 'openapi/openapi.yml' } as any) // git diff
-        .mockRejectedValueOnce(new Error('html gen failed')) // generate html fails
 
-      await expect(generateApiDocs()).rejects.toThrow('html gen failed')
-      expect(log.error).toHaveBeenCalledWith(expect.stringContaining('failed'))
+      // HTML generation was removed; function should return successfully
+      const result = await generateApiDocs()
+
+      expect(result).toEqual({ generated: true, changed: true, path: 'openapi/openapi.yml' })
     })
 
     it('should throw on spec generation error', async () => {

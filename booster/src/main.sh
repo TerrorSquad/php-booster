@@ -360,6 +360,7 @@ function main() {
     fi
 
     install_node_dependencies
+    generate_hooks_config
 
     # --- Create Version Stamp ---
     local install_mode="full"

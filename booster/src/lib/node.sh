@@ -47,6 +47,29 @@ function update_ignore_files() {
     fi
 }
 
+function generate_hooks_config() {
+    # Only generate if no config file already exists (idempotent)
+    if [ -f ".git-hooks.config.json" ] || [ -f ".githooks.json" ]; then
+        log "  .git-hooks.config.json already exists. Skipping generation."
+        return
+    fi
+
+    local dist=".husky/.git-hooks.config.dist.json"
+    if [ ! -f "$dist" ]; then
+        warn "  Dist config template not found at '$dist'. Skipping config generation."
+        warn "  Run 'npm run hooks:init' manually to generate .git-hooks.config.json."
+        return
+    fi
+
+    cp "$dist" ".git-hooks.config.json" || {
+        warn "  Failed to copy dist config. Run 'npm run hooks:init' manually."
+        return
+    }
+
+    success "Generated .git-hooks.config.json from dist template."
+    info "  Edit it to enable/disable tools for each hook."
+}
+
 function install_node_dependencies() {
     log "Installing Node.js dependencies..."
 

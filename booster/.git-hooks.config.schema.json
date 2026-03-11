@@ -42,73 +42,57 @@
       },
       "additionalProperties": false
     },
-    "tools": {
+    "hooks": {
       "type": "object",
-      "description": "Tool-specific configuration overrides. Tool names are case-insensitive.",
+      "description": "Per-hook configuration. Replaces the old global 'tools' key — configure tools for each hook independently.",
       "properties": {
-        "ESLint": {
-          "$ref": "#/definitions/toolOverride",
-          "description": "ESLint - JavaScript/TypeScript linting (group: lint)"
+        "preCommit": {
+          "$ref": "#/definitions/hookConfig",
+          "description": "Pre-commit hook configuration. All default tools run; overrides are applied on top."
         },
-        "Prettier": {
-          "$ref": "#/definitions/toolOverride",
-          "description": "Prettier - Code formatting (group: format)"
+        "prePush": {
+          "$ref": "#/definitions/hookConfig",
+          "description": "Pre-push hook configuration. ONLY the tools listed here will run as quality checks. Use passFiles:false for whole-project analysis tools."
         },
-        "Stylelint": {
-          "$ref": "#/definitions/toolOverride",
-          "description": "Stylelint - CSS/SCSS linting (group: lint)"
-        },
-        "TypeScript": {
-          "$ref": "#/definitions/toolOverride",
-          "description": "TypeScript - Type checking (group: lint)"
-        },
-        "Markdownlint": {
-          "$ref": "#/definitions/toolOverride",
-          "description": "Markdownlint - Markdown style checker (group: lint)"
-        },
-        "Flatten JSON": {
-          "$ref": "#/definitions/toolOverride",
-          "description": "Flatten JSON - Normalizes JSON files (group: format)"
-        },
-        "PHP Syntax Check": {
-          "$ref": "#/definitions/toolOverride",
-          "description": "PHP Syntax Check - PHP lint (group: lint)"
-        },
-        "Rector": {
-          "$ref": "#/definitions/toolOverride",
-          "description": "Rector - PHP code refactoring (group: refactor)"
-        },
-        "ECS": {
-          "$ref": "#/definitions/toolOverride",
-          "description": "ECS - Easy Coding Standard formatter (group: format)"
-        },
-        "PHPStan": {
-          "$ref": "#/definitions/toolOverride",
-          "description": "PHPStan - PHP static analysis (group: analysis)"
-        },
-        "Psalm": {
-          "$ref": "#/definitions/toolOverride",
-          "description": "Psalm - PHP static analysis (group: analysis)"
-        },
-        "Deptrac": {
-          "$ref": "#/definitions/toolOverride",
-          "description": "Deptrac - Architecture layer dependency checker (group: analysis)"
-        },
-        "PHPUnit": {
-          "$ref": "#/definitions/toolOverride",
-          "description": "PHPUnit - PHP unit testing"
-        },
-        "API Docs": {
-          "$ref": "#/definitions/toolOverride",
-          "description": "API Docs - OpenAPI documentation generation"
+        "commitMsg": {
+          "$ref": "#/definitions/hookConfig",
+          "description": "Commit-msg hook configuration. ONLY the tools listed here will run."
         }
       },
-      "additionalProperties": {
-        "$ref": "#/definitions/customTool"
-      }
+      "additionalProperties": false
     }
   },
   "definitions": {
+    "hookConfig": {
+      "type": "object",
+      "description": "Per-hook configuration",
+      "properties": {
+        "tools": {
+          "type": "object",
+          "description": "Tool overrides/additions scoped to this hook. Tool names are case-insensitive. For pre-commit: all default tools run and these are merged on top. For pre-push/commit-msg: ONLY tools listed here will run.",
+          "properties": {
+            "ESLint": { "$ref": "#/definitions/toolOverride", "description": "ESLint - JavaScript/TypeScript linting (group: lint)" },
+            "Prettier": { "$ref": "#/definitions/toolOverride", "description": "Prettier - Code formatting (group: format)" },
+            "Stylelint": { "$ref": "#/definitions/toolOverride", "description": "Stylelint - CSS/SCSS linting (group: lint)" },
+            "TypeScript": { "$ref": "#/definitions/toolOverride", "description": "TypeScript - Type checking (group: lint)" },
+            "Markdownlint": { "$ref": "#/definitions/toolOverride", "description": "Markdownlint - Markdown style checker (group: lint)" },
+            "Flatten JSON": { "$ref": "#/definitions/toolOverride", "description": "Flatten JSON - Normalizes JSON files (group: format)" },
+            "PHP Syntax Check": { "$ref": "#/definitions/toolOverride", "description": "PHP Syntax Check - PHP lint (group: lint)" },
+            "Rector": { "$ref": "#/definitions/toolOverride", "description": "Rector - PHP code refactoring (group: refactor)" },
+            "ECS": { "$ref": "#/definitions/toolOverride", "description": "ECS - Easy Coding Standard formatter (group: format)" },
+            "PHPStan": { "$ref": "#/definitions/toolOverride", "description": "PHPStan - PHP static analysis (group: analysis)" },
+            "Psalm": { "$ref": "#/definitions/toolOverride", "description": "Psalm - PHP static analysis (group: analysis)" },
+            "Deptrac": { "$ref": "#/definitions/toolOverride", "description": "Deptrac - Architecture layer dependency checker (group: analysis)" },
+            "PHPUnit": { "$ref": "#/definitions/toolOverride", "description": "PHPUnit - PHP unit testing" },
+            "API Docs": { "$ref": "#/definitions/toolOverride", "description": "API Docs - OpenAPI documentation generation" }
+          },
+          "additionalProperties": {
+            "$ref": "#/definitions/customTool"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
     "toolOverride": {
       "type": "object",
       "description": "Override existing tool settings to customize behavior or replace functionality",
@@ -250,9 +234,23 @@
       "skip": {
         "tests": true
       },
-      "tools": {
-        "Psalm": { "enabled": false },
-        "PHPStan": { "args": ["analyse", "--level=9"] }
+      "hooks": {
+        "preCommit": {
+          "tools": {
+            "Psalm": { "enabled": false },
+            "PHPStan": { "args": ["analyse", "--level=9"] }
+          }
+        },
+        "prePush": {
+          "tools": {
+            "PHPStan": { "passFiles": false },
+            "MyCustomAnalyser": {
+              "command": "vendor/bin/my-analyser",
+              "type": "php",
+              "passFiles": false
+            }
+          }
+        }
       }
     }
   ]

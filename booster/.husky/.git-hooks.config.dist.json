@@ -1,0 +1,109 @@
+{
+  "$schema": ".git-hooks.config.schema.json",
+
+  "verbose": false,
+
+  "skip": {
+    "preCommit": false,
+    "prePush": false,
+    "commitMsg": false,
+    "tests": false,
+    "artifacts": false
+  },
+
+  "hooks": {
+    "preCommit": {
+      "tools": {
+        "ESLint": {
+          "command": "eslint",
+          "args": ["--fix", "--cache", "--no-warn-ignored"],
+          "type": "node",
+          "stagesFilesAfter": true,
+          "extensions": [".js", ".jsx", ".ts", ".tsx", ".vue", ".mjs", ".cjs"],
+          "group": "lint"
+        },
+        "Prettier": {
+          "command": "prettier",
+          "args": ["--write", "--ignore-unknown", "--cache"],
+          "type": "node",
+          "stagesFilesAfter": true,
+          "extensions": [".js", ".jsx", ".ts", ".tsx", ".vue", ".mjs", ".cjs", ".json", ".md", ".yml", ".yaml", ".css", ".scss"],
+          "group": "format"
+        },
+        "Stylelint": {
+          "command": "stylelint",
+          "args": ["--fix", "--allow-empty-input", "--cache"],
+          "type": "node",
+          "stagesFilesAfter": true,
+          "extensions": [".vue", ".css", ".scss", ".sass", ".less"],
+          "group": "lint"
+        },
+        "TypeScript": {
+          "command": "tsc",
+          "args": ["--noEmit", "--skipLibCheck"],
+          "type": "node",
+          "passFiles": false,
+          "extensions": [".ts", ".tsx"],
+          "group": "lint",
+          "description": "Type-checking TypeScript files..."
+        },
+        "Markdownlint": {
+          "command": "markdownlint-cli2",
+          "args": [],
+          "type": "node",
+          "extensions": [".md"],
+          "group": "lint"
+        },
+        "PHP Syntax Check": {
+          "command": "php",
+          "args": ["-l", "-d", "display_errors=0"],
+          "type": "php",
+          "runForEachFile": true,
+          "extensions": [".php"],
+          "onFailure": "stop",
+          "group": "lint"
+        },
+        "Rector": {
+          "command": "rector",
+          "args": ["process"],
+          "type": "php",
+          "stagesFilesAfter": true,
+          "extensions": [".php"],
+          "group": "refactor"
+        },
+        "ECS": {
+          "command": "ecs",
+          "args": ["check", "--fix"],
+          "type": "php",
+          "stagesFilesAfter": true,
+          "extensions": [".php"],
+          "group": "format"
+        },
+        "PHPStan": {
+          "command": "phpstan",
+          "args": ["analyse"],
+          "type": "php",
+          "extensions": [".php"],
+          "group": "analysis"
+        },
+        "Psalm": {
+          "command": "psalm",
+          "type": "php",
+          "extensions": [".php"],
+          "group": "analysis"
+        },
+        "Deptrac": {
+          "command": "deptrac",
+          "args": ["analyse", "--no-cache"],
+          "type": "php",
+          "passFiles": false,
+          "extensions": [".php"],
+          "group": "analysis"
+        }
+      }
+    },
+    "prePush": {
+      "tools": {}
+    }
+  }
+}

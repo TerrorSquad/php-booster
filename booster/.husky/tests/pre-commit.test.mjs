@@ -5,6 +5,7 @@ const mocks = {
   getStagedFiles: vi.fn(),
   runQualityChecks: vi.fn(),
   logInfo: vi.fn(),
+  logWarn: vi.fn(),
   loadConfig: vi.fn().mockResolvedValue({}),
   applyConfigOverrides: vi.fn((tools) => tools),
 }
@@ -14,6 +15,7 @@ vi.mock('../shared/index.ts', () => ({
   GitHook: { PreCommit: 'pre-commit' },
   log: {
     info: mocks.logInfo,
+    warn: mocks.logWarn,
   },
   runHook: vi.fn((hook, callback) => callback()),
   runQualityChecks: mocks.runQualityChecks,
@@ -51,5 +53,14 @@ describe('Pre-commit Hook', () => {
     await import('../pre-commit.ts')
 
     expect(mocks.runQualityChecks).toHaveBeenCalledWith(['file1.php', 'file2.ts'], ['mock-tool'])
+  })
+
+  it('should skip quality checks when config is null (no config file)', async () => {
+    mocks.getStagedFiles.mockResolvedValue(['file1.php'])
+    mocks.loadConfig.mockResolvedValue(null)
+
+    await import('../pre-commit.ts')
+
+    expect(mocks.runQualityChecks).not.toHaveBeenCalled()
   })
 })

@@ -198,11 +198,20 @@ interface PreparedTool {
   description: string
 }
 
+// ----------------------------------------------------------------------------
+// allowNoFiles parameter note:
+// When true, tools that have passFiles:false are allowed to run even when there
+// are no matching files (e.g. in a pre-push context where staged files are not
+// relevant).  Tools that DO pass files are still skipped when filteredFiles is
+// empty — there's nothing to analyse.
+// ----------------------------------------------------------------------------
+
 /**
  * Prepare a tool for execution (check skips, filter files, check availability)
  * Returns null if tool should be skipped
+ * @param allowNoFiles When true, tools with passFiles:false run even with an empty files list
  */
-async function prepareTool(tool: ToolConfig, files: string[]): Promise<PreparedTool | null> {
+async function prepareTool(tool: ToolConfig, files: string[], allowNoFiles = false): Promise<PreparedTool | null> {
   // Check if tool is explicitly skipped via env var
   if (isSkipped(tool.name)) {
     log.skip(`${tool.name} skipped (${getSkipEnvVar(tool.name)} environment variable set)`)
@@ -241,7 +250,15 @@ async function prepareTool(tool: ToolConfig, files: string[]): Promise<PreparedT
         })
     : filesToRun;
 
-  if (filteredFiles.length === 0) return null
+  if (filteredFiles.length === 0) {
+    // Allow whole-project tools (passFiles:false) to run with no file context
+    // (e.g. analysis tools configured for pre-push)
+    if (allowNoFiles && tool.passFiles === false) {
+      // Proceed — the tool will be invoked without any file arguments
+    } else {
+      return null
+    }
+  }
 
   // Check binary existence
   if (!(await isToolAvailable(tool))) {
@@ -270,11 +287,18 @@ async function prepareTool(tool: ToolConfig, files: string[]): Promise<PreparedT
  * @returns true if all tools passed, false otherwise
  */
 
-export async function runQualityChecks(files: string[], tools: ToolConfig[]): Promise<boolean> {
+/**
+ * Run all configured quality tools on the provided files
+ *
+ * @param files        List of files to check (may be empty for pre-push whole-project tools)
+ * @param tools        List of tool configurations to run
+ * @param allowNoFiles When true, tools with passFiles:false run even when files is empty
+ */
+export async function runQualityChecks(files: string[], tools: ToolConfig[], allowNoFiles = false): Promise<boolean> {
   let allSuccessful = true
 
   for (const tool of tools) {
-    const prepared = await prepareTool(tool, files)
+    const prepared = await prepareTool(tool, files, allowNoFiles)
     if (!prepared) continue
 
     const { tool: preparedTool, files: filesToRun, description } = prepared
@@ -313,6 +337,13 @@ export async function runHook(hookName: GitHook, fn: () => Promise<boolean>): Pr
 
     // Load config and apply verbose setting
     const config = await loadConfig()
+
+    if (config === null) {
+      log.warn('No .git-hooks.config.json found.')
+      log.info('Run `npm run hooks:init` to generate one. Quality checks skipped.')
+      process.exit(0)
+    }
+
     applyVerboseSetting(config)
 
     // Do not set $.verbose here; always show tool output regardless of verbose flag

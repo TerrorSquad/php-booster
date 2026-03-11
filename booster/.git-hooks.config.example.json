@@ -23,38 +23,61 @@
     "artifacts": false
   },
 
-  "tools": {
-    "// Disable a tool": {
-      "enabled": false
+  "hooks": {
+    "preCommit": {
+      "// Note": "All default tools run; overrides here are merged on top.",
+      "tools": {
+        "// Disable a tool": {
+          "enabled": false
+        },
+
+        "// Override arguments": {
+          "args": ["analyse", "--level=max"]
+        },
+
+        "// Override extensions": {
+          "extensions": [".php", ".phtml"]
+        },
+
+        "// Change failure mode": {
+          "onFailure": "stop"
+        },
+
+        "// Example: Disable Psalm": {
+          "// Psalm": { "enabled": false }
+        },
+
+        "// Example: Increase PHPStan level": {
+          "// PHPStan": { "args": ["analyse", "--level=9"] }
+        },
+
+        "// Example: Add custom tool": {
+          "// CustomLinter": {
+            "command": "vendor/bin/custom-lint",
+            "args": ["--strict"],
+            "type": "php",
+            "extensions": [".php"],
+            "description": "Custom PHP linter"
+          }
+        }
+      }
     },
 
-    "// Override arguments": {
-      "args": ["analyse", "--level=max"]
-    },
+    "prePush": {
+      "// Note": "ONLY the tools listed here run during pre-push.",
+      "// Note2": "Use passFiles:false for whole-project analysis (PHPStan, Psalm, Deptrac, etc.).",
+      "tools": {
+        "// Example: Run full PHPStan on push (no file-by-file filtering)": {
+          "// PHPStan": { "passFiles": false }
+        },
 
-    "// Override extensions": {
-      "extensions": [".php", ".phtml"]
-    },
-
-    "// Change failure mode": {
-      "onFailure": "stop"
-    },
-
-    "// Example: Disable Psalm": {
-      "// Psalm": { "enabled": false }
-    },
-
-    "// Example: Increase PHPStan level": {
-      "// PHPStan": { "args": ["analyse", "--level=9"] }
-    },
-
-    "// Example: Add custom tool": {
-      "// CustomLinter": {
-        "command": "vendor/bin/custom-lint",
-        "args": ["--strict"],
-        "type": "php",
-        "extensions": [".php"],
-        "description": "Custom PHP linter"
+        "// Example: Run a custom tool only on push": {
+          "// MyAnalyser": {
+            "command": "vendor/bin/my-analyser",
+            "type": "php",
+            "passFiles": false
+          }
+        }
       }
     }
   }

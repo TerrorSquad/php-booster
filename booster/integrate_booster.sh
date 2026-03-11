@@ -798,14 +798,15 @@ function copy_files() {
         mkdir -p .husky
         rm -rf .husky/tests
 
-        # Copy everything except the 'tests' directory
-        for item in "$husky_src"/*; do
+        # Copy everything except the 'tests' directory.
+        # Use find to include dotfiles (shell globs exclude them by default).
+        while IFS= read -r item; do
             local item_name
             item_name=$(basename "$item")
             if [ "$item_name" != "tests" ]; then
                 cp -R "$item" .husky/
             fi
-        done
+        done < <(find "$husky_src" -maxdepth 1 -mindepth 1)
 
         # Set execute permissions for scripts and hooks
         find ".husky" -type f \( -name "*.sh" -o -name "*.bash" -o -name "*.mjs" -o -name "pre-commit" -o -name "commit-msg" -o -name "pre-push" \) -exec chmod +x {} \;
@@ -1709,6 +1710,29 @@ function update_ignore_files() {
     fi
 }
 
+function generate_hooks_config() {
+    # Only generate if no config file already exists (idempotent)
+    if [ -f ".git-hooks.config.json" ] || [ -f ".githooks.json" ]; then
+        log "  .git-hooks.config.json already exists. Skipping generation."
+        return
+    fi
+
+    local dist=".husky/.git-hooks.config.dist.json"
+    if [ ! -f "$dist" ]; then
+        warn "  Dist config template not found at '$dist'. Skipping config generation."
+        warn "  Run 'npm run hooks:init' manually to generate .git-hooks.config.json."
+        return
+    fi
+
+    cp "$dist" ".git-hooks.config.json" || {
+        warn "  Failed to copy dist config. Run 'npm run hooks:init' manually."
+        return
+    }
+
+    success "Generated .git-hooks.config.json from dist template."
+    info "  Edit it to enable/disable tools for each hook."
+}
+
 function install_node_dependencies() {
     log "Installing Node.js dependencies..."
 
@@ -2093,6 +2117,7 @@ function main() {
     fi
 
     install_node_dependencies
+    generate_hooks_config
 
     # --- Create Version Stamp ---
     local install_mode="full"

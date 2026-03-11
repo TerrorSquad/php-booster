@@ -122,6 +122,9 @@ class TestOrchestrator:
         ".husky/commit-msg",
         ".husky/shared/index.ts",
         ".git-hooks.config.example.json",
+        ".husky/.git-hooks.config.dist.json",
+        ".husky/generate-config.ts",
+        ".git-hooks.config.json",
     ]
 
     def _verify_expected_files(self, test_dir: Path) -> List[str]:

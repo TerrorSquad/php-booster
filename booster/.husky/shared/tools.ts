@@ -1,12 +1,14 @@
 import type { ToolConfig } from './types.ts'
 
 /**
- * Centralized tool configurations
+ * Tool definition registry for git hooks.
  *
- * To add a new tool:
- * 1. Add a new object to the TOOLS array
- * 2. Configure the tool properties (name, command, args, etc.)
- * 3. Ensure the tool is installed in your project (package.json or composer.json)
+ * This array is a **pure lookup registry** — tools listed here are NOT
+ * automatically executed. They serve as built-in definitions that users can
+ * reference by name in `.git-hooks.config.json` without repeating every field.
+ *
+ * To run tools, list them under `hooks.<hookName>.tools` in your config file.
+ * Run `npm run hooks:init` to generate a starter config from the dist template.
  *
  * Tool groups for selective execution (HOOKS_ONLY env var):
  * - 'format': Formatting tools (Prettier, ECS)
@@ -16,7 +18,7 @@ import type { ToolConfig } from './types.ts'
  */
 
 /**
- * All quality tools (JS/TS and PHP)
+ * Built-in tool definitions (registry / lookup only — not auto-run)
  */
 export const TOOLS: ToolConfig[] = [
   // JavaScript/TypeScript Tools

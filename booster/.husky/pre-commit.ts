@@ -36,9 +36,12 @@ await runHook(GitHook.PreCommit, async () => {
 
   log.info(`Found ${files.length} staged file(s): ${files.join(', ')}`)
 
-  // Load config and apply overrides to tools
+  // Load config (null means no config file found — runHook already handled the
+  // warning/exit, but we guard here too in case this function is called directly)
   const config = await loadConfig()
-  const tools = applyConfigOverrides(TOOLS, config)
+  if (config === null) return true
+
+  const tools = applyConfigOverrides(TOOLS, config, 'preCommit')
 
   const success = await runQualityChecks(files, tools)
 
