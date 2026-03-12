@@ -25,8 +25,6 @@ mkdir -p "$OUTPUT_DIR"
 # Files/dirs to include in the package
 INCLUDE_ITEMS=$(cat <<'EOF'
 .editorconfig
-.git-hooks.config.example.json
-.git-hooks.config.schema.json
 .github
 .gitignore
 .husky

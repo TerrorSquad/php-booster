@@ -1,5 +1,5 @@
 {
-  "$schema": ".git-hooks.config.schema.json",
+  "$schema": ".husky/.git-hooks.config.schema.json",
 
   "verbose": false,
 

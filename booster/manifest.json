@@ -28,8 +28,7 @@
       "items": [
         "commitlint.config.ts",
         "validate-branch-name.config.cjs",
-        "renovate.json",
-        ".git-hooks.config.example.json"
+        "renovate.json"
       ]
     },
     "php": {

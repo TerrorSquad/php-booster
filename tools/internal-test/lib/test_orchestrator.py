@@ -121,7 +121,7 @@ class TestOrchestrator:
         "openapi/openapi.yml",
         ".husky/commit-msg",
         ".husky/shared/index.ts",
-        ".git-hooks.config.example.json",
+        ".husky/.git-hooks.config.example.json",
         ".husky/.git-hooks.config.dist.json",
         ".husky/generate-config.ts",
         ".git-hooks.config.json",

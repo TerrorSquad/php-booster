@@ -105,13 +105,15 @@ function update_hooks_only() {
         mkdir -p .husky
         rm -rf .husky/tests
 
-        # Copy everything except the 'tests' directory
-        for item in "$husky_src"/*; do
-            local item_name=$(basename "$item")
+        # Copy everything except the 'tests' directory.
+        # Use find to include dotfiles (shell globs exclude them by default).
+        while IFS= read -r item; do
+            local item_name
+            item_name=$(basename "$item")
             if [ "$item_name" != "tests" ]; then
                 cp -R "$item" .husky/
             fi
-        done
+        done < <(find "$husky_src" -maxdepth 1 -mindepth 1)
 
         # Set execute permissions for scripts and hooks
         find ".husky" -type f \( -name "*.sh" -o -name "*.bash" -o -name "*.mjs" -o -name "pre-commit" -o -name "commit-msg" -o -name "pre-push" \) -exec chmod +x {} \;

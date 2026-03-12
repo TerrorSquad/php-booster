@@ -66,7 +66,7 @@ Create a `.git-hooks.config.json` file (or `.githooks.json`) in the project root
 
 ```json
 {
-  "$schema": "https://raw.githubusercontent.com/TerrorSquad/php-booster/main/booster/.git-hooks.config.schema.json",
+  "$schema": "https://raw.githubusercontent.com/TerrorSquad/php-booster/main/booster/.husky/.git-hooks.config.schema.json",
   "verbose": false,
   "skip": {
     "preCommit": false,

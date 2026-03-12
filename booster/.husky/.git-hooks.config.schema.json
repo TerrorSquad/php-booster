@@ -48,15 +48,15 @@
       "properties": {
         "preCommit": {
           "$ref": "#/definitions/hookConfig",
-          "description": "Pre-commit hook configuration. All default tools run; overrides are applied on top."
+          "description": "Pre-commit hook configuration. Only tools listed under 'tools' will run."
         },
         "prePush": {
           "$ref": "#/definitions/hookConfig",
-          "description": "Pre-push hook configuration. ONLY the tools listed here will run as quality checks. Use passFiles:false for whole-project analysis tools."
+          "description": "Pre-push hook configuration. Only tools listed under 'tools' will run. Use passFiles:false for whole-project analysis tools."
         },
         "commitMsg": {
           "$ref": "#/definitions/hookConfig",
-          "description": "Commit-msg hook configuration. ONLY the tools listed here will run."
+          "description": "Commit-msg hook configuration. Only tools listed under 'tools' will run."
         }
       },
       "additionalProperties": false
@@ -69,7 +69,7 @@
       "properties": {
         "tools": {
           "type": "object",
-          "description": "Tool overrides/additions scoped to this hook. Tool names are case-insensitive. For pre-commit: all default tools run and these are merged on top. For pre-push/commit-msg: ONLY tools listed here will run.",
+          "description": "Tools to run for this hook. Only tools listed here will execute. Built-in tools can be referenced by name — registry definitions fill in defaults. Custom tools require 'command', 'type', and 'extensions'.",
           "properties": {
             "ESLint": { "$ref": "#/definitions/toolOverride", "description": "ESLint - JavaScript/TypeScript linting (group: lint)" },
             "Prettier": { "$ref": "#/definitions/toolOverride", "description": "Prettier - Code formatting (group: format)" },
