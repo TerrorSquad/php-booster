@@ -4,8 +4,7 @@
  * Generate .git-hooks.config.json from the dist template.
  *
  * Usage:
- *   zx .husky/generate-config.ts        # interactive
- *   npm run hooks:init                   # same via package.json script
+ *   npx zx .husky/generate-config.ts    # interactive
  */
 
 import { chalk, fs } from 'zx'
@@ -46,4 +45,4 @@ await fs.writeFile(TARGET_PATH, distContents, 'utf-8')
 
 console.log(chalk.green('✓ Created .git-hooks.config.json'))
 console.log(chalk.gray('  Edit it to enable/disable tools for each hook.'))
-console.log(chalk.gray('  Run `npm run hooks:init` again to reset to defaults.'))
+console.log(chalk.gray('  Run `npx zx .husky/generate-config.ts` again to reset to defaults.'))

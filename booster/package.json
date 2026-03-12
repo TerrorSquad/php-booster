@@ -5,7 +5,6 @@
   "version": "2.7.0",
   "scripts": {
     "commit": "commit",
-    "hooks:init": "zx .husky/generate-config.ts",
     "test": "vitest run .husky/tests",
     "test:coverage": "vitest run .husky/tests --coverage",
     "prepare": "husky || true"

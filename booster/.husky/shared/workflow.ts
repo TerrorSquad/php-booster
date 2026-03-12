@@ -340,7 +340,7 @@ export async function runHook(hookName: GitHook, fn: () => Promise<boolean>): Pr
 
     if (config === null) {
       log.warn('No .git-hooks.config.json found.')
-      log.info('Run `npm run hooks:init` to generate one. Quality checks skipped.')
+      log.info('Run `npx zx .husky/generate-config.ts` to generate one. Quality checks skipped.')
       process.exit(0)
     }
 

@@ -8,7 +8,7 @@ import type { ToolConfig } from './types.ts'
  * reference by name in `.git-hooks.config.json` without repeating every field.
  *
  * To run tools, list them under `hooks.<hookName>.tools` in your config file.
- * Run `npm run hooks:init` to generate a starter config from the dist template.
+ * Run `npx zx .husky/generate-config.ts` to generate a starter config from the dist template.
  *
  * Tool groups for selective execution (HOOKS_ONLY env var):
  * - 'format': Formatting tools (Prettier, ECS)

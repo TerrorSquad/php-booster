@@ -57,12 +57,12 @@ function generate_hooks_config() {
     local dist=".husky/.git-hooks.config.dist.json"
     if [ ! -f "$dist" ]; then
         warn "  Dist config template not found at '$dist'. Skipping config generation."
-        warn "  Run 'npm run hooks:init' manually to generate .git-hooks.config.json."
+        warn "  Run 'npx zx .husky/generate-config.ts' manually to generate .git-hooks.config.json."
         return
     fi
 
     cp "$dist" ".git-hooks.config.json" || {
-        warn "  Failed to copy dist config. Run 'npm run hooks:init' manually."
+        warn "  Failed to copy dist config. Run 'npx zx .husky/generate-config.ts' manually."
         return
     }
 
