@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.8.0](https://github.com/TerrorSquad/php-booster/compare/v2.7.0...v2.8.0) (2026-03-12)
+
+
+### Features
+
+* **hooks:** make hook tooling config-driven ([8cd50a7](https://github.com/TerrorSquad/php-booster/commit/8cd50a75859a796a2705334b1fcae078d21ff45b))
+* **hooks:** update git hooks configuration and schema files ([ccb0f12](https://github.com/TerrorSquad/php-booster/commit/ccb0f1273ffdd67b7bf1be3d3d88bde0c330ff0e))
+
 ## [2.7.0](https://github.com/TerrorSquad/php-booster/compare/v2.6.0...v2.7.0) (2026-03-09)
 
 
