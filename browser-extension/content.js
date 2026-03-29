@@ -75,9 +75,6 @@ function buildCSS(scheme) {
     a:visited, a:visited * {
       color: ${colors.linkVisited} !important;
     }
-    img, video, picture, canvas, svg:not(:root) {
-      /* Preserve media elements */
-    }
     input, textarea, select, button {
       background-color: ${colors.border} !important;
       color: ${colors.text} !important;
@@ -89,12 +86,13 @@ function buildCSS(scheme) {
     div, section, article, aside, header, footer, main, nav,
     p, span, li, ul, ol, dl, dt, dd,
     h1, h2, h3, h4, h5, h6,
-    blockquote, pre, code, figure, figcaption, details, summary {
+    blockquote, figure, figcaption, details, summary {
       background-color: transparent !important;
       color: inherit !important;
     }
     pre, code {
       background-color: ${colors.border} !important;
+      color: inherit !important;
     }
   `;
 }
