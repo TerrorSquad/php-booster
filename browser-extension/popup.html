@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dark Mode Toggle</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <div class="container">
+      <h1>Dark Mode</h1>
+
+      <div class="toggle-row">
+        <label class="toggle" for="darkModeToggle">
+          <input type="checkbox" id="darkModeToggle" />
+          <span class="slider"></span>
+        </label>
+        <span id="statusLabel" class="status-label">Off</span>
+      </div>
+
+      <h2>Color Scheme</h2>
+
+      <div id="schemeList" class="scheme-list">
+        <button class="scheme-btn" data-scheme="default-dark">
+          <span class="swatch" style="background: #1a1a2e"></span>
+          Default Dark
+        </button>
+        <button class="scheme-btn" data-scheme="solarized-dark">
+          <span class="swatch" style="background: #002b36"></span>
+          Solarized Dark
+        </button>
+        <button class="scheme-btn" data-scheme="nord">
+          <span class="swatch" style="background: #2e3440"></span>
+          Nord
+        </button>
+        <button class="scheme-btn" data-scheme="dracula">
+          <span class="swatch" style="background: #282a36"></span>
+          Dracula
+        </button>
+        <button class="scheme-btn" data-scheme="midnight-blue">
+          <span class="swatch" style="background: #0d1b2a"></span>
+          Midnight Blue
+        </button>
+        <button class="scheme-btn" data-scheme="sepia">
+          <span class="swatch" style="background: #2b2118"></span>
+          Sepia
+        </button>
+      </div>
+    </div>
+    <script src="popup.js"></script>
+  </body>
+</html>

@@ -1,0 +1,134 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  width: 280px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+  background: #1e1e2e;
+  color: #cdd6f4;
+  padding: 16px;
+}
+
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+h1 {
+  font-size: 18px;
+  font-weight: 600;
+  text-align: center;
+}
+
+h2 {
+  font-size: 13px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #a6adc8;
+}
+
+/* Toggle switch */
+.toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.toggle {
+  position: relative;
+  display: inline-block;
+  width: 48px;
+  height: 26px;
+}
+
+.toggle input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  inset: 0;
+  background-color: #45475a;
+  border-radius: 26px;
+  transition: background-color 0.25s ease;
+}
+
+.slider::before {
+  content: "";
+  position: absolute;
+  height: 20px;
+  width: 20px;
+  left: 3px;
+  bottom: 3px;
+  background-color: #cdd6f4;
+  border-radius: 50%;
+  transition: transform 0.25s ease;
+}
+
+.toggle input:checked + .slider {
+  background-color: #89b4fa;
+}
+
+.toggle input:checked + .slider::before {
+  transform: translateX(22px);
+}
+
+.status-label {
+  font-size: 14px;
+  font-weight: 500;
+  min-width: 24px;
+}
+
+/* Color scheme buttons */
+.scheme-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.scheme-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 12px;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  background: #313244;
+  color: #cdd6f4;
+  font-size: 13px;
+  cursor: pointer;
+  transition:
+    border-color 0.2s ease,
+    background-color 0.2s ease;
+}
+
+.scheme-btn:hover {
+  background: #45475a;
+}
+
+.scheme-btn.active {
+  border-color: #89b4fa;
+  background: #45475a;
+}
+
+.swatch {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  flex-shrink: 0;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
