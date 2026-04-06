@@ -9,8 +9,8 @@
     }
   ],
   "require-dev": {
-    "rector/rector": "^2.3.9",
-    "phpstan/phpstan": "^2.1.44",
+    "rector/rector": "^2.4.0",
+    "phpstan/phpstan": "^2.1.46",
     "symplify/easy-coding-standard": "^13.0.4",
     "zircote/swagger-php": "^6.0.6",
     "psalm/phar": "^6.16.1",
