@@ -9,12 +9,12 @@
     }
   ],
   "require-dev": {
-    "rector/rector": "^2.4.2",
-    "phpstan/phpstan": "^2.1.54",
-    "symplify/easy-coding-standard": "^13.1.2",
+    "rector/rector": "^2.4.5",
+    "phpstan/phpstan": "^2.2.1",
+    "symplify/easy-coding-standard": "^13.1.5",
     "zircote/swagger-php": "^6.1.2",
     "psalm/phar": "^6.16.1",
-    "deptrac/deptrac": "^4.6.0"
+    "deptrac/deptrac": "^4.6.1"
   },
   "scripts": {
     "generate-api-spec": "php openapi/api.php",
