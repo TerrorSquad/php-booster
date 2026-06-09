@@ -45,15 +45,7 @@ class IntegrationVerifier:
 
         # Check expected files
         expected_files = [
-            ".husky/commit-msg",
-            ".husky/pre-commit",
-            ".husky/pre-push",
-            ".husky/commit-msg.ts",
-            ".husky/pre-commit.ts",
-            ".husky/pre-push.ts",
-            ".husky/shared/index.ts",
             "validate-branch-name.config.cjs",
-            "package.json",
             "renovate.json",
             "deptrac.yaml",
         ]

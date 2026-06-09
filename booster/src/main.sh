@@ -8,14 +8,13 @@ function show_help() {
     echo "OPTIONS:"
     echo "  -I          Run in interactive mode (recommended for first-time setup)"
     echo "  -N          Non-interactive mode (skip all prompts, use defaults)"
-    echo "  -J          JavaScript/TypeScript only mode (hooks only, no PHP tools)"
+    echo "  -J          JavaScript/TypeScript only mode (no PHP tools)"
     echo "  -v          Enable verbose logging"
     echo "  -c          Skip cleanup (preserve temporary files for debugging)"
     echo "  -i          Show version information and exit"
     echo "  -h          Show this help message and exit"
     echo ""
     echo "PARTIAL UPDATE OPTIONS (for existing installations):"
-    echo "  --update-hooks    Update only Git hooks (.husky directory)"
     echo "  --update-configs  Update only config files (commitlint, validate-branch-name, etc.)"
     echo "  --update-deps     Update only dependencies (composer/npm packages)"
     echo "  --ignore-platform-reqs Ignore platform requirements (for composer)"
@@ -31,10 +30,9 @@ function show_help() {
     echo "EXAMPLES:"
     echo "  $0              # Run integration with default settings"
     echo "  $0 -I           # Run in interactive mode (guided setup)"
-    echo "  $0 -J           # Install hooks only (for JS/TS projects)"
+    echo "  $0 -J           # JS/TS only mode (skip PHP tools)"
     echo "  $0 -v           # Run with verbose output"
     echo "  $0 -i           # Show version information"
-    echo "  $0 --update-hooks    # Update Git hooks only"
     echo "  $0 --update-configs  # Update config files only"
     echo ""
     echo "ENVIRONMENT VARIABLES:"
@@ -79,53 +77,9 @@ function show_version_info_and_exit() {
 # --- Main Execution ---
 
 # Partial update mode flags
-UPDATE_HOOKS_ONLY=false
 UPDATE_CONFIGS_ONLY=false
 IGNORE_PLATFORM_REQS=false
 UPDATE_DEPS_ONLY=false
-
-# --- Partial Update Functions ---
-
-function update_hooks_only() {
-    log "Starting partial update: Git hooks only..."
-
-    download_php_booster
-
-    local husky_src="${BOOSTER_INTERNAL_PATH}/.husky"
-    if [ -d "$husky_src" ]; then
-        log "Updating .husky directory..."
-
-        # Backup existing husky if it exists
-        if [ -d ".husky" ]; then
-            rm -rf ".husky.bak"
-            mv ".husky" ".husky.bak"
-            log "  Backed up existing .husky to .husky.bak"
-        fi
-
-        mkdir -p .husky
-        rm -rf .husky/tests
-
-        # Copy everything except the 'tests' directory.
-        # Use find to include dotfiles (shell globs exclude them by default).
-        while IFS= read -r item; do
-            local item_name
-            item_name=$(basename "$item")
-            if [ "$item_name" != "tests" ]; then
-                cp -R "$item" .husky/
-            fi
-        done < <(find "$husky_src" -maxdepth 1 -mindepth 1)
-
-        # Set execute permissions for scripts and hooks
-        find ".husky" -type f \( -name "*.sh" -o -name "*.bash" -o -name "*.mjs" -o -name "pre-commit" -o -name "commit-msg" -o -name "pre-push" \) -exec chmod +x {} \;
-
-        # Remove backup on success
-        rm -rf ".husky.bak"
-
-        success "Git hooks updated successfully."
-    else
-        error "Could not find .husky directory in booster."
-    fi
-}
 
 function update_configs_only() {
     log "Starting partial update: Config files only..."
@@ -208,9 +162,6 @@ function main() {
     local args=()
     for arg in "$@"; do
         case $arg in
-            --update-hooks)
-                UPDATE_HOOKS_ONLY=true
-                ;;
             --update-configs)
                 UPDATE_CONFIGS_ONLY=true
                 ;;
@@ -244,20 +195,16 @@ function main() {
     shift $((OPTIND - 1))
 
     # --- Handle Partial Update Modes ---
-    if [ "$UPDATE_HOOKS_ONLY" = true ] || [ "$UPDATE_CONFIGS_ONLY" = true ] || [ "$UPDATE_DEPS_ONLY" = true ]; then
+    if [ "$UPDATE_CONFIGS_ONLY" = true ] || [ "$UPDATE_DEPS_ONLY" = true ]; then
         log "Running in partial update mode..."
 
         # Check for existing booster installation
-        if [ ! -f ".booster-version" ] && [ ! -d ".husky" ]; then
+        if [ ! -f ".booster-version" ]; then
             warn "No existing booster installation detected. Running partial update anyway..."
         fi
 
         IS_DDEV_PROJECT=$(is_ddev_project)
         check_dependencies
-
-        if [ "$UPDATE_HOOKS_ONLY" = true ]; then
-            update_hooks_only
-        fi
 
         if [ "$UPDATE_CONFIGS_ONLY" = true ]; then
             update_configs_only
@@ -282,7 +229,7 @@ function main() {
 
     # Determine installation mode
     if [ "$HOOKS_ONLY_MODE" = true ]; then
-        log "Starting php-booster integration (hooks-only mode for JS/TS projects)..."
+        log "Starting php-booster integration (JS/TS only mode)..."
     else
         log "Starting php-booster integration..."
     fi
@@ -297,7 +244,7 @@ function main() {
     fi
 
     if [ "$HOOKS_ONLY_MODE" = true ]; then
-        log "Hooks-only mode: PHP tools will be skipped."
+        log "JS/TS only mode: PHP tools will be skipped."
     elif [ $IS_DDEV_PROJECT -eq 1 ]; then
         log "DDEV project detected."
     else
@@ -322,7 +269,6 @@ function main() {
     fi
 
     copy_files
-    update_package_json
     update_readme
     update_gitignore
 
@@ -358,25 +304,21 @@ function main() {
         add_code_quality_tools # Merges composer scripts & installs deps
         init_deptrac
     else
-        log "Skipping PHP tools installation (hooks-only mode)."
+        log "Skipping PHP tools installation (JS/TS only mode)."
     fi
 
     install_node_dependencies
-    generate_hooks_config
 
     # --- Create Version Stamp ---
     local install_mode="full"
     if [ "$HOOKS_ONLY_MODE" = true ]; then
-        install_mode="hooks-only"
+        install_mode="js-only"
     fi
     create_version_stamp "$current_version" "$install_mode"
 
     success "Integration process completed."
 
-    if [ "$HOOKS_ONLY_MODE" = true ]; then
-        success "Hooks-only installation complete. Git hooks are now active for JS/TS projects."
-        info "Available tools: ESLint, Prettier, Stylelint, TypeScript (if tsconfig.json exists)"
-    elif [ $IS_DDEV_PROJECT -eq 1 ]; then
+    if [ $IS_DDEV_PROJECT -eq 1 ]; then
         success "Please run 'ddev restart' to apply the DDEV configuration changes."
     fi
 

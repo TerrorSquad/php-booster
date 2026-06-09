@@ -9,8 +9,7 @@
       ".github",
       ".vscode",
       ".phpstorm",
-      "bin",
-      ".husky"
+      "bin"
     ]
   },
 
@@ -42,14 +41,6 @@
         "psalm.xml",
         "deptrac.yaml",
         "sonar-project.properties"
-      ]
-    },
-    "packageManagement": {
-      "description": "Package manager configuration files",
-      "items": [
-        "package.json",
-        "pnpm-workspace.yaml",
-        "pnpm-lock.dist.yaml"
       ]
     },
     "openapi": {

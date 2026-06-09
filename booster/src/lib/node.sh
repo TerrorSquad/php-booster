@@ -1,85 +1,15 @@
-function update_ignore_files() {
-    log "Updating ignore files to exclude .husky..."
-
-    # 1. Update tsconfig.json if it exists
-    if [ -f "tsconfig.json" ]; then
-        log "Updating tsconfig.json to exclude .husky..."
-        if command -v node >/dev/null 2>&1; then
-            node -e "
-            const fs = require('fs');
-            try {
-                const config = JSON.parse(fs.readFileSync('tsconfig.json', 'utf8'));
-                if (!config.exclude) config.exclude = [];
-                if (!config.exclude.includes('.husky')) {
-                    config.exclude.push('.husky');
-                    fs.writeFileSync('tsconfig.json', JSON.stringify(config, null, 2));
-                    console.log('Added .husky to tsconfig.json exclude list');
-                }
-            } catch (e) {
-                console.error('Failed to update tsconfig.json:', e);
-            }
-            "
-        else
-            warn "Node.js not found. Skipping tsconfig.json update."
-        fi
-    fi
-
-    # 2. Update .prettierignore
-    if [ -f ".prettierignore" ]; then
-        if ! grep -q ".husky" ".prettierignore"; then
-            echo -e "\n.husky" >> ".prettierignore"
-            log "Added .husky to .prettierignore"
-        fi
-    fi
-
-    # 3. Update .eslintignore or check Flat Config
-    # Check for Flat Config files
-    if ls eslint.config.* 1>/dev/null 2>&1; then
-        # Check if '.husky' is mentioned in any eslint config file
-        if ! grep -q "\.husky" eslint.config.* 2>/dev/null; then
-             warn "ESLint Flat Config detected. Please ensure '.husky' is added to 'ignores' in your configuration."
-        fi
-    elif [ -f ".eslintignore" ]; then
-        if ! grep -q ".husky" ".eslintignore"; then
-            echo -e "\n.husky" >> ".eslintignore"
-            log "Added .husky to .eslintignore"
-        fi
-    fi
-}
-
-function generate_hooks_config() {
-    # Only generate if no config file already exists (idempotent)
-    if [ -f ".git-hooks.config.json" ] || [ -f ".githooks.json" ]; then
-        log "  .git-hooks.config.json already exists. Skipping generation."
-        return
-    fi
-
-    local dist=".husky/.git-hooks.config.dist.json"
-    if [ ! -f "$dist" ]; then
-        warn "  Dist config template not found at '$dist'. Skipping config generation."
-        warn "  Run 'npx zx .husky/generate-config.ts' manually to generate .git-hooks.config.json."
-        return
-    fi
-
-    cp "$dist" ".git-hooks.config.json" || {
-        warn "  Failed to copy dist config. Run 'npx zx .husky/generate-config.ts' manually."
-        return
-    }
-
-    success "Generated .git-hooks.config.json from dist template."
-    info "  Edit it to enable/disable tools for each hook."
-}
-
 function install_node_dependencies() {
     log "Installing Node.js dependencies..."
 
-    # Update ignore files (tsconfig, eslint, prettier) to ignore .husky
-    update_ignore_files
+    if [ ! -f "package.json" ]; then
+        log "No package.json found. Skipping Node.js dependency installation."
+        return
+    fi
 
     # Check if pnpm is available
     if ! command -v pnpm >/dev/null 2>&1; then
         warn "pnpm not found. Skipping Node.js dependency installation."
-        warn "Please install pnpm and run 'pnpm install' manually to enable git hooks."
+        warn "Please install pnpm and run 'pnpm install' manually."
         return
     fi
 

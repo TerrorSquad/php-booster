@@ -737,11 +737,6 @@ function copy_files() {
     for item in "${top_level[@]}"; do
         local src_path="${BOOSTER_INTERNAL_PATH}/${item}"
 
-        if [ "$item" = ".husky" ]; then
-            log "  Skipping generic copy for '.husky'; handled by filtered hook copy."
-            continue
-        fi
-
         if [ -e "$src_path" ]; then
             if [ -d "$src_path" ]; then
                 # It's a directory
@@ -791,30 +786,7 @@ function copy_files() {
         fi
     done
 
-    # Copy .husky directory
-    local husky_src="${BOOSTER_INTERNAL_PATH}/.husky"
-    if [ -d "$husky_src" ]; then
-        log "  Copying .husky directory"
-        mkdir -p .husky
-        rm -rf .husky/tests
-
-        # Copy everything except the 'tests' directory.
-        # Use find to include dotfiles (shell globs exclude them by default).
-        while IFS= read -r item; do
-            local item_name
-            item_name=$(basename "$item")
-            if [ "$item_name" != "tests" ]; then
-                cp -R "$item" .husky/
-            fi
-        done < <(find "$husky_src" -maxdepth 1 -mindepth 1)
-
-        # Set execute permissions for scripts and hooks
-        find ".husky" -type f \( -name "*.sh" -o -name "*.bash" -o -name "*.mjs" -o -name "pre-commit" -o -name "commit-msg" -o -name "pre-push" \) -exec chmod +x {} \;
-    else
-        warn "  Expected directory missing: .husky"
-    fi
-
-    # Copy validate-branch-name config (needed by hooks & scripts)
+    # Copy validate-branch-name config (needed by scripts)
     local branch_cfg="${BOOSTER_INTERNAL_PATH}/validate-branch-name.config.cjs"
     if [ -f "$branch_cfg" ]; then
         cp "$branch_cfg" . || warn "Failed to copy validate-branch-name.config.cjs"
@@ -847,85 +819,6 @@ function copy_files() {
     success "Common files copied (tools filtered to runtime essentials)."
 }
 
-function update_package_json() {
-    log "Updating package.json..."
-    local project_pkg="package.json"
-    local booster_pkg="${BOOSTER_INTERNAL_PATH}/package.json"
-    local booster_commitlint="${BOOSTER_INTERNAL_PATH}/commitlint.config.ts"
-    local tmp_pkg="package.json.tmp"
-
-    if [ ! -f "$booster_pkg" ]; then
-        warn "Booster package.json '$booster_pkg' not found. Skipping update."
-        return
-    fi
-
-    if [ ! -f "$project_pkg" ]; then
-        log "'$project_pkg' not found. Copying from booster..."
-        # Filter scripts using whitelist and devDependencies using blacklist when creating new package.json
-        jq '
-            ["commit", "prepare"] as $script_whitelist |
-            ["vitest", "@vitest/coverage-v8"] as $dev_blacklist |
-            .scripts |= with_entries(select(.key as $k | $script_whitelist | index($k))) |
-            .devDependencies |= with_entries(select(.key as $k | ($dev_blacklist | index($k) | not)))
-        ' "$booster_pkg" > "$project_pkg" || error "Failed to create package.json using jq."
-        success "package.json created from booster (with filtered scripts and dependencies)."
-    else
-        log "'$project_pkg' already exists. Merging scripts, devDependencies, and sections..."
-        # Merge using jq: project + booster (booster overwrites simple keys, merges objects)
-        # This merges top-level objects like scripts, devDependencies
-        jq -s '
-            .[0] as $proj | .[1] as $booster |
-            ["commit", "prepare"] as $script_whitelist |
-            ["vitest", "@vitest/coverage-v8"] as $dev_blacklist |
-
-            ($booster.scripts // {} | with_entries(select(.key as $k | $script_whitelist | index($k)))) as $booster_scripts |
-            ($booster.devDependencies // {} | with_entries(select(.key as $k | ($dev_blacklist | index($k) | not)))) as $booster_dev_deps |
-
-            $proj * {
-                scripts: (($proj.scripts // {}) + $booster_scripts),
-                devDependencies: (($proj.devDependencies // {}) + $booster_dev_deps)
-            }
-            ' "$project_pkg" "$booster_pkg" >"$tmp_pkg" || error "Failed to merge package.json using jq."
-
-        mv "$tmp_pkg" "$project_pkg"
-        success "package.json updated with merged scripts and devDependencies."
-    fi
-
-    # Copy commitlint config regardless
-    if [ -f "$booster_commitlint" ]; then
-        cp "$booster_commitlint" . || warn "Failed to copy commitlint config."
-        success "commitlint.config.ts copied."
-    else
-        warn "Booster 'commitlint.config.ts' not found. Skipping copy."
-    fi
-
-    # Copy pnpm-workspace.yaml if it exists
-    local booster_pnpm_workspace="${BOOSTER_INTERNAL_PATH}/pnpm-workspace.yaml"
-    if [ -f "$booster_pnpm_workspace" ]; then
-        cp "$booster_pnpm_workspace" . || warn "Failed to copy pnpm-workspace.yaml."
-        success "pnpm-workspace.yaml copied."
-    else
-        warn "Booster 'pnpm-workspace.yaml' not found. Skipping copy."
-    fi
-
-    # Copy pnpm-lock.yaml if it exists (to ensure deterministic installs)
-    # Prefer pnpm-lock.dist.yaml (clean version without internal dev deps) if available
-    local booster_pnpm_lock="${BOOSTER_INTERNAL_PATH}/pnpm-lock.yaml"
-    local booster_dist_lock="${BOOSTER_INTERNAL_PATH}/pnpm-lock.dist.yaml"
-
-    if [ -f "$booster_dist_lock" ]; then
-        booster_pnpm_lock="$booster_dist_lock"
-    fi
-
-    if [ -f "$booster_pnpm_lock" ]; then
-        if [ ! -f "pnpm-lock.yaml" ]; then
-            cp "$booster_pnpm_lock" "pnpm-lock.yaml" || warn "Failed to copy pnpm-lock.yaml."
-            success "pnpm-lock.yaml copied."
-        else
-            log "pnpm-lock.yaml already exists. Skipping copy."
-        fi
-    fi
-}
 
 function update_readme() {
     log "Updating README.md..."
@@ -1661,88 +1554,18 @@ function init_deptrac() {
     fi
 }
 
-function update_ignore_files() {
-    log "Updating ignore files to exclude .husky..."
-
-    # 1. Update tsconfig.json if it exists
-    if [ -f "tsconfig.json" ]; then
-        log "Updating tsconfig.json to exclude .husky..."
-        if command -v node >/dev/null 2>&1; then
-            node -e "
-            const fs = require('fs');
-            try {
-                const config = JSON.parse(fs.readFileSync('tsconfig.json', 'utf8'));
-                if (!config.exclude) config.exclude = [];
-                if (!config.exclude.includes('.husky')) {
-                    config.exclude.push('.husky');
-                    fs.writeFileSync('tsconfig.json', JSON.stringify(config, null, 2));
-                    console.log('Added .husky to tsconfig.json exclude list');
-                }
-            } catch (e) {
-                console.error('Failed to update tsconfig.json:', e);
-            }
-            "
-        else
-            warn "Node.js not found. Skipping tsconfig.json update."
-        fi
-    fi
-
-    # 2. Update .prettierignore
-    if [ -f ".prettierignore" ]; then
-        if ! grep -q ".husky" ".prettierignore"; then
-            echo -e "\n.husky" >> ".prettierignore"
-            log "Added .husky to .prettierignore"
-        fi
-    fi
-
-    # 3. Update .eslintignore or check Flat Config
-    # Check for Flat Config files
-    if ls eslint.config.* 1>/dev/null 2>&1; then
-        # Check if '.husky' is mentioned in any eslint config file
-        if ! grep -q "\.husky" eslint.config.* 2>/dev/null; then
-             warn "ESLint Flat Config detected. Please ensure '.husky' is added to 'ignores' in your configuration."
-        fi
-    elif [ -f ".eslintignore" ]; then
-        if ! grep -q ".husky" ".eslintignore"; then
-            echo -e "\n.husky" >> ".eslintignore"
-            log "Added .husky to .eslintignore"
-        fi
-    fi
-}
-
-function generate_hooks_config() {
-    # Only generate if no config file already exists (idempotent)
-    if [ -f ".git-hooks.config.json" ] || [ -f ".githooks.json" ]; then
-        log "  .git-hooks.config.json already exists. Skipping generation."
-        return
-    fi
-
-    local dist=".husky/.git-hooks.config.dist.json"
-    if [ ! -f "$dist" ]; then
-        warn "  Dist config template not found at '$dist'. Skipping config generation."
-        warn "  Run 'npx zx .husky/generate-config.ts' manually to generate .git-hooks.config.json."
-        return
-    fi
-
-    cp "$dist" ".git-hooks.config.json" || {
-        warn "  Failed to copy dist config. Run 'npx zx .husky/generate-config.ts' manually."
-        return
-    }
-
-    success "Generated .git-hooks.config.json from dist template."
-    info "  Edit it to enable/disable tools for each hook."
-}
-
 function install_node_dependencies() {
     log "Installing Node.js dependencies..."
 
-    # Update ignore files (tsconfig, eslint, prettier) to ignore .husky
-    update_ignore_files
+    if [ ! -f "package.json" ]; then
+        log "No package.json found. Skipping Node.js dependency installation."
+        return
+    fi
 
     # Check if pnpm is available
     if ! command -v pnpm >/dev/null 2>&1; then
         warn "pnpm not found. Skipping Node.js dependency installation."
-        warn "Please install pnpm and run 'pnpm install' manually to enable git hooks."
+        warn "Please install pnpm and run 'pnpm install' manually."
         return
     fi
 
@@ -1765,14 +1588,13 @@ function show_help() {
     echo "OPTIONS:"
     echo "  -I          Run in interactive mode (recommended for first-time setup)"
     echo "  -N          Non-interactive mode (skip all prompts, use defaults)"
-    echo "  -J          JavaScript/TypeScript only mode (hooks only, no PHP tools)"
+    echo "  -J          JavaScript/TypeScript only mode (no PHP tools)"
     echo "  -v          Enable verbose logging"
     echo "  -c          Skip cleanup (preserve temporary files for debugging)"
     echo "  -i          Show version information and exit"
     echo "  -h          Show this help message and exit"
     echo ""
     echo "PARTIAL UPDATE OPTIONS (for existing installations):"
-    echo "  --update-hooks    Update only Git hooks (.husky directory)"
     echo "  --update-configs  Update only config files (commitlint, validate-branch-name, etc.)"
     echo "  --update-deps     Update only dependencies (composer/npm packages)"
     echo "  --ignore-platform-reqs Ignore platform requirements (for composer)"
@@ -1788,10 +1610,9 @@ function show_help() {
     echo "EXAMPLES:"
     echo "  $0              # Run integration with default settings"
     echo "  $0 -I           # Run in interactive mode (guided setup)"
-    echo "  $0 -J           # Install hooks only (for JS/TS projects)"
+    echo "  $0 -J           # JS/TS only mode (skip PHP tools)"
     echo "  $0 -v           # Run with verbose output"
     echo "  $0 -i           # Show version information"
-    echo "  $0 --update-hooks    # Update Git hooks only"
     echo "  $0 --update-configs  # Update config files only"
     echo ""
     echo "ENVIRONMENT VARIABLES:"
@@ -1836,53 +1657,9 @@ function show_version_info_and_exit() {
 # --- Main Execution ---
 
 # Partial update mode flags
-UPDATE_HOOKS_ONLY=false
 UPDATE_CONFIGS_ONLY=false
 IGNORE_PLATFORM_REQS=false
 UPDATE_DEPS_ONLY=false
-
-# --- Partial Update Functions ---
-
-function update_hooks_only() {
-    log "Starting partial update: Git hooks only..."
-
-    download_php_booster
-
-    local husky_src="${BOOSTER_INTERNAL_PATH}/.husky"
-    if [ -d "$husky_src" ]; then
-        log "Updating .husky directory..."
-
-        # Backup existing husky if it exists
-        if [ -d ".husky" ]; then
-            rm -rf ".husky.bak"
-            mv ".husky" ".husky.bak"
-            log "  Backed up existing .husky to .husky.bak"
-        fi
-
-        mkdir -p .husky
-        rm -rf .husky/tests
-
-        # Copy everything except the 'tests' directory.
-        # Use find to include dotfiles (shell globs exclude them by default).
-        while IFS= read -r item; do
-            local item_name
-            item_name=$(basename "$item")
-            if [ "$item_name" != "tests" ]; then
-                cp -R "$item" .husky/
-            fi
-        done < <(find "$husky_src" -maxdepth 1 -mindepth 1)
-
-        # Set execute permissions for scripts and hooks
-        find ".husky" -type f \( -name "*.sh" -o -name "*.bash" -o -name "*.mjs" -o -name "pre-commit" -o -name "commit-msg" -o -name "pre-push" \) -exec chmod +x {} \;
-
-        # Remove backup on success
-        rm -rf ".husky.bak"
-
-        success "Git hooks updated successfully."
-    else
-        error "Could not find .husky directory in booster."
-    fi
-}
 
 function update_configs_only() {
     log "Starting partial update: Config files only..."
@@ -1965,9 +1742,6 @@ function main() {
     local args=()
     for arg in "$@"; do
         case $arg in
-            --update-hooks)
-                UPDATE_HOOKS_ONLY=true
-                ;;
             --update-configs)
                 UPDATE_CONFIGS_ONLY=true
                 ;;
@@ -2001,20 +1775,16 @@ function main() {
     shift $((OPTIND - 1))
 
     # --- Handle Partial Update Modes ---
-    if [ "$UPDATE_HOOKS_ONLY" = true ] || [ "$UPDATE_CONFIGS_ONLY" = true ] || [ "$UPDATE_DEPS_ONLY" = true ]; then
+    if [ "$UPDATE_CONFIGS_ONLY" = true ] || [ "$UPDATE_DEPS_ONLY" = true ]; then
         log "Running in partial update mode..."
 
         # Check for existing booster installation
-        if [ ! -f ".booster-version" ] && [ ! -d ".husky" ]; then
+        if [ ! -f ".booster-version" ]; then
             warn "No existing booster installation detected. Running partial update anyway..."
         fi
 
         IS_DDEV_PROJECT=$(is_ddev_project)
         check_dependencies
-
-        if [ "$UPDATE_HOOKS_ONLY" = true ]; then
-            update_hooks_only
-        fi
 
         if [ "$UPDATE_CONFIGS_ONLY" = true ]; then
             update_configs_only
@@ -2039,7 +1809,7 @@ function main() {
 
     # Determine installation mode
     if [ "$HOOKS_ONLY_MODE" = true ]; then
-        log "Starting php-booster integration (hooks-only mode for JS/TS projects)..."
+        log "Starting php-booster integration (JS/TS only mode)..."
     else
         log "Starting php-booster integration..."
     fi
@@ -2054,7 +1824,7 @@ function main() {
     fi
 
     if [ "$HOOKS_ONLY_MODE" = true ]; then
-        log "Hooks-only mode: PHP tools will be skipped."
+        log "JS/TS only mode: PHP tools will be skipped."
     elif [ $IS_DDEV_PROJECT -eq 1 ]; then
         log "DDEV project detected."
     else
@@ -2079,7 +1849,6 @@ function main() {
     fi
 
     copy_files
-    update_package_json
     update_readme
     update_gitignore
 
@@ -2115,25 +1884,21 @@ function main() {
         add_code_quality_tools # Merges composer scripts & installs deps
         init_deptrac
     else
-        log "Skipping PHP tools installation (hooks-only mode)."
+        log "Skipping PHP tools installation (JS/TS only mode)."
     fi
 
     install_node_dependencies
-    generate_hooks_config
 
     # --- Create Version Stamp ---
     local install_mode="full"
     if [ "$HOOKS_ONLY_MODE" = true ]; then
-        install_mode="hooks-only"
+        install_mode="js-only"
     fi
     create_version_stamp "$current_version" "$install_mode"
 
     success "Integration process completed."
 
-    if [ "$HOOKS_ONLY_MODE" = true ]; then
-        success "Hooks-only installation complete. Git hooks are now active for JS/TS projects."
-        info "Available tools: ESLint, Prettier, Stylelint, TypeScript (if tsconfig.json exists)"
-    elif [ $IS_DDEV_PROJECT -eq 1 ]; then
+    if [ $IS_DDEV_PROJECT -eq 1 ]; then
         success "Please run 'ddev restart' to apply the DDEV configuration changes."
     fi
 

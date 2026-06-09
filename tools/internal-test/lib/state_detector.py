@@ -68,11 +68,9 @@ class StateDetector:
         if version_stamp.exists():
             return True
 
-        # Fallback check: essential booster files (updated for TypeScript architecture)
-        return (
-            self.config.target_dir / ".husky/shared/index.ts"
-        ).exists() and (
-            self.config.target_dir / ".husky/commit-msg.ts"
+        # Fallback check: essential booster files
+        return (self.config.target_dir / ".editorconfig").exists() and (
+            self.config.target_dir / "renovate.json"
         ).exists()
 
     def get_integrated_version(self) -> Optional[str]:
@@ -87,14 +85,7 @@ class StateDetector:
 
     def has_git_hooks(self) -> bool:
         """Check if git hooks are installed"""
-        # Check .husky directory first (primary method for this booster)
-        husky_dir = self.config.target_dir / ".husky"
-
-        if husky_dir.exists():
-            hooks_dir = husky_dir
-        else:
-            # Fallback to .git/hooks
-            hooks_dir = self.config.target_dir / ".git" / "hooks"
+        hooks_dir = self.config.target_dir / ".git" / "hooks"
 
         if not hooks_dir.exists():
             return False

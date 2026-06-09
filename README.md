@@ -9,7 +9,7 @@ A curated collection of tools and best practices for PHP development.
 - Static analysis with [PHPStan](https://phpstan.org/) and [Psalm](https://psalm.dev/).
 - Automated code formatting with [EasyCodingStandard](https://github.com/symplify/easy-coding-standard).
 - Automatic refactoring with [Rector](https://getrector.org/).
-- Git hooks for quality enforcement.
+- Git hooks for quality enforcement via [Forge](https://terrorsquad.github.io/forge/).
 - **GitHub Actions for automatic code fixing** - Move formatting and modernization to the cloud!
 - IDE configuration for VS Code and PhpStorm.
 

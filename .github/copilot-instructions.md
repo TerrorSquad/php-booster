@@ -9,7 +9,6 @@ This is a **PHP Booster**: an integration layer that injects a curated quality/t
 Primary goals:
 - Add consistent code quality tooling (ECS, Rector, PHPStan, Psalm, SonarQube).
 - Enforce branch naming + commit message conventions (Conventional Commits + ticket IDs when configured).
-- Provide Git hooks (commitlint, branch validation, ticket footer appending).
 - Supply IDE/editor settings, OpenAPI starter, and documentation.
 - Remain **idempotent**: re-running integration shouldn't break or duplicate config.
 
@@ -35,10 +34,9 @@ The script:
 |------|-------------|
 | `-I` | Interactive mode (guided setup wizard) |
 | `-N` | Non-interactive mode (skip prompts, use defaults) |
-| `-J` | JavaScript/TypeScript only (hooks-only, no PHP tools) |
+| `-J` | JavaScript/TypeScript only (no PHP tools) |
 | `-v` | Verbose logging |
 | `-i` | Show version info and exit |
-| `--update-hooks` | Partial update: refresh only `.husky` directory |
 | `--update-configs` | Partial update: refresh only config files |
 | `--update-deps` | Partial update: refresh only dependencies |
 
@@ -60,8 +58,7 @@ If inside a DDEV project, prefix composer commands with `ddev`. Otherwise call `
 | PHPStan analysis | `composer phpstan` |
 | Psalm analysis | `composer psalm` |
 | Run all static checks (if aggregated) | Suggest existing combined script if present (inspect composer.json) |
-| Commit message lint | Git hook (do not manually run unless needed) |
-| Branch validation | `validate-branch-name` via hook or `node_modules/.bin/validate-branch-name -t <branch>` |
+| Branch validation | `node_modules/.bin/validate-branch-name -t <branch>` |
 | OpenAPI editing | Modify `openapi/openapi.yml` (do not generate large boilerplate) |
 
 Copilot SHOULD NOT generate raw php-cs-fixer, phpstan, rector, or psalm command lines if a composer script already exists.
@@ -75,35 +72,7 @@ Copilot SHOULD NOT generate raw php-cs-fixer, phpstan, rector, or psalm command 
 - Do NOT fabricate ticket IDs; if none supplied in branch name and config requires it, surface a reminder.
 
 ---
-## 5. Git Hooks Architecture
-- Native ZX implementation: All git hooks use Google ZX for secure, cross-platform execution.
-- Common library: `.husky/shared/index.ts` provides shared functionality and colored logging.
-- `commit-msg` hook validates branch, lints message, appends footer if needed - all functionality integrated natively.
-- Copilot SHOULD reference the ZX-based hook system and shared utilities instead of legacy scripts.
-
-**Tool Groups & Filtering:**
-Tools are organized into groups: `lint`, `format`, `analysis`, `refactor`. Use the `HOOKS_ONLY` environment variable to run only specific groups:
-```bash
-HOOKS_ONLY=lint,format git commit -m "..."  # Only run lint and format tools
-```
-
-**Per-Project Configuration:**
-Create `.git-hooks.config.json` in project root to customize hook behavior:
-```json
-{
-  "ticketIdRequired": true,
-  "ticketPrefix": "PRJ",
-  "footerLabel": "Closes",
-  "verbose": false,
-  "hooks": {
-    "preCommit": { "skip": false },
-    "prePush": { "skip": false }
-  }
-}
-```
-
----
-## 6. Configuration Files (Do Not Duplicate)
+## 5. Configuration Files (Do Not Duplicate)
 | File | Purpose |
 |------|---------|
 | `ecs.php` | Coding standards & formatting rules |
@@ -114,7 +83,6 @@ Create `.git-hooks.config.json` in project root to customize hook behavior:
 | `.editorconfig` | Base editor formatting |
 | `.vscode/` & `.phpstorm/` | Editor recommendations |
 | `openapi/openapi.yml` | API spec seed |
-| `.git-hooks.config.json` | Per-project hook configuration |
 | `.booster-version` | Installation version stamp |
 
 Copilot SHOULD reference or extend these—NOT generate new parallel config files with different names.
@@ -180,15 +148,7 @@ Run all analyzers (example if combined script exists, otherwise run individually
 ```
 composer phpstan && composer psalm && composer ecs
 ```
-Run specific tool groups only:
-```
-HOOKS_ONLY=lint git commit -m "fix: quick lint check"
-```
-Partial update (refresh hooks only):
-```
-curl -sSL https://raw.githubusercontent.com/TerrorSquad/php-booster/main/booster/integrate_booster.sh | bash -s -- --update-hooks
-```
-JS/TS project integration (hooks only, no PHP):
+JS/TS project integration (no PHP tools):
 ```
 curl -sSL https://raw.githubusercontent.com/TerrorSquad/php-booster/main/booster/integrate_booster.sh | bash -s -- -J
 ```
@@ -208,7 +168,6 @@ The repository includes a Python-based integration test suite in `tools/internal
 | Build integration script | `make build` |
 | Run full Laravel test | `python3 tools/internal-test/test-integration.py full laravel` |
 | Run full Symfony test | `python3 tools/internal-test/test-integration.py full symfony` |
-| Test Git hooks only | `python3 tools/internal-test/test-integration.py test-hooks laravel` |
 | Clean test environments | `python3 tools/internal-test/test-integration.py clean laravel` |
 | See all options | `python3 tools/internal-test/test-integration.py --help` |
 

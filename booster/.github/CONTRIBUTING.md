@@ -105,33 +105,9 @@ Each commit message should adhere to the following format:
 - `chore: update dependencies`
 - `docs: improve installation instructions`
 
-Commitlint plus the `commit-msg` hook will append the ticket footer automatically (see Hook Footers). Focus on the title and optional body.
-
 ### Developer Tooling
 
-Git hooks (managed via Husky and `zx`) enforce naming, formatting and static analysis.
-
-**Hooks:**
-
-- `commit-msg`: Validates branch name and commit message format. Appends ticket ID footer.
-- `pre-commit`: Runs linters and static analysis.
-- **PHP**: Rector, PHPStan, Psalm, EasyCodingStandard.
-- **JS/TS**: ESLint, Prettier, Stylelint.
-- `pre-push`: Runs tests (`Pest`) and generates API documentation.
-
-### Environment Variables (Skipping Checks)
-
-For a complete list of environment variables to skip specific checks (e.g., `SKIP_PRECOMMIT`, `SKIP_PHPSTAN`), please refer to the [Git Hooks Documentation](../.husky/README.md#environment-variables).
-
-### Hook Footers
-
-If a ticket is required & detected, the hook appends a footer:
-
-```text
-Closes: PRJ-123
-```
-
-Footer label is configurable via `commitFooterLabel` in `validate-branch-name.config.cjs`. Valid characters: alphanumeric, `_`, `-` (must start with a letter). Default: `Closes`.
+Run code quality tools manually via `ddev composer` or `composer`.
 
 ### Configuration Reference (`validate-branch-name.config.cjs`)
 
@@ -150,13 +126,11 @@ Footer label is configurable via `commitFooterLabel` in `validate-branch-name.co
 | --------------- | ----------------------------------------------------------------------------- |
 | Branch rejected | Check branch name format against `validate-branch-name.config.cjs` rules.     |
 | Missing footer  | Ensure branch has valid ticket segment & config has prefixes.                 |
-| Slow pre-commit | Use `SKIP_...` variables if necessary (e.g. `SKIP_PHPSTAN=1 git commit ...`). |
-
 ## Tools We Use
 
 ### Linters & Static Analysis
 
-This project uses the following tools to ensure code quality. Most run automatically via git hooks, but you can run them manually via `ddev`.
+This project uses the following tools to ensure code quality. Run them manually via `ddev composer` or `composer`.
 
 - **[Rector](https://getrector.org/)**: PHP refactoring and upgrades.
 - Command: `ddev composer rector`
@@ -174,7 +148,7 @@ This project uses the following tools to ensure code quality. Most run automatic
 
 ### Git Hooks
 
-We use [Husky](https://typicode.github.io/husky/) to manage Git hooks. For detailed configuration and troubleshooting, see [.husky/README.md](../.husky/README.md).
+For Git hooks (commit message linting, branch validation, pre-commit checks), see [Forge](https://terrorsquad.github.io/forge/).
 
 ### Required Visual Studio Code Extensions
 

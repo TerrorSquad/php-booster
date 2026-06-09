@@ -27,7 +27,6 @@ INCLUDE_ITEMS=$(cat <<'EOF'
 .editorconfig
 .github
 .gitignore
-.husky
 .markdownlint-cli2.jsonc
 .phpstorm
 .ddev/config.yaml
@@ -44,10 +43,7 @@ deptrac.yaml
 ecs.php
 manifest.json
 openapi
-package.json
 phpstan.neon.dist
-pnpm-lock.dist.yaml
-pnpm-workspace.yaml
 psalm.xml
 rector.php
 renovate.json

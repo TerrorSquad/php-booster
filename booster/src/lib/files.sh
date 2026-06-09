@@ -199,11 +199,6 @@ function copy_files() {
     for item in "${top_level[@]}"; do
         local src_path="${BOOSTER_INTERNAL_PATH}/${item}"
 
-        if [ "$item" = ".husky" ]; then
-            log "  Skipping generic copy for '.husky'; handled by filtered hook copy."
-            continue
-        fi
-
         if [ -e "$src_path" ]; then
             if [ -d "$src_path" ]; then
                 # It's a directory
@@ -253,30 +248,7 @@ function copy_files() {
         fi
     done
 
-    # Copy .husky directory
-    local husky_src="${BOOSTER_INTERNAL_PATH}/.husky"
-    if [ -d "$husky_src" ]; then
-        log "  Copying .husky directory"
-        mkdir -p .husky
-        rm -rf .husky/tests
-
-        # Copy everything except the 'tests' directory.
-        # Use find to include dotfiles (shell globs exclude them by default).
-        while IFS= read -r item; do
-            local item_name
-            item_name=$(basename "$item")
-            if [ "$item_name" != "tests" ]; then
-                cp -R "$item" .husky/
-            fi
-        done < <(find "$husky_src" -maxdepth 1 -mindepth 1)
-
-        # Set execute permissions for scripts and hooks
-        find ".husky" -type f \( -name "*.sh" -o -name "*.bash" -o -name "*.mjs" -o -name "pre-commit" -o -name "commit-msg" -o -name "pre-push" \) -exec chmod +x {} \;
-    else
-        warn "  Expected directory missing: .husky"
-    fi
-
-    # Copy validate-branch-name config (needed by hooks & scripts)
+    # Copy validate-branch-name config (needed by scripts)
     local branch_cfg="${BOOSTER_INTERNAL_PATH}/validate-branch-name.config.cjs"
     if [ -f "$branch_cfg" ]; then
         cp "$branch_cfg" . || warn "Failed to copy validate-branch-name.config.cjs"
@@ -309,85 +281,6 @@ function copy_files() {
     success "Common files copied (tools filtered to runtime essentials)."
 }
 
-function update_package_json() {
-    log "Updating package.json..."
-    local project_pkg="package.json"
-    local booster_pkg="${BOOSTER_INTERNAL_PATH}/package.json"
-    local booster_commitlint="${BOOSTER_INTERNAL_PATH}/commitlint.config.ts"
-    local tmp_pkg="package.json.tmp"
-
-    if [ ! -f "$booster_pkg" ]; then
-        warn "Booster package.json '$booster_pkg' not found. Skipping update."
-        return
-    fi
-
-    if [ ! -f "$project_pkg" ]; then
-        log "'$project_pkg' not found. Copying from booster..."
-        # Filter scripts using whitelist and devDependencies using blacklist when creating new package.json
-        jq '
-            ["commit", "prepare"] as $script_whitelist |
-            ["vitest", "@vitest/coverage-v8"] as $dev_blacklist |
-            .scripts |= with_entries(select(.key as $k | $script_whitelist | index($k))) |
-            .devDependencies |= with_entries(select(.key as $k | ($dev_blacklist | index($k) | not)))
-        ' "$booster_pkg" > "$project_pkg" || error "Failed to create package.json using jq."
-        success "package.json created from booster (with filtered scripts and dependencies)."
-    else
-        log "'$project_pkg' already exists. Merging scripts, devDependencies, and sections..."
-        # Merge using jq: project + booster (booster overwrites simple keys, merges objects)
-        # This merges top-level objects like scripts, devDependencies
-        jq -s '
-            .[0] as $proj | .[1] as $booster |
-            ["commit", "prepare"] as $script_whitelist |
-            ["vitest", "@vitest/coverage-v8"] as $dev_blacklist |
-
-            ($booster.scripts // {} | with_entries(select(.key as $k | $script_whitelist | index($k)))) as $booster_scripts |
-            ($booster.devDependencies // {} | with_entries(select(.key as $k | ($dev_blacklist | index($k) | not)))) as $booster_dev_deps |
-
-            $proj * {
-                scripts: (($proj.scripts // {}) + $booster_scripts),
-                devDependencies: (($proj.devDependencies // {}) + $booster_dev_deps)
-            }
-            ' "$project_pkg" "$booster_pkg" >"$tmp_pkg" || error "Failed to merge package.json using jq."
-
-        mv "$tmp_pkg" "$project_pkg"
-        success "package.json updated with merged scripts and devDependencies."
-    fi
-
-    # Copy commitlint config regardless
-    if [ -f "$booster_commitlint" ]; then
-        cp "$booster_commitlint" . || warn "Failed to copy commitlint config."
-        success "commitlint.config.ts copied."
-    else
-        warn "Booster 'commitlint.config.ts' not found. Skipping copy."
-    fi
-
-    # Copy pnpm-workspace.yaml if it exists
-    local booster_pnpm_workspace="${BOOSTER_INTERNAL_PATH}/pnpm-workspace.yaml"
-    if [ -f "$booster_pnpm_workspace" ]; then
-        cp "$booster_pnpm_workspace" . || warn "Failed to copy pnpm-workspace.yaml."
-        success "pnpm-workspace.yaml copied."
-    else
-        warn "Booster 'pnpm-workspace.yaml' not found. Skipping copy."
-    fi
-
-    # Copy pnpm-lock.yaml if it exists (to ensure deterministic installs)
-    # Prefer pnpm-lock.dist.yaml (clean version without internal dev deps) if available
-    local booster_pnpm_lock="${BOOSTER_INTERNAL_PATH}/pnpm-lock.yaml"
-    local booster_dist_lock="${BOOSTER_INTERNAL_PATH}/pnpm-lock.dist.yaml"
-
-    if [ -f "$booster_dist_lock" ]; then
-        booster_pnpm_lock="$booster_dist_lock"
-    fi
-
-    if [ -f "$booster_pnpm_lock" ]; then
-        if [ ! -f "pnpm-lock.yaml" ]; then
-            cp "$booster_pnpm_lock" "pnpm-lock.yaml" || warn "Failed to copy pnpm-lock.yaml."
-            success "pnpm-lock.yaml copied."
-        else
-            log "pnpm-lock.yaml already exists. Skipping copy."
-        fi
-    fi
-}
 
 function update_readme() {
     log "Updating README.md..."
