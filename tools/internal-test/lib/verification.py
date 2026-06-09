@@ -45,7 +45,6 @@ class IntegrationVerifier:
 
         # Check expected files
         expected_files = [
-            "validate-branch-name.config.cjs",
             "renovate.json",
             "deptrac.yaml",
         ]

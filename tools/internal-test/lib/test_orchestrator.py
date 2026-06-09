@@ -108,10 +108,6 @@ class TestOrchestrator:
 
     # Define expected files as a class attribute
     EXPECTED_BOOSTER_FILES = [
-        "package.json",
-        "commitlint.config.ts",
-        "validate-branch-name.config.cjs",
-        "pnpm-workspace.yaml",
         "ecs.php",
         "rector.php",
         "phpstan.neon.dist",
@@ -196,19 +192,6 @@ class TestOrchestrator:
                 for file in missing_files:
                     self.log.error(f"  - {file}")
                 return False
-
-            # Validate ticket prefix configuration
-            branch_config_path = test_dir / "validate-branch-name.config.cjs"
-            if branch_config_path.exists():
-                with open(branch_config_path, "r") as f:
-                    if "PRJ-" not in f.read():
-                        self.log.error(
-                            "Ticket prefix 'PRJ' not found in branch validation config!"
-                        )
-                        return False
-                self.log.success(
-                    "Branch validation config contains correct ticket prefix."
-                )
 
             success = result.returncode == 0
             if success:

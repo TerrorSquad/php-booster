@@ -46,7 +46,7 @@ function select_project_type() {
     echo "What type of project is this?"
     echo ""
     echo "  1. PHP Project (full tooling: ECS, Rector, PHPStan, Psalm, etc.)"
-    echo "  2. JavaScript/TypeScript Project (hooks only: ESLint, Prettier, TypeScript)"
+    echo "  2. JavaScript/TypeScript Project (no PHP tools)"
     echo ""
 
     # Auto-detect based on files present
@@ -64,7 +64,7 @@ function select_project_type() {
 
     if [ "$project_choice" = "2" ]; then
         HOOKS_ONLY_MODE=true
-        success "JavaScript/TypeScript mode selected (hooks only)"
+        success "JavaScript/TypeScript mode selected (no PHP tools)"
     else
         HOOKS_ONLY_MODE=false
         success "PHP mode selected (full tooling)"
@@ -75,7 +75,7 @@ function select_project_type() {
 function select_tools_to_install() {
     # Skip PHP tool selection in hooks-only mode
     if [ "$HOOKS_ONLY_MODE" = true ]; then
-        log "Skipping PHP tool selection (hooks-only mode)"
+        log "Skipping PHP tool selection (JS/TS only mode)"
         return
     fi
 
@@ -120,48 +120,6 @@ function select_tools_to_install() {
     fi
 }
 
-function configure_git_workflow() {
-    echo ""
-    echo ""
-    echo "═══════════════════════════════════════════════════════════════"
-    info "Step 2: Configure Git Workflow"
-    echo "═══════════════════════════════════════════════════════════════"
-    echo ""
-    echo ""
-    echo "Git workflow features:"
-    echo "  • Branch naming validation (e.g., feature/PRJ-123-my-feature)"
-    echo "  • Conventional commit messages (e.g., feat:, fix:, chore:)"
-    echo "  • Automatic ticket footer appending to commits"
-    echo ""
-
-    if confirm_action "Do you use ticket IDs in your branches? (e.g., JIRA, GitHub Issues)" "n"; then
-        INTERACTIVE_REQUIRE_TICKETS=true
-        echo ""
-        prompt "Enter your ticket prefix (e.g., PRJ, JIRA, ISSUE): "
-        read -r INTERACTIVE_TICKET_PREFIX
-
-        if [ -z "$INTERACTIVE_TICKET_PREFIX" ]; then
-            warn "No prefix provided. Using default: 'TICKET'"
-            INTERACTIVE_TICKET_PREFIX="TICKET"
-        fi
-
-        success "Ticket prefix set to: $INTERACTIVE_TICKET_PREFIX"
-
-        echo ""
-        prompt "Enter the commit footer label (default: Closes): "
-        read -r footer_label
-
-        if [ -n "$footer_label" ]; then
-            INTERACTIVE_COMMIT_FOOTER_LABEL="$footer_label"
-        fi
-
-        success "Commit footer will be: $INTERACTIVE_COMMIT_FOOTER_LABEL: $INTERACTIVE_TICKET_PREFIX-XXX"
-    else
-        INTERACTIVE_REQUIRE_TICKETS=false
-        info "Ticket IDs will be optional in branch names"
-    fi
-}
-
 function configure_ide_settings() {
     echo ""
     echo "═══════════════════════════════════════════════════════════════"
@@ -194,8 +152,7 @@ function show_configuration_summary() {
 
     echo "🏗️  Project Type:"
     if [ "$HOOKS_ONLY_MODE" = true ]; then
-        echo "   ✓ JavaScript/TypeScript (hooks only)"
-        echo "   ✓ Tools: ESLint, Prettier, Stylelint, TypeScript"
+        echo "   ✓ JavaScript/TypeScript (no PHP tools)"
     else
         echo "   ✓ PHP (full tooling)"
         echo ""
@@ -206,16 +163,6 @@ function show_configuration_summary() {
         done
     fi
     echo ""
-    echo ""
-
-    echo "🔧 Git Workflow:"
-    if [ "$INTERACTIVE_REQUIRE_TICKETS" = true ]; then
-        echo "   ✓ Ticket IDs: Required"
-        echo "   ✓ Ticket Prefix: $INTERACTIVE_TICKET_PREFIX"
-        echo "   ✓ Commit Footer: $INTERACTIVE_COMMIT_FOOTER_LABEL"
-    else
-        echo "   ✓ Ticket IDs: Optional"
-    fi
     echo ""
 
     echo "🎨 IDE Settings: Will be installed"
@@ -231,27 +178,7 @@ function show_configuration_summary() {
 }
 
 function apply_interactive_configuration() {
-    # Update branch validation config with user's choices
-    if [ "$INTERACTIVE_REQUIRE_TICKETS" = true ] && [ -n "$INTERACTIVE_TICKET_PREFIX" ]; then
-        local config_file="validate-branch-name.config.cjs"
-
-        if [ -f "$config_file" ]; then
-            log "Updating branch validation config with ticket prefix: $INTERACTIVE_TICKET_PREFIX"
-
-            # Update ticket prefix
-            sed -i.bak "s/ticketIdPrefix: '[^']*'/ticketIdPrefix: '$INTERACTIVE_TICKET_PREFIX'/g" "$config_file"
-
-            # Update requireTickets flag
-            sed -i.bak "s/requireTickets: false/requireTickets: true/g" "$config_file"
-
-            # Update commit footer label
-            sed -i.bak "s/commitFooterLabel: '[^']*'/commitFooterLabel: '$INTERACTIVE_COMMIT_FOOTER_LABEL'/g" "$config_file"
-
-            rm -f "$config_file.bak"
-
-            success "Branch validation configured with your settings"
-        fi
-    fi
+    log "Interactive configuration applied."
 }
 
 function show_post_installation_summary() {
@@ -268,8 +195,6 @@ function show_post_installation_summary() {
     echo ""
     echo ""
     echo "1. Review the integrated files:"
-    echo "   • validate-branch-name.config.cjs  - Branch naming rules"
-    echo "   • commitlint.config.ts             - Commit message rules"
     echo "   • ecs.php, rector.php, phpstan.neon.dist - Code quality configs"
     echo ""
     echo "2. Try the available commands:"
@@ -292,31 +217,12 @@ function show_post_installation_summary() {
 
     echo ""
     echo ""
-    echo "3. Test your Git hooks:"
-    echo "   • Create a test branch with proper naming"
-
-    if [ "$INTERACTIVE_REQUIRE_TICKETS" = true ]; then
-        echo "     Example: git checkout -b feature/$INTERACTIVE_TICKET_PREFIX-123-test-booster"
-    else
-        echo "     Example: git checkout -b feature/test-booster"
-    fi
-
-    echo "   • Make a commit with conventional format"
-    echo "     Example: git commit -m \"feat: add PHP Booster integration\""
-    echo ""
-    echo "4. Commit the booster integration:"
+    echo "3. Commit the booster integration:"
     echo "   git add ."
     echo "   git commit -m \"chore: integrate PHP Booster tooling\""
     echo ""
     echo "📚 Documentation: https://terrorsquad.github.io/php-booster/"
     echo ""
-
-    if [ "$INTERACTIVE_REQUIRE_TICKETS" = true ]; then
-        echo "💡 Tip: Your commit messages will automatically include:"
-        echo "   $INTERACTIVE_COMMIT_FOOTER_LABEL: $INTERACTIVE_TICKET_PREFIX-XXX"
-        echo ""
-    fi
-
     success "Happy coding with PHP Booster! 🚀"
     echo ""
 }
@@ -325,7 +231,6 @@ function run_interactive_mode() {
     show_welcome_banner
     select_project_type
     select_tools_to_install
-    configure_git_workflow
     configure_ide_settings
     show_configuration_summary
 }

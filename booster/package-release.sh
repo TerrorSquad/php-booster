@@ -37,7 +37,6 @@ INCLUDE_ITEMS=$(cat <<'EOF'
 .prettierignore
 .vscode
 bin
-commitlint.config.ts
 composer.json
 deptrac.yaml
 ecs.php
@@ -49,7 +48,6 @@ rector.php
 renovate.json
 sonar-project.properties
 src
-validate-branch-name.config.cjs
 README_SNIPPET.md
 EOF
 )

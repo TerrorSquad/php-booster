@@ -58,18 +58,14 @@ If inside a DDEV project, prefix composer commands with `ddev`. Otherwise call `
 | PHPStan analysis | `composer phpstan` |
 | Psalm analysis | `composer psalm` |
 | Run all static checks (if aggregated) | Suggest existing combined script if present (inspect composer.json) |
-| Branch validation | `node_modules/.bin/validate-branch-name -t <branch>` |
 | OpenAPI editing | Modify `openapi/openapi.yml` (do not generate large boilerplate) |
 
 Copilot SHOULD NOT generate raw php-cs-fixer, phpstan, rector, or psalm command lines if a composer script already exists.
 
 ---
 ## 4. Branch & Commit Conventions
-- Branch names must satisfy `validate-branch-name.config.cjs` (pattern uses ticket prefix + number when configured).
-- Ticket footer is auto-appended if required: `Closes: TICKET-ID` (label may be overridden via config but defaults to `Closes`).
 - Commit messages follow **Conventional Commits** (`feat:`, `fix:`, `chore:`, etc.).
 - Copilot SHOULD propose commit messages in that format and **include scope** only if meaningful.
-- Do NOT fabricate ticket IDs; if none supplied in branch name and config requires it, surface a reminder.
 
 ---
 ## 5. Configuration Files (Do Not Duplicate)
@@ -139,10 +135,6 @@ If user asks about improvements, Copilot may propose:
 Check current branch and validation:
 ```
 git rev-parse --abbrev-ref HEAD
-```
-Validate branch manually:
-```
-./node_modules/.bin/validate-branch-name -t "$(git rev-parse --abbrev-ref HEAD)"
 ```
 Run all analyzers (example if combined script exists, otherwise run individually):
 ```

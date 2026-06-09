@@ -248,14 +248,6 @@ function copy_files() {
         fi
     done
 
-    # Copy validate-branch-name config (needed by scripts)
-    local branch_cfg="${BOOSTER_INTERNAL_PATH}/validate-branch-name.config.cjs"
-    if [ -f "$branch_cfg" ]; then
-        cp "$branch_cfg" . || warn "Failed to copy validate-branch-name.config.cjs"
-    else
-        warn "validate-branch-name.config.cjs missing in booster."
-    fi
-
     # Copy renovate config (for automated dependency updates)
     local renovate_cfg="${BOOSTER_INTERNAL_PATH}/renovate.json"
     if [ -f "$renovate_cfg" ]; then

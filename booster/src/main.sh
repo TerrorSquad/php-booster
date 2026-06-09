@@ -15,7 +15,7 @@ function show_help() {
     echo "  -h          Show this help message and exit"
     echo ""
     echo "PARTIAL UPDATE OPTIONS (for existing installations):"
-    echo "  --update-configs  Update only config files (commitlint, validate-branch-name, etc.)"
+    echo "  --update-configs  Update only config files (renovate, editorconfig, etc.)"
     echo "  --update-deps     Update only dependencies (composer/npm packages)"
     echo "  --ignore-platform-reqs Ignore platform requirements (for composer)"
     echo ""

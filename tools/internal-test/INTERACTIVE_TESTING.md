@@ -54,10 +54,6 @@ The interactive mode tests verify:
 
 1. That the integration script runs successfully with the `-I` flag
 2. That all expected files are created:
-   - package.json
-   - commitlint.config.ts
-   - validate-branch-name.config.cjs
-   - pnpm-workspace.yaml
    - ecs.php
    - rector.php
    - phpstan.neon.dist
@@ -65,16 +61,12 @@ The interactive mode tests verify:
    - .editorconfig
    - .booster-version
    - openapi/openapi.yml
-3. That the branch validation config contains the correct ticket prefix ("PRJ")
 
 ## Automated Test Input
 
 When running with `--automated`, the following inputs are simulated:
 
 - Install all tools: `y`
-- Use ticket IDs: `y`
-- Ticket prefix: `PRJ`
-- Commit footer: (default)
 - Install IDE settings: `y`
 - Proceed with configuration: `y`
 

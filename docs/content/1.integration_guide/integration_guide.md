@@ -60,7 +60,7 @@ curl -sSL https://raw.githubusercontent.com/TerrorSquad/php-booster/main/booster
 
 This installs:
 - **JS/TS tools**: ESLint, Prettier, Stylelint, TypeScript type-checking
-- **Commit conventions**: CommitLint, branch name validation
+- **Commit conventions**: see [Forge](https://terrorsquad.github.io/forge/) for commit linting and branch validation
 
 ::tip
 The script auto-detects JS/TS projects (no `composer.json` found) and suggests JS/TS only mode.
@@ -108,8 +108,6 @@ curl -sSL https://raw.githubusercontent.com/TerrorSquad/php-booster/main/booster
 ```
 
 This updates:
-- `commitlint.config.ts`
-- `validate-branch-name.config.cjs`
 - `renovate.json`
 - `.editorconfig`
 - PHP configs (if applicable): `ecs.php`, `rector.php`, `phpstan.neon.dist`, `psalm.xml`, `deptrac.yaml`
