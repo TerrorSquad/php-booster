@@ -30,6 +30,9 @@ jobs:
         if: github.event_name == 'release' || github.event.inputs.upload_asset == 'true'
         uses: softprops/action-gh-release@v2
         with:
+          # On a dispatch the run is already on the tag ref, but naming the tag
+          # explicitly keeps it from guessing when triggered any other way.
+          tag_name: ${{ github.event.release.tag_name || github.ref_name }}
           files: /tmp/booster-package/booster.zip
           fail_on_unmatched_files: true
         env:

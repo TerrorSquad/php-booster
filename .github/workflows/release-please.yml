@@ -19,6 +19,7 @@ jobs:
       contents: write
       pull-requests: write
       issues: write
+      actions: write # to dispatch publish-booster-package.yml
     steps:
       - uses: googleapis/release-please-action@v4
         id: release
@@ -26,3 +27,17 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
+
+      # A release published with GITHUB_TOKEN does not raise the `release`
+      # event (GitHub's anti-recursion rule), so publish-booster-package.yml
+      # never ran — every release from v2.4.0 on shipped without its
+      # booster.zip asset, and integrate_booster.sh silently fell back to a
+      # full git clone. Start it explicitly instead.
+      - name: Publish the booster package
+        if: ${{ steps.release.outputs.release_created }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.release.outputs.tag_name }}
+        run: |
+          gh workflow run publish-booster-package.yml \
+            --repo "$GITHUB_REPOSITORY" --ref "$TAG" --field upload_asset=true
